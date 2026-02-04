@@ -135,15 +135,12 @@ async function cargarDesdeGoogleSheets() {
     try {
         const resp = await fetch(SHEET_CSV_URL + "&cb=" + new Date().getTime());
         const csvText = await resp.text();
-        
-        // PARSEO ROBUSTO: Maneja comas dentro de comillas (celdas largas)
         const lineas = csvText.split(/\r?\n/);
         const mapExistente = new Map(datos.map(d => [String(d.ID), d]));
 
         for(let i = 1; i < lineas.length; i++) {
             if(!lineas[i].trim()) continue;
-            
-            // Regex para separar por comas pero ignorar comas dentro de comillas
+            // Google Sheets siempre usa coma en su CSV publicado
             const d = lineas[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
             const c = d.map(v => v.replace(/^"|"$/g, '').trim());
 
@@ -206,7 +203,7 @@ function render(lista) {
     tbody.innerHTML = "";
     markerLayer.clearLayers();
     let c = { pend: 0, nr: 0, proc: 0, fin: 0 };
-    let pZ = {}; let pC = {}; let pM = {}; let bounds = [];
+    let pZ = {}; let pC = {}; let bounds = [];
 
     lista.forEach((d) => {
         const est = (d.ESTADO || "Pendiente").trim();
@@ -290,13 +287,25 @@ function actualizarBox(id, obj) {
 function importarCSV(e) {
     const reader = new FileReader();
     reader.onload = () => {
-        const lineas = reader.result.split(/\r?\n/);
-        const sep = lineas[0].includes(";") ? ";" : ",";
-        lineas.shift();
+        const text = reader.result;
+        const lineas = text.split(/\r?\n/);
+        
+        // DETECCIÓN AUTOMÁTICA DEL SEPARADOR
+        const primeraLinea = lineas[0];
+        const sep = primeraLinea.includes(";") ? ";" : ",";
+        
+        lineas.shift(); // Saltar cabecera
         lineas.forEach(l => {
             if(!l.trim()) return;
             const c = l.split(sep).map(v => v.replace(/"/g,'').trim());
-            datos.push({ ID:c[0], FECHA:c[1], ZONA:c[2], DETALLE:c[3], LATITUD:c[4], LONGITUD:c[5], ESCALERA:c[6], CATEGORIA:c[7], ESTADO:c[8]||"Pendiente", FINALIZACION:c[9], COMENTARIO:c[10] });
+            datos.push({ 
+                ID:c[0], FECHA:c[1], ZONA:c[2], DETALLE:c[3], 
+                LATITUD: (c[4]||"").replace(',','.'), 
+                LONGITUD: (c[5]||"").replace(',','.'), 
+                ESCALERA:c[6], CATEGORIA:c[7], 
+                ESTADO:c[8]||"Pendiente", 
+                FINALIZACION:c[9], COMENTARIO:c[10] 
+            });
         });
         guardarEnDB(); buscar();
     };
