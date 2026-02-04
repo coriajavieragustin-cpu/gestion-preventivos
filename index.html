@@ -2,99 +2,86 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Gestión Preventiva V1.2 - Full Sync</title>
+    <title>Panel Gestión Preventiva V1.3</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
         :root {
             --pend-color: #dc3545;
+            --norep-color: #6c757d; /* Gris para No Reparable */
             --proc-color: #007bff;
             --fin-color: #28a745;
         }
 
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
         
-        /* Cabecera */
         .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
         .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
 
-        /* Barra de Estado */
         .status-bar { display: flex; justify-content: space-between; padding: 8px 20px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 12px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid #ccc; }
         .status-ok { border-left-color: var(--fin-color); color: var(--fin-color); }
-        .status-error { border-left-color: var(--pend-color); color: var(--pend-color); }
-        .status-loading { border-left-color: #ffc107; color: #856404; }
 
-        /* Tarjetas de Conteo */
         .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .card-conteo { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border: 1px solid #ddd; font-size: 10px; }
         .card-conteo span { display: block; font-size: 22px; margin-top: 4px; }
         .conteo-pendiente { border-top: 4px solid var(--pend-color); color: var(--pend-color); }
+        .conteo-norep { border-top: 4px solid var(--norep-color); color: var(--norep-color); }
         .conteo-proceso { border-top: 4px solid var(--proc-color); color: var(--proc-color); }
         .conteo-finalizado { border-top: 4px solid var(--fin-color); color: var(--fin-color); }
 
-        /* Panel Central: Mapa y Stats */
         .panel-central { display: grid; grid-template-columns: 1.6fr 1fr; gap: 15px; margin-bottom: 15px; height: 450px; }
-        #mapa-general { height: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1; }
+        #mapa-general { height: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1; }
         
-        .stats-columna { display: flex; flex-direction: column; gap: 10px; height: 100%; overflow: hidden; }
-        .stats-box { background: #fff; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex: 1; overflow-y: auto; }
-        .stats-box h3 { margin: 0 0 8px 0; font-size: 13px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .stats-box { background: #fff; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex: 1; overflow-y: auto; margin-bottom:10px; }
         .stats-table { width: 100%; border-collapse: collapse; font-size: 11px; }
         .stats-table td { padding: 4px 0; border-bottom: 1px dotted #eee; }
 
-        /* Controles y Filtros */
         .controles { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
         
-        button { padding: 10px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        button { padding: 10px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px; font-weight: bold; }
         .btn-nueva { background: #6f42c1; } 
         .btn-drive { background: var(--fin-color); }
         .btn-export { background: #17a2b8; } 
         .btn-import { background: #ffc107; color: #333; }
-        .btn-borrar { background: var(--pend-color); }
 
         .filtros-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
-        .grupo-filtro { display: flex; flex-direction: column; gap: 5px; }
-        .grupo-filtro label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; }
-        .input-busqueda { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none; }
-        .input-busqueda:focus { border-color: #1a73e8; }
+        .input-busqueda { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
 
-        /* Tabla Principal */
         .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 500px; }
-        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1400px; }
+        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1500px; }
         .tabla-principal th { padding: 12px; background: #f8f9fa; color: #666; font-size: 11px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
         .tabla-principal td { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #eee; }
         
-        /* Diferenciación de filas */
         .fila-pendiente { border-left: 5px solid var(--pend-color); background-color: #fff8f8; }
+        .fila-noreparable { border-left: 5px solid var(--norep-color); background-color: #f2f2f2; }
         .fila-proceso { border-left: 5px solid var(--proc-color); background-color: #f8fbff; }
         .fila-finalizado { border-left: 5px solid var(--fin-color); background-color: #f8fff9; }
-        
-        .etiqueta-id { background: #333; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 10px; }
     </style>
 </head>
 <body>
 
     <div class="header-app">
-        <h2>GESTIÓN PREVENTIVOS V1.2 - CORRIENTES</h2>
+        <h2>GESTIÓN PREVENTIVOS V1.3</h2>
     </div>
 
     <div id="statusBar" class="status-bar">
-        <span id="statusText">Iniciando sistema...</span>
+        <span id="statusText">Iniciando...</span>
         <span id="statusTime">--:--:--</span>
     </div>
 
     <div class="resumen-estados">
         <div class="card-conteo">TOTAL <span id="res-total">0</span></div>
         <div class="card-conteo conteo-pendiente">PENDIENTES <span id="res-pend">0</span></div>
+        <div class="card-conteo conteo-norep">NO REPARABLES <span id="res-norep">0</span></div>
         <div class="card-conteo conteo-proceso">EN PROCESO <span id="res-proc">0</span></div>
         <div class="card-conteo conteo-finalizado">FINALIZADOS <span id="res-fin">0</span></div>
     </div>
 
     <div class="panel-central">
         <div id="mapa-general"></div>
-        <div class="stats-columna">
+        <div style="display: flex; flex-direction: column;">
             <div class="stats-box"><h3>📍 Top Zonas</h3><div id="stats-zona"></div></div>
             <div class="stats-box"><h3>🏷️ Categorías</h3><div id="stats-categoria"></div></div>
         </div>
@@ -105,19 +92,25 @@
             <button class="btn-nueva" onclick="agregarFila()">➕ Nueva tarea</button>
             <button class="btn-drive" onclick="cargarDesdeGoogleSheets()">☁️ Sincronizar Drive</button>
             <button class="btn-export" onclick="exportarCSV()">📥 Exportar CSV</button>
-            <button class="btn-import" onclick="document.getElementById('inputImport').click()">📤 Importar Local</button>
+            <button class="btn-import" onclick="document.getElementById('inputImport').click()">📤 Importar CSV</button>
             <input type="file" id="inputImport" accept=".csv" style="display:none" onchange="importarCSV(event)">
-            <button class="btn-borrar" onclick="borrarTodo()">🗑️ Limpiar Vista</button>
         </div>
         
         <div class="filtros-grid">
-            <div class="grupo-filtro"><label>ID Tarea</label><input type="text" id="fId" class="input-busqueda" onkeyup="buscar()" placeholder="Ej: 123"></div>
-            <div class="grupo-filtro"><label>Zona</label><select id="fZon" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
-            <div class="grupo-filtro">
-                <label>Estado</label>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <label style="font-size:10px; font-weight:bold;">ID TAREA</label>
+                <input type="text" id="fId" class="input-busqueda" onkeyup="buscar()">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <label style="font-size:10px; font-weight:bold;">ZONA</label>
+                <select id="fZon" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <label style="font-size:10px; font-weight:bold;">ESTADO</label>
                 <select id="fEst" class="input-busqueda" onchange="buscar()">
                     <option value="">Todos</option>
                     <option value="pendiente">Pendiente</option>
+                    <option value="no reparable">No Reparable</option>
                     <option value="proceso">En proceso</option>
                     <option value="finalizado">Finalizado</option>
                 </select>
@@ -131,7 +124,7 @@
                 <tr>
                     <th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th>
                     <th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th>
-                    <th>ESTADO</th><th>ACCIONES</th>
+                    <th>ESTADO</th><th>CIERRE</th><th>COMENT</th><th>ACCIONES</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -139,46 +132,30 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
 
 let datos = [];
 let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
 let markerLayer = L.layerGroup().addTo(map);
-
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// --- 1. LIMPIADOR DE COORDENADAS (PARA CORRIENTES) ---
 function limpiarCoord(val) {
     if (!val) return NaN;
-    let s = val.toString().replace(/[^0-9]/g, ''); // Solo números
+    let s = val.toString().replace(/[^0-9]/g, '');
     if (s.length < 5) return NaN;
-    // Forzamos el formato -27.xxxxxx y -58.xxxxxx
-    let prefijo = s.substring(0, 2);
-    let resto = s.substring(2);
-    return parseFloat("-" + prefijo + "." + resto);
+    return parseFloat("-" + s.substring(0, 2) + "." + s.substring(2));
 }
 
-// --- 2. GESTIÓN DE ESTADOS Y AVISOS ---
-function actualizarAviso(tipo, msg) {
-    const bar = document.getElementById("statusBar");
-    document.getElementById("statusText").innerText = msg;
-    document.getElementById("statusTime").innerText = new Date().toLocaleTimeString();
-    bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
-}
-
-// --- 3. PROCESAMIENTO DE DATOS ---
 async function cargarDesdeGoogleSheets() {
-    actualizarAviso('loading', '⏳ Sincronizando con Google Drive...');
     try {
         const resp = await fetch(SHEET_URL + "&cb=" + Date.now());
         const csv = await resp.text();
         procesarCSV(csv);
-        actualizarAviso('ok', '✅ Sincronización exitosa');
-    } catch (e) {
-        actualizarAviso('error', '❌ Error al cargar Drive');
-    }
+        document.getElementById("statusBar").className = "status-bar status-ok";
+        document.getElementById("statusText").innerText = "✅ Sincronizado";
+        document.getElementById("statusTime").innerText = new Date().toLocaleTimeString();
+    } catch (e) { console.error(e); }
 }
 
 function procesarCSV(texto) {
@@ -186,49 +163,40 @@ function procesarCSV(texto) {
     datos = [];
     for(let i = 1; i < lineas.length; i++) {
         if(!lineas[i].trim()) continue;
-        // Split inteligente que respeta comas dentro de comillas
         const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-        if(c.length < 6) continue;
-
         datos.push({
-            ID: c[0] || "S/N", FECHA: c[1] || "", ZONA: c[2] || "S/Z",
+            ID: c[0] || "", FECHA: c[1] || "", ZONA: c[2] || "",
             DETALLE: c[3] || "", LAT: c[4] || "", LON: c[5] || "",
-            ESC: c[6] || "", CAT: c[7] || "S/C",
-            ESTADO: c[8] || "Pendiente"
+            ESC: c[6] || "", CAT: c[7] || "",
+            ESTADO: c[8] || "Pendiente", CIERRE: c[9] || "", COMENT: c[10] || ""
         });
     }
-    actualizarSelectsZonas();
+    actualizarSelects();
     buscar();
 }
 
-// --- 4. FILTRO BLINDADO ---
 function buscar() {
     const fId = document.getElementById("fId").value.toLowerCase().trim();
     const fZon = document.getElementById("fZon").value.toLowerCase().trim();
     const fEst = document.getElementById("fEst").value.toLowerCase().trim();
 
     const filtrados = datos.filter(d => {
-        const txtId = d.ID.toString().toLowerCase();
-        const txtZon = d.ZONA.toString().toLowerCase();
-        const txtEst = d.ESTADO.toString().toLowerCase();
-
-        return txtId.includes(fId) &&
-               (fZon === "" || txtZon === fZon) &&
-               (fEst === "" || txtEst.includes(fEst));
+        return d.ID.toLowerCase().includes(fId) &&
+               (fZon === "" || d.ZONA.toLowerCase() === fZon) &&
+               (fEst === "" || d.ESTADO.toLowerCase().includes(fEst));
     });
     render(filtrados);
 }
 
-// --- 5. RENDERIZADO (TABLA + MAPA + STATS) ---
 function render(lista) {
     const tbody = document.querySelector("#tabla tbody");
     tbody.innerHTML = "";
     markerLayer.clearLayers();
     
-    let conteos = { total: 0, pend: 0, proc: 0, fin: 0 };
+    let conteos = { total: 0, pend: 0, norep: 0, proc: 0, fin: 0 };
     let statsZ = {}; let statsC = {}; let bounds = [];
 
-    lista.forEach((d, idx) => {
+    lista.forEach(d => {
         const est = d.ESTADO.toLowerCase();
         conteos.total++;
         
@@ -237,6 +205,8 @@ function render(lista) {
 
         if(est.includes("pend")) { 
             conteos.pend++; colorPunto = "red"; claseFila = "fila-pendiente"; 
+        } else if(est.includes("reparable")) { 
+            conteos.norep++; colorPunto = "gray"; claseFila = "fila-noreparable";
         } else if(est.includes("proc")) { 
             conteos.proc++; colorPunto = "blue"; claseFila = "fila-proceso"; 
         } else if(est.includes("fin")) { 
@@ -246,82 +216,67 @@ function render(lista) {
         statsZ[d.ZONA] = (statsZ[d.ZONA] || 0) + 1;
         statsC[d.CAT] = (statsC[d.CAT] || 0) + 1;
 
-        // Marcador en Mapa
         let lat = limpiarCoord(d.LAT);
         let lon = limpiarCoord(d.LON);
-        if(!isNaN(lat) && !isNaN(lon)) {
-            const m = L.circleMarker([lat, lon], { radius: 8, fillColor: colorPunto, color: "#fff", weight: 2, fillOpacity: 0.9 });
-            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
-            m.bindTooltip(d.ID, { permanent: true, className: 'etiqueta-id', offset: [0, -10] });
-            markerLayer.addLayer(m);
+        if(!isNaN(lat)) {
+            L.circleMarker([lat, lon], { radius: 7, fillColor: colorPunto, color: "#fff", weight: 2, fillOpacity: 0.9 })
+             .addTo(markerLayer).bindPopup(`ID: ${d.ID}<br>${d.DETALLE}`);
             bounds.push([lat, lon]);
         }
 
-        // Crear Fila
         const tr = document.createElement("tr");
         tr.className = claseFila;
         tr.innerHTML = `
             <td><b>${d.ID}</b></td><td>${d.FECHA}</td><td>${d.ZONA}</td>
-            <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.DETALLE}</td>
-            <td>${lat.toFixed(4)}</td><td>${lon.toFixed(4)}</td><td>${d.ESC}</td><td>${d.CAT}</td>
-            <td style="font-weight:bold">${d.ESTADO}</td>
-            <td><button onclick="map.setView([${lat},${lon}], 18)" style="background:#444; padding:5px;">📍</button></td>
+            <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.DETALLE}</td>
+            <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
+            <td style="font-weight:bold">${d.ESTADO}</td><td>${d.CIERRE}</td><td>${d.COMENT}</td>
+            <td><button onclick="map.setView([${lat},${lon}],18)" style="background:#444; padding:4px;">📍</button></td>
         `;
         tbody.appendChild(tr);
     });
 
-    // Actualizar UI de conteo
     document.getElementById("res-total").innerText = conteos.total;
     document.getElementById("res-pend").innerText = conteos.pend;
+    document.getElementById("res-norep").innerText = conteos.norep;
     document.getElementById("res-proc").innerText = conteos.proc;
     document.getElementById("res-fin").innerText = conteos.fin;
 
-    // Actualizar Sidebars
-    actualizarTablaStats("stats-zona", statsZ);
-    actualizarTablaStats("stats-categoria", statsC);
-    
-    if(bounds.length > 0) map.fitBounds(bounds, {padding: [50,50]});
+    actualizarBox("stats-zona", statsZ);
+    actualizarBox("stats-categoria", statsC);
+    if(bounds.length > 0) map.fitBounds(bounds);
 }
 
-function actualizarTablaStats(id, obj) {
-    const box = document.getElementById(id);
-    let items = Object.entries(obj).sort((a,b) => b[1] - a[1]);
-    box.innerHTML = '<table class="stats-table">' + items.map(([k,v]) => `<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
+function actualizarBox(id, obj) {
+    const items = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+    document.getElementById(id).innerHTML = '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
 }
 
-function actualizarSelectsZonas() {
-    const sel = document.getElementById("fZon");
-    const zonas = [...new Set(datos.map(d => d.ZONA))].sort();
-    sel.innerHTML = '<option value="">Todas</option>' + zonas.map(z => `<option value="${z.toLowerCase()}">${z}</option>`).join("");
+function actualizarSelects() {
+    const zs = [...new Set(datos.map(d => d.ZONA))].sort();
+    document.getElementById("fZon").innerHTML = '<option value="">Todas</option>' + zs.map(z=>`<option value="${z.toLowerCase()}">${z}</option>`).join("");
 }
 
-// --- 6. IMPORTAR / EXPORTAR ---
 function exportarCSV() {
-    let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO\n";
-    datos.forEach(d => {
-        csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO,CIERRE,COMENT\n";
+    datos.forEach(d => { csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}","${d.CIERRE}","${d.COMENT}"\n`; });
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "preventivos_corrientes.csv";
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    link.download = "preventivos.csv";
     link.click();
 }
 
 function importarCSV(e) {
     const reader = new FileReader();
-    reader.onload = () => { procesarCSV(reader.result); actualizarAviso('ok', '📤 CSV Local cargado'); };
+    reader.onload = () => procesarCSV(reader.result);
     reader.readAsText(e.target.files[0]);
 }
 
 function agregarFila() {
-    datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ZONA: "CORRIENTES", DETALLE: "Nueva tarea...", LAT: "-27.46", LON: "-58.83", ESC: "NO", CAT: "GENERAL", ESTADO: "Pendiente" });
+    datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ZONA: "A", DETALLE: "Nueva...", LAT: "-27.46", LON: "-58.83", ESC: "NO", CAT: "POSTES", ESTADO: "Pendiente", CIERRE: "", COMENT: "" });
     buscar();
 }
 
-function borrarTodo() { if(confirm("¿Limpiar la vista actual?")) { datos = []; render([]); } }
-
-// Inicio Automático
 window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
