@@ -2,21 +2,34 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Gestión Preventiva - FIX TOTAL</title>
+    <title>Panel Gestión Preventiva - Control de Sincronización</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', sans-serif; margin:15px; background: #f0f2f5; }
-        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; gap: 15px; }
+        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 5px; gap: 15px; }
+        
+        /* --- ESTILO DE AVISOS DE SINCRONIZACIÓN --- */
+        .status-bar { 
+            display: flex; align-items: center; justify-content: space-between;
+            background: #fff; padding: 8px 20px; border-radius: 8px; 
+            margin-bottom: 15px; font-size: 13px; font-weight: bold;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .status-ok { color: #1fa463; border-left: 5px solid #1fa463; }
+        .status-error { color: #dc3545; border-left: 5px solid #dc3545; }
+        .status-loading { color: #f39c12; border-left: 5px solid #f39c12; }
+        /* ----------------------------------------- */
+
         .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .card-conteo { padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border-top: 4px solid #ddd; }
         .card-conteo span { display: block; font-size: 24px; }
-        #mapa-general { height: 500px; border-radius: 8px; margin-bottom: 15px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; max-height: 600px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        #mapa-general { height: 450px; border-radius: 8px; margin-bottom: 15px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; max-height: 500px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 1200px; }
         th { background: #f8f9fa; position: sticky; top: 0; padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; }
         td { padding: 8px; border-bottom: 1px solid #eee; }
         button { padding: 8px 12px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; color: white; }
-        .btn-sync { background: #1fa463; }
+        .btn-sync { background: #1a73e8; }
         .btn-new { background: #28a745; }
         .etiqueta-id { background: #333; color: white; padding: 2px 5px; border-radius: 3px; font-size: 10px; }
     </style>
@@ -26,7 +39,12 @@
     <div class="header-app">
         <h2>GESTIÓN PREVENTIVOS V1.0</h2>
         <button class="btn-new" onclick="agregarFila()">➕ Nueva Tarea</button>
-        <button class="btn-sync" id="btnSincronizar" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar Drive</button>
+        <button class="btn-sync" id="btnSincronizar" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar Ahora</button>
+    </div>
+
+    <div id="statusBar" class="status-bar status-loading">
+        <span id="statusText">Iniciando sistema...</span>
+        <span id="statusTime">--:--:--</span>
     </div>
 
     <div class="resumen-estados">
@@ -56,41 +74,43 @@
         let markerLayer = L.layerGroup().addTo(map);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // --- SUPER LIMPIADOR DE COORDENADAS ---
+        // FUNCIÓN DE AVISO VISUAL
+        function actualizarAviso(tipo, mensaje) {
+            const bar = document.getElementById("statusBar");
+            const txt = document.getElementById("statusText");
+            const time = document.getElementById("statusTime");
+            
+            bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
+            txt.innerText = mensaje;
+            time.innerText = new Date().toLocaleTimeString();
+        }
+
         function limpiarCoordenada(valor) {
             if (!valor) return NaN;
-            // Quitamos todo lo que no sea números o el signo menos
             let s = valor.toString().replace(/\s/g, '').trim();
             let esNegativo = s.startsWith('-');
             let soloNumeros = s.replace(/[^0-9]/g, '');
-
             if (soloNumeros.length < 4) return NaN;
-
-            // Forzamos el formato: Los primeros 2 dígitos son el grado (27 o 58)
-            // Ejemplo: -2747774429 -> -27.47774429
             let grados = soloNumeros.substring(0, 2);
             let decimales = soloNumeros.substring(2);
-            
             return parseFloat((esNegativo ? '-' : '') + grados + "." + decimales);
         }
 
         async function cargarDesdeGoogleSheets() {
-            const btn = document.getElementById("btnSincronizar");
-            btn.innerText = "⏳ Cargando...";
+            actualizarAviso('loading', '⏳ Sincronizando con Google Drive...');
             try {
+                // El "&cb=" fuerza a Google a no usar una copia vieja
                 const resp = await fetch(SHEET_URL + "&cb=" + Date.now());
+                if (!resp.ok) throw new Error("No se pudo conectar");
+                
                 const csvText = await resp.text();
                 const lineas = csvText.split(/\r?\n/);
                 
                 datos = [];
                 for(let i = 1; i < lineas.length; i++) {
                     if(!lineas[i].trim()) continue;
-                    
-                    // Regex especial para ignorar comas dentro de comillas
                     const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-
                     if(c.length < 6) continue;
-
                     datos.push({
                         ID: c[0], FECHA: c[1], ZONA: c[2], DETALLE: c[3],
                         LAT: c[4], LON: c[5], ESC: c[6], CAT: c[7],
@@ -98,8 +118,10 @@
                     });
                 }
                 render();
-            } catch (e) { alert("Error al sincronizar"); }
-            btn.innerText = "🔄 Sincronizar Drive";
+                actualizarAviso('ok', '✅ Sincronizado correctamente');
+            } catch (e) { 
+                actualizarAviso('error', '❌ Error de conexión: Revisa tu internet o el enlace del Excel');
+            }
         }
 
         function render() {
@@ -119,7 +141,6 @@
                 let lat = limpiarCoordenada(d.LAT);
                 let lon = limpiarCoordenada(d.LON);
 
-                // Solo dibujar si son coordenadas válidas
                 if(!isNaN(lat) && !isNaN(lon)) {
                     const color = est.includes("pend") ? "red" : est.includes("proc") ? "blue" : "green";
                     const m = L.circleMarker([lat, lon], { radius: 8, color: "white", weight: 2, fillColor: color, fillOpacity: 0.8 });
@@ -133,10 +154,10 @@
                 tr.innerHTML = `
                     <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
                     <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.DETALLE}</td>
-                    <td>${lat.toFixed(4)}</td><td>${lon.toFixed(4)}</td>
+                    <td>${isNaN(lat) ? 'Error' : lat.toFixed(5)}</td><td>${isNaN(lon) ? 'Error' : lon.toFixed(5)}</td>
                     <td>${d.ESC}</td><td>${d.CAT}</td>
-                    <td><select onchange="datos[${idx}].ESTADO=this.value; render()"><option ${est.includes("pend")?'selected':''}>Pendiente</option><option ${est.includes("proc")?'selected':''}>En proceso</option><option ${est.includes("fin")?'selected':''}>Finalizado</option></select></td>
-                    <td><button onclick="map.setView([${lat},${lon}], 18)" style="background:#666">📍</button></td>
+                    <td>${d.ESTADO}</td>
+                    <td><button onclick="map.setView([${lat},${lon}], 18)" style="background:#666">📍 Ver</button></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -145,7 +166,6 @@
             document.getElementById("res-pend").innerText = counts.pend;
             document.getElementById("res-proc").innerText = counts.proc;
             document.getElementById("res-fin").innerText = counts.fin;
-            
             if(bounds.length > 0) map.fitBounds(bounds, {padding: [50,50]});
         }
 
