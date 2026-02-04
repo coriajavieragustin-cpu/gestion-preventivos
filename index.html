@@ -104,6 +104,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+// CONFIGURACIÓN DE URLS
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec";
 
@@ -111,6 +112,23 @@ let datos = [];
 let map, markerLayer;
 let db;
 
+// 1. LIMPIADOR DE COORDENADAS MEJORADO
+function limpiarCoordenada(valor) {
+    if (!valor) return NaN;
+    // Quitamos espacios, letras y cambiamos coma por punto
+    let s = valor.toString().replace(/\s/g, '').replace(',', '.').trim();
+    
+    // Si Google mandó un número largo sin punto (ej: -27456677), le ponemos el punto
+    if (!s.includes('.') && s.replace('-', '').length > 5) {
+        let esNegativo = s.startsWith('-');
+        let limpia = s.replace('-', '');
+        s = (esNegativo ? '-' : '') + limpia.substring(0, 2) + '.' + limpia.substring(2);
+    }
+    let num = parseFloat(s);
+    return isNaN(num) ? NaN : num;
+}
+
+// 2. INICIALIZACIÓN
 const request = indexedDB.open("PreventivasDB", 1);
 request.onupgradeneeded = (e) => {
     db = e.target.result;
@@ -129,19 +147,7 @@ function initMap() {
     markerLayer = L.layerGroup().addTo(map);
 }
 
-// FILTRO DE COORDENADAS REPARADOR
-function limpiarCoordenada(valor) {
-    if (!valor || valor === "") return NaN;
-    let s = valor.toString().replace(',', '.').trim();
-    // Si es un número entero largo (ej: -274777), le insertamos el punto decimal
-    if (!s.includes('.') && s.replace('-', '').length > 5) {
-        let esNeg = s.startsWith('-');
-        let limpia = s.replace('-', '');
-        s = (esNeg ? '-' : '') + limpia.substring(0, 2) + '.' + limpia.substring(2);
-    }
-    return parseFloat(s);
-}
-
+// 3. SINCRONIZACIÓN INTELIGENTE (Detecta si es CSV con , o ;)
 async function cargarDesdeGoogleSheets() {
     const btn = document.getElementById("btnSincronizar");
     btn.innerText = "⏳ Sincronizando...";
@@ -149,22 +155,31 @@ async function cargarDesdeGoogleSheets() {
         const resp = await fetch(SHEET_CSV_URL + "&cb=" + new Date().getTime());
         const csvText = await resp.text();
         const lineas = csvText.split(/\r?\n/);
+        
+        // DETECTAR SEPARADOR automáticamente
+        const separador = lineas[0].includes(";") ? ";" : ",";
+        
         datos = [];
         for(let i = 1; i < lineas.length; i++) {
             if(!lineas[i].trim()) continue;
-            const d = lineas[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-            const c = d.map(v => v.replace(/^"|"$/g, '').trim());
+            
+            // Usamos una expresión regular para separar respetando las comillas
+            let regex = new RegExp(separador + '(?=(?:(?:[^"]*"){2})*[^"]*$)');
+            const c = lineas[i].split(regex).map(v => v.replace(/^"|"$/g, '').trim());
+
+            if(c.length < 6) continue;
+
             datos.push({
-                ID: c[0], FECHA: c[1], ZONA: c[2], DETALLE: c[3], 
-                LATITUD: c[4], LONGITUD: c[5], 
-                ESCALERA: c[6], CATEGORIA: c[7], 
+                ID: c[0] || "", FECHA: c[1] || "", ZONA: c[2] || "", DETALLE: c[3] || "", 
+                LATITUD: c[4] || "", LONGITUD: c[5] || "", 
+                ESCALERA: c[6] || "", CATEGORIA: c[7] || "", 
                 ESTADO: c[8] || "Pendiente", 
-                FINALIZACION: c[9], COMENTARIO: c[10]
+                FINALIZACION: c[9] || "", COMENTARIO: c[10] || ""
             });
         }
         guardarEnDB();
         buscar();
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Error cargando Sheets:", err); }
     btn.innerText = "🔄 Sincronizar Sheets";
 }
 
@@ -176,9 +191,10 @@ async function enviarADrive(tarea) {
             cache: 'no-cache',
             body: JSON.stringify(tarea)
         });
-    } catch (error) { console.error(error); }
+    } catch (error) { console.error("Error enviando a Drive:", error); }
 }
 
+// 4. RENDERIZADO Y MAPA
 function render(lista) {
     const tbody = document.querySelector("#tabla tbody");
     tbody.innerHTML = "";
@@ -190,15 +206,15 @@ function render(lista) {
     lista.forEach((d) => {
         const est = (d.ESTADO || "Pendiente").trim();
         const estL = est.toLowerCase().replace(/\s/g, '');
-        if(estL === "pendiente") c.pend++;
-        else if(estL === "noreparable") c.nr++;
-        else if(estL === "enproceso") c.proc++;
-        else if(estL === "finalizado") c.fin++;
+        if(estL.includes("pendiente")) c.pend++;
+        else if(estL.includes("reparable")) c.nr++;
+        else if(estL.includes("proceso")) c.proc++;
+        else if(estL.includes("finalizado")) c.fin++;
 
         pZ[d.ZONA || "S/Z"] = (pZ[d.ZONA || "S/Z"] || 0) + 1;
         pC[d.CATEGORIA || "S/C"] = (pC[d.CATEGORIA || "S/C"] || 0) + 1;
 
-        // APLICAMOS LA LIMPIEZA AQUÍ
+        // LIMPIEZA ANTES DE DIBUJAR
         let lat = limpiarCoordenada(d.LATITUD);
         let lon = limpiarCoordenada(d.LONGITUD);
         
@@ -211,7 +227,7 @@ function render(lista) {
                 offsetMap[key]++;
             } else { offsetMap[key] = 1; }
 
-            const color = estL==="pendiente"?"#dc3545":estL==="enproceso"?"#007bff":estL==="finalizado"?"#28a745":"#6c757d";
+            const color = estL.includes("pendiente")?"#dc3545":estL.includes("proceso")?"#007bff":estL.includes("finalizado")?"#28a745":"#6c757d";
             const m = L.circleMarker([lat, lon], { radius: 7, fillColor: color, color: "#fff", weight: 2, fillOpacity: 1 });
             m.bindTooltip(`${d.ID}`, { permanent: true, className: 'etiqueta-id', offset: [0,-8] });
             m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
@@ -251,14 +267,32 @@ function render(lista) {
     if(bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
 }
 
-function saveCell(idx, campo, cell) { datos[idx][campo] = cell.innerText.trim(); guardarEnDB(); enviarADrive(datos[idx]); }
-function cambiarEstado(idx, val) { datos[idx].ESTADO = val; guardarEnDB(); buscar(); enviarADrive(datos[idx]); }
+// 5. FUNCIONES AUXILIARES
+function saveCell(idx, campo, cell) { 
+    datos[idx][campo] = cell.innerText.trim(); 
+    guardarEnDB(); 
+    enviarADrive(datos[idx]); 
+}
+function cambiarEstado(idx, val) { 
+    datos[idx].ESTADO = val; 
+    guardarEnDB(); 
+    buscar(); 
+    enviarADrive(datos[idx]); 
+}
 function zoomTo(la, lo) { if(!isNaN(la)) map.setView([la, lo], 17); }
-function agregarFila() { datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente" }); buscar(); guardarEnDB(); }
+function agregarFila() { 
+    datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente" }); 
+    buscar(); 
+    guardarEnDB(); 
+}
 function borrarFila(idx) { if(confirm("¿Eliminar?")) { datos.splice(idx, 1); guardarEnDB(); buscar(); } }
 function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; guardarEnDB(); buscar(); } }
-function cargarDesdeDB() { db.transaction("tareas", "readonly").objectStore("tareas").getAll().onsuccess = (e) => { datos = e.target.result; buscar(); }; }
-function guardarEnDB() { const tx = db.transaction("tareas", "readwrite"); const store = tx.objectStore("tareas"); store.clear().onsuccess = () => { datos.forEach(d => { const c = {...d}; delete c.id_db; store.add(c); }); }; }
+function cargarDesdeDB() { db.transaction("tareas", "readonly").objectStore("tareas").getAll().onsuccess = (e) => { datos = e.target.result || []; buscar(); }; }
+function guardarEnDB() { 
+    const tx = db.transaction("tareas", "readwrite"); 
+    const store = tx.objectStore("tareas"); 
+    store.clear().onsuccess = () => { datos.forEach(d => { const c = {...d}; delete c.id_db; store.add(c); }); }; 
+}
 function buscar() {
     const fId = document.getElementById("filtroId").value.toLowerCase();
     const filtrados = datos.filter(d => String(d.ID).toLowerCase().includes(fId));
@@ -268,12 +302,15 @@ function actualizarSelects() {
     const selZ = document.getElementById("filtroZona"); const selC = document.getElementById("filtroCateg");
     const zonas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
     const categs = [...new Set(datos.map(d => d.CATEGORIA).filter(c => c))].sort();
-    const curZ = selZ.value; const curC = selC.value;
     selZ.innerHTML = '<option value="">Todas</option>' + zonas.map(z => `<option value="${z}">${z}</option>`).join("");
     selC.innerHTML = '<option value="">Todas</option>' + categs.map(c => `<option value="${c}">${c}</option>`).join("");
-    selZ.value = curZ; selC.value = curC;
 }
 function actualizarBox(id, obj) { const box = document.getElementById(id); let items = Object.entries(obj).sort((a,b)=>b[1]-a[1]); box.innerHTML = items.length ? '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join("") + '</table>' : '<small>Sin datos</small>'; }
+function exportarCSV() {
+    let csv = "ID,FECHA,ZONA,DETALLE,LATITUD,LONGITUD,ESCALERA,CATEGORIA,ESTADO,FINALIZACION,COMENTARIO\n";
+    datos.forEach(d => csv += [d.ID, d.FECHA, d.ZONA, d.DETALLE, d.LATITUD, d.LONGITUD, d.ESCALERA, d.CATEGORIA, d.ESTADO, d.FINALIZACION, d.COMENTARIO].map(v => `"${v||""}"`).join(",") + "\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = "preventivos.csv"; a.click();
+}
 function importarCSV(e) {
     const reader = new FileReader();
     reader.onload = () => {
@@ -288,11 +325,6 @@ function importarCSV(e) {
         guardarEnDB(); buscar();
     };
     reader.readAsText(e.target.files[0], "ISO-8859-1");
-}
-function exportarCSV() {
-    let csv = "ID,FECHA,ZONA,DETALLE,LATITUD,LONGITUD,ESCALERA,CATEGORIA,ESTADO,FINALIZACION,COMENTARIO\n";
-    datos.forEach(d => csv += [d.ID, d.FECHA, d.ZONA, d.DETALLE, d.LATITUD, d.LONGITUD, d.ESCALERA, d.CATEGORIA, d.ESTADO, d.FINALIZACION, d.COMENTARIO].map(v => `"${v||""}"`).join(",") + "\n");
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = "preventivos.csv"; a.click();
 }
 </script>
 </body>
