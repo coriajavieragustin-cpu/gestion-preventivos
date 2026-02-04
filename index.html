@@ -2,179 +2,317 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Gestión Preventiva - Control de Sincronización</title>
+    <title>Panel de Gestión Preventiva - FULL VERSION</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin:15px; background: #f0f2f5; }
-        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 5px; gap: 15px; }
-        
-        /* --- ESTILO DE AVISOS DE SINCRONIZACIÓN --- */
-        .status-bar { 
-            display: flex; align-items: center; justify-content: space-between;
-            background: #fff; padding: 8px 20px; border-radius: 8px; 
-            margin-bottom: 15px; font-size: 13px; font-weight: bold;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-        }
-        .status-ok { color: #1fa463; border-left: 5px solid #1fa463; }
-        .status-error { color: #dc3545; border-left: 5px solid #dc3545; }
-        .status-loading { color: #f39c12; border-left: 5px solid #f39c12; }
-        /* ----------------------------------------- */
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
+        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
+        .header-app img { max-height: 40px; }
+        .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
 
-        .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px; }
-        .card-conteo { padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border-top: 4px solid #ddd; }
-        .card-conteo span { display: block; font-size: 24px; }
-        #mapa-general { height: 450px; border-radius: 8px; margin-bottom: 15px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; max-height: 500px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 1200px; }
-        th { background: #f8f9fa; position: sticky; top: 0; padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; }
-        td { padding: 8px; border-bottom: 1px solid #eee; }
-        button { padding: 8px 12px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; color: white; }
-        .btn-sync { background: #1a73e8; }
-        .btn-new { background: #28a745; }
-        .etiqueta-id { background: #333; color: white; padding: 2px 5px; border-radius: 3px; font-size: 10px; }
+        /* BARRA DE ESTADO */
+        .status-bar { display: flex; justify-content: space-between; padding: 8px 20px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 12px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid #ccc; }
+        .status-ok { border-left-color: #28a745; color: #28a745; }
+        .status-error { border-left-color: #dc3545; color: #dc3545; }
+        .status-loading { border-left-color: #ffc107; color: #856404; }
+
+        .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .card-conteo { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border: 1px solid #ddd; font-size: 10px; }
+        .card-conteo span { display: block; font-size: 22px; margin-top: 4px; }
+        .conteo-pendiente { border-top: 4px solid #dc3545; color: #dc3545; }
+        .conteo-noreparable { border-top: 4px solid #6c757d; color: #6c757d; }
+        .conteo-proceso { border-top: 4px solid #007bff; color: #007bff; }
+        .conteo-finalizado { border-top: 4px solid #28a745; color: #28a745; }
+
+        .panel-central { display: grid; grid-template-columns: 1.6fr 1fr; gap: 15px; margin-bottom: 15px; height: 500px; }
+        #mapa-general { height: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        
+        .stats-columna { display: flex; flex-direction: column; gap: 10px; height: 100%; overflow: hidden; }
+        .stats-box { background: #fff; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex: 1; overflow-y: auto; }
+        .stats-box h3 { margin: 0 0 8px 0; font-size: 13px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .stats-table td { padding: 5px 0; border-bottom: 1px dotted #eee; }
+        .stats-table td:last-child { text-align: right; font-weight: bold; color: #1a73e8; }
+
+        .controles { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .filtros-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; }
+        .grupo-filtro { display: flex; flex-direction: column; gap: 5px; }
+        .grupo-filtro label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; }
+        .input-busqueda { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+
+        button { padding: 8px 14px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.2s; }
+        .btn-nueva { background: #28a745; } 
+        .btn-drive { background: #1fa463; }
+        .btn-export { background: #17a2b8; } 
+        .btn-borrar { background: #dc3545; }
+
+        .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 500px; }
+        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1300px; }
+        .tabla-principal th { padding: 12px; background: #f8f9fa; color: #666; font-size: 11px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
+        .tabla-principal td { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #eee; }
+        
+        /* COLORES DE FILAS */
+        .estado-pendiente { background-color: #fff5f5; }
+        .estado-noreparable { background-color: #f8f9fa; }
+        .estado-enproceso { background-color: #f0f7ff; }
+        .estado-finalizado { background-color: #f2fff5; }
+        .etiqueta-id { background: #333; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 10px; }
     </style>
 </head>
 <body>
 
     <div class="header-app">
-        <h2>GESTIÓN PREVENTIVOS V1.0</h2>
-        <button class="btn-new" onclick="agregarFila()">➕ Nueva Tarea</button>
-        <button class="btn-sync" id="btnSincronizar" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar Ahora</button>
+        <img src="img/logo.png" alt="Logo">
+        <h2>GESTIÓN PREVENTIVOS V1.0 - FULL SYNC</h2>
     </div>
 
-    <div id="statusBar" class="status-bar status-loading">
-        <span id="statusText">Iniciando sistema...</span>
+    <div id="statusBar" class="status-bar">
+        <span id="statusText">Sistema listo</span>
         <span id="statusTime">--:--:--</span>
     </div>
 
     <div class="resumen-estados">
-        <div class="card-conteo" style="border-color: #1a73e8">TOTAL <span id="res-total">0</span></div>
-        <div class="card-conteo" style="border-color: #dc3545">PENDIENTES <span id="res-pend">0</span></div>
-        <div class="card-conteo" style="border-color: #007bff">EN PROCESO <span id="res-proc">0</span></div>
-        <div class="card-conteo" style="border-color: #28a745">FINALIZADOS <span id="res-fin">0</span></div>
+        <div class="card-conteo">TOTAL <span id="res-total">0</span></div>
+        <div class="card-conteo conteo-pendiente">PENDIENTES <span id="res-pend">0</span></div>
+        <div class="card-conteo conteo-noreparable">NO REPARABLE <span id="res-nr">0</span></div>
+        <div class="card-conteo conteo-proceso">EN PROCESO <span id="res-proc">0</span></div>
+        <div class="card-conteo conteo-finalizado">FINALIZADOS <span id="res-fin">0</span></div>
     </div>
 
-    <div id="mapa-general"></div>
+    <div class="panel-central">
+        <div id="mapa-general"></div>
+        <div class="stats-columna">
+            <div class="stats-box"><h3>📅 Historial Cierres</h3><div id="stats-mes"></div></div>
+            <div class="stats-box"><h3>📍 Top Zonas</h3><div id="stats-zona"></div></div>
+            <div class="stats-box"><h3>🏷️ Categorías</h3><div id="stats-categoria"></div></div>
+        </div>
+    </div>
+
+    <div class="controles">
+        <div>
+            <button class="btn-nueva" onclick="agregarFila()">➕ Nueva tarea</button>
+            <button class="btn-drive" id="btnSincronizar" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar Sheets</button>
+            <button class="btn-export" onclick="exportarCSV()">📤 Exportar CSV</button>
+            <button class="btn-borrar" onclick="borrarTodo()">🗑 Borrar todo</button>
+        </div>
+        
+        <div class="filtros-grid">
+            <div class="grupo-filtro"><label>ID Tarea</label><input type="text" id="filtroId" class="input-busqueda" onkeyup="buscar()"></div>
+            <div class="grupo-filtro"><label>Fecha</label><input type="text" id="filtroFecha" class="input-busqueda" placeholder="Buscar..." onkeyup="buscar()"></div>
+            <div class="grupo-filtro"><label>Zona</label><select id="filtroZona" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
+            <div class="grupo-filtro"><label>Categoría</label><select id="filtroCateg" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
+            <div class="grupo-filtro"><label>Estado</label><select id="filtroEstado" class="input-busqueda" onchange="buscar()"><option value="">Todos</option><option value="Pendiente">Pendiente</option><option value="No Reparable">No Reparable</option><option value="En proceso">En proceso</option><option value="Finalizado">Finalizado</option></select></div>
+        </div>
+    </div>
 
     <div class="contenedor-tabla">
-        <table id="tabla">
+        <table class="tabla-principal" id="tabla">
             <thead>
-                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>ACCIONES</th></tr>
+                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>CIERRE</th><th>COMENT</th><th>ACCIONES</th></tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
+
+<script>
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
+
+let datos = [];
+let map, markerLayer;
+
+// --- INICIALIZACIÓN ---
+window.onload = () => {
+    map = L.map('mapa-general').setView([-27.46, -58.83], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    markerLayer = L.layerGroup().addTo(map);
+    cargarDesdeGoogleSheets();
+};
+
+function actualizarAviso(tipo, mensaje) {
+    const bar = document.getElementById("statusBar");
+    const txt = document.getElementById("statusText");
+    const time = document.getElementById("statusTime");
+    bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
+    txt.innerText = mensaje;
+    time.innerText = new Date().toLocaleTimeString();
+}
+
+// --- LIMPIADOR DE COORDENADAS (EL MOTOR REPARADO) ---
+function limpiarCoordenada(valor) {
+    if (!valor) return NaN;
+    let s = valor.toString().replace(/\s/g, '').trim();
+    let esNegativo = s.startsWith('-');
+    let soloNumeros = s.replace(/[^0-9]/g, '');
+    if (soloNumeros.length < 4) return NaN;
+    // Forzar punto decimal tras los primeros 2 dígitos
+    let grados = soloNumeros.substring(0, 2);
+    let decimales = soloNumeros.substring(2);
+    let resultado = parseFloat((esNegativo ? '-' : '') + grados + "." + decimales);
+    return (resultado > 90 || resultado < -90) ? NaN : resultado;
+}
+
+// --- CARGA DE DATOS ---
+async function cargarDesdeGoogleSheets() {
+    actualizarAviso('loading', '⏳ Sincronizando con Drive...');
+    try {
+        const resp = await fetch(SHEET_CSV_URL + "&cb=" + Date.now());
+        const csvText = await resp.text();
+        const lineas = csvText.split(/\r?\n/);
         
-        let datos = [];
-        let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
-        let markerLayer = L.layerGroup().addTo(map);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        datos = [];
+        for(let i = 1; i < lineas.length; i++) {
+            if(!lineas[i].trim()) continue;
+            // Separador inteligente que ignora comas dentro de comillas
+            const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+            if(c.length < 6) continue;
 
-        // FUNCIÓN DE AVISO VISUAL
-        function actualizarAviso(tipo, mensaje) {
-            const bar = document.getElementById("statusBar");
-            const txt = document.getElementById("statusText");
-            const time = document.getElementById("statusTime");
-            
-            bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
-            txt.innerText = mensaje;
-            time.innerText = new Date().toLocaleTimeString();
-        }
-
-        function limpiarCoordenada(valor) {
-            if (!valor) return NaN;
-            let s = valor.toString().replace(/\s/g, '').trim();
-            let esNegativo = s.startsWith('-');
-            let soloNumeros = s.replace(/[^0-9]/g, '');
-            if (soloNumeros.length < 4) return NaN;
-            let grados = soloNumeros.substring(0, 2);
-            let decimales = soloNumeros.substring(2);
-            return parseFloat((esNegativo ? '-' : '') + grados + "." + decimales);
-        }
-
-        async function cargarDesdeGoogleSheets() {
-            actualizarAviso('loading', '⏳ Sincronizando con Google Drive...');
-            try {
-                // El "&cb=" fuerza a Google a no usar una copia vieja
-                const resp = await fetch(SHEET_URL + "&cb=" + Date.now());
-                if (!resp.ok) throw new Error("No se pudo conectar");
-                
-                const csvText = await resp.text();
-                const lineas = csvText.split(/\r?\n/);
-                
-                datos = [];
-                for(let i = 1; i < lineas.length; i++) {
-                    if(!lineas[i].trim()) continue;
-                    const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-                    if(c.length < 6) continue;
-                    datos.push({
-                        ID: c[0], FECHA: c[1], ZONA: c[2], DETALLE: c[3],
-                        LAT: c[4], LON: c[5], ESC: c[6], CAT: c[7],
-                        ESTADO: c[8] || "Pendiente"
-                    });
-                }
-                render();
-                actualizarAviso('ok', '✅ Sincronizado correctamente');
-            } catch (e) { 
-                actualizarAviso('error', '❌ Error de conexión: Revisa tu internet o el enlace del Excel');
-            }
-        }
-
-        function render() {
-            const tbody = document.querySelector("#tabla tbody");
-            tbody.innerHTML = "";
-            markerLayer.clearLayers();
-            let counts = { total: 0, pend: 0, proc: 0, fin: 0 };
-            let bounds = [];
-
-            datos.forEach((d, idx) => {
-                counts.total++;
-                let est = d.ESTADO.toLowerCase();
-                if(est.includes("pend")) counts.pend++;
-                else if(est.includes("proc")) counts.proc++;
-                else if(est.includes("fin")) counts.fin++;
-
-                let lat = limpiarCoordenada(d.LAT);
-                let lon = limpiarCoordenada(d.LON);
-
-                if(!isNaN(lat) && !isNaN(lon)) {
-                    const color = est.includes("pend") ? "red" : est.includes("proc") ? "blue" : "green";
-                    const m = L.circleMarker([lat, lon], { radius: 8, color: "white", weight: 2, fillColor: color, fillOpacity: 0.8 });
-                    m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
-                    m.bindTooltip(d.ID, { permanent: true, className: 'etiqueta-id', offset: [0, -10] });
-                    markerLayer.addLayer(m);
-                    bounds.push([lat, lon]);
-                }
-
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
-                    <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.DETALLE}</td>
-                    <td>${isNaN(lat) ? 'Error' : lat.toFixed(5)}</td><td>${isNaN(lon) ? 'Error' : lon.toFixed(5)}</td>
-                    <td>${d.ESC}</td><td>${d.CAT}</td>
-                    <td>${d.ESTADO}</td>
-                    <td><button onclick="map.setView([${lat},${lon}], 18)" style="background:#666">📍 Ver</button></td>
-                `;
-                tbody.appendChild(tr);
+            datos.push({
+                ID: c[0] || "", FECHA: c[1] || "", ZONA: c[2] || "", DETALLE: c[3] || "",
+                LAT: c[4] || "", LON: c[5] || "", ESC: c[6] || "", CATEG: c[7] || "",
+                ESTADO: c[8] || "Pendiente", CIERRE: c[9] || "", COMENT: c[10] || ""
             });
+        }
+        actualizarSelects();
+        buscar();
+        actualizarAviso('ok', '✅ Datos actualizados');
+    } catch (e) {
+        actualizarAviso('error', '❌ Error de conexión');
+    }
+}
 
-            document.getElementById("res-total").innerText = counts.total;
-            document.getElementById("res-pend").innerText = counts.pend;
-            document.getElementById("res-proc").innerText = counts.proc;
-            document.getElementById("res-fin").innerText = counts.fin;
-            if(bounds.length > 0) map.fitBounds(bounds, {padding: [50,50]});
+// --- RENDERIZADO COMPLETO ---
+function render(lista) {
+    const tbody = document.querySelector("#tabla tbody");
+    tbody.innerHTML = "";
+    markerLayer.clearLayers();
+    
+    let c = { pend: 0, nr: 0, proc: 0, fin: 0 };
+    let pZ = {}; let pC = {}; let pM = {}; let bounds = [];
+
+    lista.forEach((d, idx) => {
+        const est = (d.ESTADO || "Pendiente").trim();
+        const estL = est.toLowerCase().replace(/\s/g, '');
+        
+        // Conteos para cards
+        if(estL.includes("pendiente")) c.pend++;
+        else if(estL.includes("reparable")) c.nr++;
+        else if(estL.includes("proceso")) c.proc++;
+        else if(estL.includes("finalizado")) c.fin++;
+
+        // Conteos para estadísticas
+        pZ[d.ZONA || "S/Z"] = (pZ[d.ZONA || "S/Z"] || 0) + 1;
+        pC[d.CATEG || "S/C"] = (pC[d.CATEG || "S/C"] || 0) + 1;
+        if(d.CIERRE && d.CIERRE.includes("/")) {
+            let mes = d.CIERRE.split("/")[1] + "/" + d.CIERRE.split("/")[2];
+            pM[mes] = (pM[mes] || 0) + 1;
         }
 
-        function agregarFila() {
-            datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ZONA: "", DETALLE: "", LAT: "", LON: "", ESC: "NO", CAT: "", ESTADO: "Pendiente" });
-            render();
+        // Mapa
+        let lat = limpiarCoordenada(d.LAT);
+        let lon = limpiarCoordenada(d.LON);
+        if(!isNaN(lat) && !isNaN(lon)) {
+            const color = estL.includes("pend") ? "#dc3545" : estL.includes("proc") ? "#007bff" : estL.includes("fin") ? "#28a745" : "#6c757d";
+            const m = L.circleMarker([lat, lon], { radius: 7, fillColor: color, color: "#fff", weight: 2, fillOpacity: 1 });
+            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
+            m.bindTooltip(d.ID, { permanent: true, className: 'etiqueta-id', offset: [0, -8] });
+            markerLayer.addLayer(m);
+            bounds.push([lat, lon]);
         }
 
-        window.onload = cargarDesdeGoogleSheets;
-    </script>
+        // Tabla
+        const tr = document.createElement("tr");
+        tr.className = `estado-${estL}`;
+        tr.innerHTML = `
+            <td contenteditable onblur="saveCell(${idx},'ID',this)">${d.ID}</td>
+            <td contenteditable onblur="saveCell(${idx},'FECHA',this)">${d.FECHA}</td>
+            <td contenteditable onblur="saveCell(${idx},'ZONA',this)">${d.ZONA}</td>
+            <td contenteditable onblur="saveCell(${idx},'DETALLE',this)">${d.DETALLE}</td>
+            <td contenteditable onblur="saveCell(${idx},'LAT',this)">${d.LAT}</td>
+            <td contenteditable onblur="saveCell(${idx},'LON',this)">${d.LON}</td>
+            <td contenteditable onblur="saveCell(${idx},'ESC',this)">${d.ESC}</td>
+            <td contenteditable onblur="saveCell(${idx},'CATEG',this)">${d.CATEG}</td>
+            <td>
+                <select onchange="datos[${idx}].ESTADO=this.value; render(datos)">
+                    ${["Pendiente","No Reparable","En proceso","Finalizado"].map(e => `<option ${est===e?"selected":""}>${e}</option>`).join("")}
+                </select>
+            </td>
+            <td contenteditable onblur="saveCell(${idx},'CIERRE',this)">${d.CIERRE}</td>
+            <td contenteditable onblur="saveCell(${idx},'COMENT',this)">${d.COMENT}</td>
+            <td>
+                <button onclick="zoomTo(${lat},${lon})" style="background:#6c757d; padding: 4px 8px;">📍</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Actualizar UI
+    document.getElementById("res-total").innerText = lista.length;
+    document.getElementById("res-pend").innerText = c.pend;
+    document.getElementById("res-nr").innerText = c.nr;
+    document.getElementById("res-proc").innerText = c.proc;
+    document.getElementById("res-fin").innerText = c.fin;
+    
+    actualizarBox("stats-zona", pZ); 
+    actualizarBox("stats-categoria", pC);
+    actualizarBox("stats-mes", pM);
+    
+    if(bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
+}
+
+// --- FUNCIONES DE FILTRO Y UI ---
+function buscar() {
+    const fId = document.getElementById("filtroId").value.toLowerCase();
+    const fFec = document.getElementById("filtroFecha").value.toLowerCase();
+    const fZon = document.getElementById("filtroZona").value;
+    const fCat = document.getElementById("filtroCateg").value;
+    const fEst = document.getElementById("filtroEstado").value;
+
+    const filtrados = datos.filter(d => {
+        return (d.ID.toLowerCase().includes(fId)) &&
+               (d.FECHA.toLowerCase().includes(fFec)) &&
+               (fZon === "" || d.ZONA === fZon) &&
+               (fCat === "" || d.CATEG === fCat) &&
+               (fEst === "" || d.ESTADO === fEst);
+    });
+    render(filtrados);
+}
+
+function actualizarSelects() {
+    const selZ = document.getElementById("filtroZona");
+    const selC = document.getElementById("filtroCateg");
+    const zonas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
+    const cats = [...new Set(datos.map(d => d.CATEG).filter(c => c))].sort();
+    
+    selZ.innerHTML = '<option value="">Todas</option>' + zonas.map(z => `<option value="${z}">${z}</option>`).join("");
+    selC.innerHTML = '<option value="">Todas</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join("");
+}
+
+function actualizarBox(id, obj) {
+    const box = document.getElementById(id);
+    let items = Object.entries(obj).sort((a,b) => b[1] - a[1]);
+    box.innerHTML = items.length ? '<table class="stats-table">' + items.map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("") + '</table>' : '<small>Sin datos</small>';
+}
+
+function saveCell(idx, campo, cell) { datos[idx][campo] = cell.innerText.trim(); }
+function zoomTo(la, lo) { if(!isNaN(la)) map.setView([la, lo], 18); }
+function agregarFila() { datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente", ZONA: "", CATEG: "" }); buscar(); }
+function borrarTodo() { if(confirm("¿Borrar visualización?")) { datos = []; render([]); } }
+
+function exportarCSV() {
+    let csv = "ID,FECHA,ZONA,DETALLE,LATITUD,LONGITUD,ESCALERA,CATEGORIA,ESTADO,CIERRE,COMENTARIO\n";
+    datos.forEach(d => {
+        csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CATEG}","${d.ESTADO}","${d.CIERRE}","${d.COMENT}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "preventivos_export.csv";
+    link.click();
+}
+</script>
 </body>
 </html>
