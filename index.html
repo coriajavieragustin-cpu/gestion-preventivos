@@ -111,6 +111,7 @@ let map;
 let markerLayer = L.layerGroup();
 let db;
 
+// DB Local para que no se pierda nada al recargar
 const request = indexedDB.open("PreventivasDB", 1);
 request.onupgradeneeded = (e) => {
     db = e.target.result;
@@ -119,12 +120,12 @@ request.onupgradeneeded = (e) => {
 request.onsuccess = (e) => {
     db = e.target.result;
     initMap();
-    cargarDesdeDB();
-    cargarDesdeGoogleSheets();
+    cargarDesdeDB(); // Primero cargamos lo local
+    cargarDesdeGoogleSheets(); // Luego adosamos lo de Google
 };
 
 function initMap() {
-    map = L.map('mapa-general').setView([-27.46, -58.83], 12);
+    map = L.map('mapa-general').setView([-34.6, -58.4], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     markerLayer.addTo(map);
 }
@@ -136,25 +137,25 @@ async function cargarDesdeGoogleSheets() {
         const resp = await fetch(SHEET_CSV_URL + "&cb=" + new Date().getTime());
         const csvText = await resp.text();
         const lineas = csvText.split(/\r?\n/);
+        
         const mapExistente = new Map(datos.map(d => [String(d.ID), d]));
 
         for(let i = 1; i < lineas.length; i++) {
             if(!lineas[i].trim()) continue;
-            const d = lineas[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-            const c = d.map(v => v.replace(/^"|"$/g, '').trim());
-
+            const c = lineas[i].split(",").map(v => v.replace(/"/g,'').trim());
             const id = c[0];
+            
+            // Si el ID no existe localmente, lo agregamos
             if(!mapExistente.has(id)) {
                 datos.push({
                     ID: id, FECHA: c[1], ZONA: c[2], DETALLE: c[3], 
-                    LATITUD: (c[4] || "").replace(',', '.'), 
-                    LONGITUD: (c[5] || "").replace(',', '.'), 
-                    ESCALERA: c[6], CATEGORIA: c[7], 
-                    ESTADO: c[8] || "Pendiente", 
+                    LATITUD: c[4], LONGITUD: c[5], ESCALERA: c[6], 
+                    CATEGORIA: c[7], ESTADO: c[8] || "Pendiente", 
                     FINALIZACION: c[9], COMENTARIO: c[10]
                 });
             }
         }
+        
         guardarEnDB();
         buscar();
     } catch (err) { console.error(err); }
@@ -202,42 +203,37 @@ function render(lista) {
     tbody.innerHTML = "";
     markerLayer.clearLayers();
     let c = { pend: 0, nr: 0, proc: 0, fin: 0 };
-    let pZ = {}; let pC = {}; let bounds = [];
-    
-    // Objeto para llevar cuenta de posiciones repetidas
-    let offsetMap = {};
+    let pZ = {}; let pC = {}; let pM = {}; let bounds = [];
+    const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
     lista.forEach((d) => {
-        const est = (d.ESTADO || "Pendiente").trim();
+        const est = d.ESTADO || "Pendiente";
         const estL = est.toLowerCase().replace(/\s/g, '');
         
         if(estL === "pendiente") c.pend++;
         else if(estL === "noreparable") c.nr++;
         else if(estL === "enproceso") c.proc++;
-        else if(estL === "finalizado") c.fin++;
+        else if(estL === "finalizado") {
+            c.fin++;
+            if(d.FINALIZACION) {
+                const parts = d.FINALIZACION.split(/[-/]/);
+                if(parts.length===3) {
+                    const m = parseInt(parts[1])-1;
+                    const a = parts[2].length===2 ? "20"+parts[2] : parts[2];
+                    if(m>=0 && m<12) pM[`${meses[m]} ${a}`] = (pM[`${meses[m]} ${a}`] || 0) + 1;
+                }
+            }
+        }
 
         pZ[d.ZONA || "S/Z"] = (pZ[d.ZONA || "S/Z"] || 0) + 1;
         pC[d.CATEGORIA || "S/C"] = (pC[d.CATEGORIA || "S/C"] || 0) + 1;
 
-        let lat = parseFloat(d.LATITUD);
-        let lon = parseFloat(d.LONGITUD);
-        
-        if(!isNaN(lat) && !isNaN(lon) && lat !== 0) {
-            // Lógica de dispersión (Anti-Juntado)
-            let key = lat.toFixed(6) + "_" + lon.toFixed(6);
-            if(offsetMap[key]) {
-                let angle = offsetMap[key] * (Math.PI / 4);
-                lat += Math.cos(angle) * 0.00015;
-                lon += Math.sin(angle) * 0.00015;
-                offsetMap[key]++;
-            } else {
-                offsetMap[key] = 1;
-            }
-
+        const lat = parseFloat(String(d.LATITUD).replace(",","."));
+        const lon = parseFloat(String(d.LONGITUD).replace(",","."));
+        if(!isNaN(lat) && !isNaN(lon)) {
             const color = estL==="pendiente"?"#dc3545":estL==="enproceso"?"#007bff":estL==="finalizado"?"#28a745":"#6c757d";
-            const m = L.circleMarker([lat, lon], { radius: 7, fillColor: color, color: "#fff", weight: 2, fillOpacity: 1 });
+            const m = L.circleMarker([lat, lon], { radius: 8, fillColor: color, color: "#fff", weight: 2, fillOpacity: 1 });
             m.bindTooltip(`${d.ID}`, { permanent: true, className: 'etiqueta-id', offset: [0,-8] });
-            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
             markerLayer.addLayer(m);
             bounds.push([lat, lon]);
         }
@@ -270,13 +266,13 @@ function render(lista) {
     document.getElementById("res-nr").innerText = c.nr;
     document.getElementById("res-proc").innerText = c.proc;
     document.getElementById("res-fin").innerText = c.fin;
-    actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC);
-    if(bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
+    actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC); actualizarBox("stats-mes", pM, false);
+    if(bounds.length > 0) map.fitBounds(bounds, { padding: [30, 30] });
 }
 
 function saveCell(idx, campo, cell) { datos[idx][campo] = cell.innerText.trim(); guardarEnDB(); }
 function cambiarEstado(idx, val) { datos[idx].ESTADO = val; guardarEnDB(); buscar(); }
-function zoomTo(la, lo) { if(!isNaN(la)) map.setView([la, lo], 17); }
+function zoomTo(la, lo) { if(!isNaN(la)) map.setView([la, lo], 18); }
 function agregarFila() { datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente" }); buscar(); guardarEnDB(); }
 function borrarFila(idx) { if(confirm("¿Eliminar?")) { datos.splice(idx, 1); guardarEnDB(); buscar(); } }
 function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; guardarEnDB(); buscar(); } }
@@ -292,31 +288,22 @@ function actualizarSelects() {
     selZ.value = curZ; selC.value = curC;
 }
 
-function actualizarBox(id, obj) {
+function actualizarBox(id, obj, s=true) {
     const box = document.getElementById(id);
-    let items = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+    let items = Object.entries(obj); if(s) items.sort((a,b)=>b[1]-a[1]);
     box.innerHTML = items.length ? '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join("") + '</table>' : '<small>Sin datos</small>';
 }
 
 function importarCSV(e) {
     const reader = new FileReader();
     reader.onload = () => {
-        const text = reader.result;
-        const lineas = text.split(/\r?\n/);
+        const lineas = reader.result.split(/\r?\n/);
         const sep = lineas[0].includes(";") ? ";" : ",";
         lineas.shift();
         lineas.forEach(l => {
             if(!l.trim()) return;
-            const d = l.match(new RegExp(`(".*?"|[^"${sep}\\s]+)(?=\\s*${sep}|\\s*$)`, 'g')) || [];
-            const c = d.map(v => v.replace(/^"|"$/g, '').trim());
-            datos.push({ 
-                ID:c[0], FECHA:c[1], ZONA:c[2], DETALLE:c[3], 
-                LATITUD: (c[4]||"").replace(',','.'), 
-                LONGITUD: (c[5]||"").replace(',','.'), 
-                ESCALERA:c[6], CATEGORIA:c[7], 
-                ESTADO:c[8]||"Pendiente", 
-                FINALIZACION:c[9], COMENTARIO:c[10] 
-            });
+            const c = l.split(sep).map(v => v.replace(/"/g,'').trim());
+            datos.push({ ID:c[0], FECHA:c[1], ZONA:c[2], DETALLE:c[3], LATITUD:c[4], LONGITUD:c[5], ESCALERA:c[6], CATEGORIA:c[7], ESTADO:c[8]||"Pendiente", FINALIZACION:c[9], COMENTARIO:c[10] });
         });
         guardarEnDB(); buscar();
     };
