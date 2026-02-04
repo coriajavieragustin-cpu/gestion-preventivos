@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Gestión Preventiva - AUTO-SYNC</title>
+    <title>Panel de Gestión Preventiva - Full Sync</title>
     
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -32,14 +32,12 @@
         .grupo-filtro { display: flex; flex-direction: column; gap: 5px; }
         .grupo-filtro label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; }
         .input-busqueda { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
-        
         button { padding: 8px 14px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.2s; margin-bottom: 5px; }
         .btn-nueva { background: #28a745; } 
         .btn-export { background: #17a2b8; } 
         .btn-import { background: #ffc107; color: #333; } 
         .btn-borrar { background: #dc3545; }
         .btn-drive { background: #1fa463; }
-
         .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 500px; }
         table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1200px; }
         .tabla-principal th { padding: 12px; background: #f8f9fa; color: #666; font-size: 11px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
@@ -106,7 +104,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-// CONFIGURACIÓN DE APIS
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec";
 
@@ -114,7 +111,6 @@ let datos = [];
 let map, markerLayer;
 let db;
 
-// INICIALIZACIÓN
 const request = indexedDB.open("PreventivasDB", 1);
 request.onupgradeneeded = (e) => {
     db = e.target.result;
@@ -133,7 +129,19 @@ function initMap() {
     markerLayer = L.layerGroup().addTo(map);
 }
 
-// SINCRONIZACIÓN (TRAER DATOS)
+// FILTRO DE COORDENADAS REPARADOR
+function limpiarCoordenada(valor) {
+    if (!valor || valor === "") return NaN;
+    let s = valor.toString().replace(',', '.').trim();
+    // Si es un número entero largo (ej: -274777), le insertamos el punto decimal
+    if (!s.includes('.') && s.replace('-', '').length > 5) {
+        let esNeg = s.startsWith('-');
+        let limpia = s.replace('-', '');
+        s = (esNeg ? '-' : '') + limpia.substring(0, 2) + '.' + limpia.substring(2);
+    }
+    return parseFloat(s);
+}
+
 async function cargarDesdeGoogleSheets() {
     const btn = document.getElementById("btnSincronizar");
     btn.innerText = "⏳ Sincronizando...";
@@ -141,17 +149,14 @@ async function cargarDesdeGoogleSheets() {
         const resp = await fetch(SHEET_CSV_URL + "&cb=" + new Date().getTime());
         const csvText = await resp.text();
         const lineas = csvText.split(/\r?\n/);
-        
-        datos = []; // Limpiamos para evitar duplicados al sincronizar
+        datos = [];
         for(let i = 1; i < lineas.length; i++) {
             if(!lineas[i].trim()) continue;
             const d = lineas[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
             const c = d.map(v => v.replace(/^"|"$/g, '').trim());
-
             datos.push({
                 ID: c[0], FECHA: c[1], ZONA: c[2], DETALLE: c[3], 
-                LATITUD: (c[4] || "").replace(',', '.'), 
-                LONGITUD: (c[5] || "").replace(',', '.'), 
+                LATITUD: c[4], LONGITUD: c[5], 
                 ESCALERA: c[6], CATEGORIA: c[7], 
                 ESTADO: c[8] || "Pendiente", 
                 FINALIZACION: c[9], COMENTARIO: c[10]
@@ -163,38 +168,17 @@ async function cargarDesdeGoogleSheets() {
     btn.innerText = "🔄 Sincronizar Sheets";
 }
 
-// GUARDADO AUTOMÁTICO HACIA GOOGLE SHEETS
 async function enviarADrive(tarea) {
     try {
-        // Usamos mode: 'no-cors' porque Apps Script suele dar problemas de redirección
         await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             cache: 'no-cache',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(tarea)
         });
-        console.log("Datos enviados al Script");
-    } catch (error) {
-        console.error("Error al enviar a Drive:", error);
-    }
+    } catch (error) { console.error(error); }
 }
 
-function saveCell(idx, campo, cell) { 
-    datos[idx][campo] = cell.innerText.trim(); 
-    guardarEnDB();
-    // Al editar cualquier celda, intentamos sincronizar esa fila con Drive
-    enviarADrive(datos[idx]); 
-}
-
-function cambiarEstado(idx, val) { 
-    datos[idx].ESTADO = val; 
-    guardarEnDB(); 
-    buscar(); 
-    enviarADrive(datos[idx]); 
-}
-
-// FUNCIONES DE INTERFAZ (Mantenidas del original)
 function render(lista) {
     const tbody = document.querySelector("#tabla tbody");
     tbody.innerHTML = "";
@@ -214,10 +198,11 @@ function render(lista) {
         pZ[d.ZONA || "S/Z"] = (pZ[d.ZONA || "S/Z"] || 0) + 1;
         pC[d.CATEGORIA || "S/C"] = (pC[d.CATEGORIA || "S/C"] || 0) + 1;
 
-        let lat = parseFloat(d.LATITUD);
-        let lon = parseFloat(d.LONGITUD);
+        // APLICAMOS LA LIMPIEZA AQUÍ
+        let lat = limpiarCoordenada(d.LATITUD);
+        let lon = limpiarCoordenada(d.LONGITUD);
         
-        if(!isNaN(lat) && !isNaN(lon) && lat !== 0) {
+        if(!isNaN(lat) && !isNaN(lon)) {
             let key = lat.toFixed(6) + "_" + lon.toFixed(6);
             if(offsetMap[key]) {
                 let angle = offsetMap[key] * (Math.PI / 4);
@@ -229,6 +214,7 @@ function render(lista) {
             const color = estL==="pendiente"?"#dc3545":estL==="enproceso"?"#007bff":estL==="finalizado"?"#28a745":"#6c757d";
             const m = L.circleMarker([lat, lon], { radius: 7, fillColor: color, color: "#fff", weight: 2, fillOpacity: 1 });
             m.bindTooltip(`${d.ID}`, { permanent: true, className: 'etiqueta-id', offset: [0,-8] });
+            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
             markerLayer.addLayer(m);
             bounds.push([lat, lon]);
         }
@@ -265,7 +251,12 @@ function render(lista) {
     if(bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
 }
 
-// OTROS AUXILIARES (IndexedDB, Filtros, etc)
+function saveCell(idx, campo, cell) { datos[idx][campo] = cell.innerText.trim(); guardarEnDB(); enviarADrive(datos[idx]); }
+function cambiarEstado(idx, val) { datos[idx].ESTADO = val; guardarEnDB(); buscar(); enviarADrive(datos[idx]); }
+function zoomTo(la, lo) { if(!isNaN(la)) map.setView([la, lo], 17); }
+function agregarFila() { datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente" }); buscar(); guardarEnDB(); }
+function borrarFila(idx) { if(confirm("¿Eliminar?")) { datos.splice(idx, 1); guardarEnDB(); buscar(); } }
+function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; guardarEnDB(); buscar(); } }
 function cargarDesdeDB() { db.transaction("tareas", "readonly").objectStore("tareas").getAll().onsuccess = (e) => { datos = e.target.result; buscar(); }; }
 function guardarEnDB() { const tx = db.transaction("tareas", "readwrite"); const store = tx.objectStore("tareas"); store.clear().onsuccess = () => { datos.forEach(d => { const c = {...d}; delete c.id_db; store.add(c); }); }; }
 function buscar() {
@@ -273,17 +264,36 @@ function buscar() {
     const filtrados = datos.filter(d => String(d.ID).toLowerCase().includes(fId));
     actualizarSelects(); render(filtrados);
 }
-function agregarFila() { 
-    const nueva = { ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente" };
-    datos.unshift(nueva); 
-    buscar(); 
-    guardarEnDB(); 
+function actualizarSelects() {
+    const selZ = document.getElementById("filtroZona"); const selC = document.getElementById("filtroCateg");
+    const zonas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
+    const categs = [...new Set(datos.map(d => d.CATEGORIA).filter(c => c))].sort();
+    const curZ = selZ.value; const curC = selC.value;
+    selZ.innerHTML = '<option value="">Todas</option>' + zonas.map(z => `<option value="${z}">${z}</option>`).join("");
+    selC.innerHTML = '<option value="">Todas</option>' + categs.map(c => `<option value="${c}">${c}</option>`).join("");
+    selZ.value = curZ; selC.value = curC;
 }
-function zoomTo(la, lo) { if(!isNaN(la)) map.setView([la, lo], 17); }
 function actualizarBox(id, obj) { const box = document.getElementById(id); let items = Object.entries(obj).sort((a,b)=>b[1]-a[1]); box.innerHTML = items.length ? '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join("") + '</table>' : '<small>Sin datos</small>'; }
-function actualizarSelects() { /* ... */ }
-function exportarCSV() { /* ... */ }
-function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; guardarEnDB(); buscar(); } }
+function importarCSV(e) {
+    const reader = new FileReader();
+    reader.onload = () => {
+        const lineas = reader.result.split(/\r?\n/);
+        const sep = lineas[0].includes(";") ? ";" : ",";
+        lineas.shift();
+        lineas.forEach(l => {
+            if(!l.trim()) return;
+            const c = l.split(sep).map(v => v.replace(/^"|"$/g, '').trim());
+            datos.push({ ID:c[0], FECHA:c[1], ZONA:c[2], DETALLE:c[3], LATITUD:c[4], LONGITUD:c[5], ESCALERA:c[6], CATEGORIA:c[7], ESTADO:c[8]||"Pendiente", FINALIZACION:c[9], COMENTARIO:c[10] });
+        });
+        guardarEnDB(); buscar();
+    };
+    reader.readAsText(e.target.files[0], "ISO-8859-1");
+}
+function exportarCSV() {
+    let csv = "ID,FECHA,ZONA,DETALLE,LATITUD,LONGITUD,ESCALERA,CATEGORIA,ESTADO,FINALIZACION,COMENTARIO\n";
+    datos.forEach(d => csv += [d.ID, d.FECHA, d.ZONA, d.DETALLE, d.LATITUD, d.LONGITUD, d.ESCALERA, d.CATEGORIA, d.ESTADO, d.FINALIZACION, d.COMENTARIO].map(v => `"${v||""}"`).join(",") + "\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = "preventivos.csv"; a.click();
+}
 </script>
 </body>
 </html>
