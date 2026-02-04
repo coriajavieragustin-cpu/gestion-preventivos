@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Gestión Preventiva - Full Sync</title>
+    <title>Panel de Gestión Preventiva - REPARADO</title>
     
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -104,7 +104,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-// CONFIGURACIÓN DE URLS
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec";
 
@@ -112,23 +111,26 @@ let datos = [];
 let map, markerLayer;
 let db;
 
-// 1. LIMPIADOR DE COORDENADAS MEJORADO
+// --- REPARADOR DE COORDENADAS AVANZADO ---
 function limpiarCoordenada(valor) {
-    if (!valor) return NaN;
-    // Quitamos espacios, letras y cambiamos coma por punto
+    if (!valor || valor === "") return NaN;
+    // Quitamos espacios y cambiamos coma por punto
     let s = valor.toString().replace(/\s/g, '').replace(',', '.').trim();
     
-    // Si Google mandó un número largo sin punto (ej: -27456677), le ponemos el punto
+    // Si el número es un entero largo (ej: -274777), insertamos el punto decimal
     if (!s.includes('.') && s.replace('-', '').length > 5) {
         let esNegativo = s.startsWith('-');
         let limpia = s.replace('-', '');
         s = (esNegativo ? '-' : '') + limpia.substring(0, 2) + '.' + limpia.substring(2);
     }
-    let num = parseFloat(s);
-    return isNaN(num) ? NaN : num;
+    
+    let n = parseFloat(s);
+    // Verificamos que esté en el rango aproximado de Corrientes / Región
+    if (isNaN(n) || n > 100 || n < -100) return NaN;
+    return n;
 }
 
-// 2. INICIALIZACIÓN
+// --- INICIO DE SISTEMA ---
 const request = indexedDB.open("PreventivasDB", 1);
 request.onupgradeneeded = (e) => {
     db = e.target.result;
@@ -147,7 +149,7 @@ function initMap() {
     markerLayer = L.layerGroup().addTo(map);
 }
 
-// 3. SINCRONIZACIÓN INTELIGENTE (Detecta si es CSV con , o ;)
+// --- CARGA DESDE GOOGLE SHEETS CON PARCHE DE COLUMNAS ---
 async function cargarDesdeGoogleSheets() {
     const btn = document.getElementById("btnSincronizar");
     btn.innerText = "⏳ Sincronizando...";
@@ -156,22 +158,35 @@ async function cargarDesdeGoogleSheets() {
         const csvText = await resp.text();
         const lineas = csvText.split(/\r?\n/);
         
-        // DETECTAR SEPARADOR automáticamente
-        const separador = lineas[0].includes(";") ? ";" : ",";
+        // Detectar si usa coma o punto y coma
+        const sep = lineas[0].includes(";") ? ";" : ",";
         
         datos = [];
         for(let i = 1; i < lineas.length; i++) {
             if(!lineas[i].trim()) continue;
             
-            // Usamos una expresión regular para separar respetando las comillas
-            let regex = new RegExp(separador + '(?=(?:(?:[^"]*"){2})*[^"]*$)');
+            // Separar columnas respetando comillas
+            let regex = new RegExp(sep + '(?=(?:(?:[^"]*"){2})*[^"]*$)');
             const c = lineas[i].split(regex).map(v => v.replace(/^"|"$/g, '').trim());
 
-            if(c.length < 6) continue;
+            if(c.length < 5) continue;
+
+            // Lógica de "Búsqueda de Coordenadas" si están movidas
+            let latLocal = c[4];
+            let lonLocal = c[5];
+
+            // Si la columna de Latitud está vacía pero el detalle tiene coordenadas
+            if((!latLocal || latLocal === "") && c[3] && c[3].includes("-27")) {
+                let extraido = c[3].match(/-?\d+([,.]\d+)?/g);
+                if(extraido && extraido.length >= 2) {
+                    latLocal = extraido[0];
+                    lonLocal = extraido[1];
+                }
+            }
 
             datos.push({
                 ID: c[0] || "", FECHA: c[1] || "", ZONA: c[2] || "", DETALLE: c[3] || "", 
-                LATITUD: c[4] || "", LONGITUD: c[5] || "", 
+                LATITUD: latLocal || "", LONGITUD: lonLocal || "", 
                 ESCALERA: c[6] || "", CATEGORIA: c[7] || "", 
                 ESTADO: c[8] || "Pendiente", 
                 FINALIZACION: c[9] || "", COMENTARIO: c[10] || ""
@@ -179,58 +194,54 @@ async function cargarDesdeGoogleSheets() {
         }
         guardarEnDB();
         buscar();
-    } catch (err) { console.error("Error cargando Sheets:", err); }
+    } catch (err) { console.error("Error:", err); }
     btn.innerText = "🔄 Sincronizar Sheets";
 }
 
 async function enviarADrive(tarea) {
     try {
         await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            cache: 'no-cache',
+            method: 'POST', mode: 'no-cors', cache: 'no-cache',
             body: JSON.stringify(tarea)
         });
-    } catch (error) { console.error("Error enviando a Drive:", error); }
+    } catch (error) { console.error(error); }
 }
 
-// 4. RENDERIZADO Y MAPA
 function render(lista) {
     const tbody = document.querySelector("#tabla tbody");
     tbody.innerHTML = "";
     markerLayer.clearLayers();
-    let c = { pend: 0, nr: 0, proc: 0, fin: 0 };
+    let conteo = { pend: 0, nr: 0, proc: 0, fin: 0 };
     let pZ = {}; let pC = {}; let bounds = [];
     let offsetMap = {};
 
     lista.forEach((d) => {
         const est = (d.ESTADO || "Pendiente").trim();
         const estL = est.toLowerCase().replace(/\s/g, '');
-        if(estL.includes("pendiente")) c.pend++;
-        else if(estL.includes("reparable")) c.nr++;
-        else if(estL.includes("proceso")) c.proc++;
-        else if(estL.includes("finalizado")) c.fin++;
+        if(estL.includes("pendiente")) conteo.pend++;
+        else if(estL.includes("reparable")) conteo.nr++;
+        else if(estL.includes("proceso")) conteo.proc++;
+        else if(estL.includes("finalizado")) conteo.fin++;
 
         pZ[d.ZONA || "S/Z"] = (pZ[d.ZONA || "S/Z"] || 0) + 1;
         pC[d.CATEGORIA || "S/C"] = (pC[d.CATEGORIA || "S/C"] || 0) + 1;
 
-        // LIMPIEZA ANTES DE DIBUJAR
+        // PROCESAR COORDENADAS PARA EL MAPA
         let lat = limpiarCoordenada(d.LATITUD);
         let lon = limpiarCoordenada(d.LONGITUD);
         
         if(!isNaN(lat) && !isNaN(lon)) {
-            let key = lat.toFixed(6) + "_" + lon.toFixed(6);
+            let key = lat.toFixed(5) + "_" + lon.toFixed(5);
             if(offsetMap[key]) {
-                let angle = offsetMap[key] * (Math.PI / 4);
-                lat += Math.cos(angle) * 0.00015;
-                lon += Math.sin(angle) * 0.00015;
-                offsetMap[key]++;
-            } else { offsetMap[key] = 1; }
+                lat += (Math.random() - 0.5) * 0.0002;
+                lon += (Math.random() - 0.5) * 0.0002;
+            }
+            offsetMap[key] = true;
 
             const color = estL.includes("pendiente")?"#dc3545":estL.includes("proceso")?"#007bff":estL.includes("finalizado")?"#28a745":"#6c757d";
             const m = L.circleMarker([lat, lon], { radius: 7, fillColor: color, color: "#fff", weight: 2, fillOpacity: 1 });
             m.bindTooltip(`${d.ID}`, { permanent: true, className: 'etiqueta-id', offset: [0,-8] });
-            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
+            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}<br><button onclick="map.setView([${lat},${lon}],18)">Zoom</button>`);
             markerLayer.addLayer(m);
             bounds.push([lat, lon]);
         }
@@ -259,32 +270,18 @@ function render(lista) {
     });
 
     document.getElementById("res-total").innerText = lista.length;
-    document.getElementById("res-pend").innerText = c.pend;
-    document.getElementById("res-nr").innerText = c.nr;
-    document.getElementById("res-proc").innerText = c.proc;
-    document.getElementById("res-fin").innerText = c.fin;
+    document.getElementById("res-pend").innerText = conteo.pend;
+    document.getElementById("res-nr").innerText = conteo.nr;
+    document.getElementById("res-proc").innerText = conteo.proc;
+    document.getElementById("res-fin").innerText = conteo.fin;
     actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC);
     if(bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
 }
 
-// 5. FUNCIONES AUXILIARES
-function saveCell(idx, campo, cell) { 
-    datos[idx][campo] = cell.innerText.trim(); 
-    guardarEnDB(); 
-    enviarADrive(datos[idx]); 
-}
-function cambiarEstado(idx, val) { 
-    datos[idx].ESTADO = val; 
-    guardarEnDB(); 
-    buscar(); 
-    enviarADrive(datos[idx]); 
-}
+function saveCell(idx, campo, cell) { datos[idx][campo] = cell.innerText.trim(); guardarEnDB(); enviarADrive(datos[idx]); }
+function cambiarEstado(idx, val) { datos[idx].ESTADO = val; guardarEnDB(); buscar(); enviarADrive(datos[idx]); }
 function zoomTo(la, lo) { if(!isNaN(la)) map.setView([la, lo], 17); }
-function agregarFila() { 
-    datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente" }); 
-    buscar(); 
-    guardarEnDB(); 
-}
+function agregarFila() { datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente" }); buscar(); guardarEnDB(); }
 function borrarFila(idx) { if(confirm("¿Eliminar?")) { datos.splice(idx, 1); guardarEnDB(); buscar(); } }
 function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; guardarEnDB(); buscar(); } }
 function cargarDesdeDB() { db.transaction("tareas", "readonly").objectStore("tareas").getAll().onsuccess = (e) => { datos = e.target.result || []; buscar(); }; }
