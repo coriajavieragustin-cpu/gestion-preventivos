@@ -2,163 +2,332 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Preventivos - Anti Solapamiento</title>
+    <title>Panel de Gestión Preventiva - Full Sync</title>
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin:15px; background: #f0f2f5; }
-        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        #mapa-general { height: 500px; border-radius: 8px; margin-bottom: 15px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .resumen-estados { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 15px; }
-        .card-conteo { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; font-size: 11px; border-top: 4px solid #333; }
-        .card-conteo span { display: block; font-size: 20px; }
-        
-        /* Botonera */
-        .controles { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-right: 5px; }
-        .btn-drive { background: #1fa463; color: white; }
-        .btn-import { background: #ffc107; }
-        
-        .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; max-height: 400px; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 1000px; }
-        th { background: #f8f9fa; position: sticky; top: 0; padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6; }
-        td { padding: 8px; border-bottom: 1px solid #eee; }
-        
-        /* Estilo para los labels del mapa */
-        .etiqueta-id { background: rgba(0,0,0,0.7); color: white; border: none; padding: 1px 4px; border-radius: 3px; font-size: 9px; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
+        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; gap: 15px; }
+        .header-app img { max-height: 40px; }
+        .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
+        .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .card-conteo { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border: 1px solid #ddd; font-size: 10px; }
+        .card-conteo span { display: block; font-size: 22px; margin-top: 4px; }
+        .conteo-pendiente { border-top: 4px solid #dc3545; color: #dc3545; }
+        .conteo-noreparable { border-top: 4px solid #6c757d; color: #6c757d; }
+        .conteo-proceso { border-top: 4px solid #007bff; color: #007bff; }
+        .conteo-finalizado { border-top: 4px solid #28a745; color: #28a745; }
+        .panel-central { display: grid; grid-template-columns: 1.6fr 1fr; gap: 15px; margin-bottom: 15px; height: 500px; }
+        #mapa-general { height: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .stats-columna { display: flex; flex-direction: column; gap: 10px; height: 100%; overflow: hidden; }
+        .stats-box { background: #fff; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex: 1; overflow-y: auto; }
+        .stats-box h3 { margin: 0 0 8px 0; font-size: 13px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .stats-table td { padding: 5px 0; border-bottom: 1px dotted #eee; }
+        .stats-table td:last-child { text-align: right; font-weight: bold; color: #1a73e8; }
+        .controles { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .filtros-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; }
+        .grupo-filtro { display: flex; flex-direction: column; gap: 5px; }
+        .grupo-filtro label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; }
+        .input-busqueda { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+        button { padding: 8px 14px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 11px; font-weight: 600; transition: 0.2s; margin-bottom: 5px; }
+        .btn-nueva { background: #28a745; } 
+        .btn-export { background: #17a2b8; } 
+        .btn-import { background: #ffc107; color: #333; } 
+        .btn-borrar { background: #dc3545; }
+        .btn-drive { background: #1fa463; }
+        .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 500px; }
+        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1200px; }
+        .tabla-principal th { padding: 12px; background: #f8f9fa; color: #666; font-size: 11px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
+        .tabla-principal td { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #eee; }
+        .estado-pendiente { background-color: #fff5f5; }
+        .estado-noreparable { background-color: #f8f9fa; }
+        .estado-enproceso { background-color: #f0f7ff; }
+        .estado-finalizado { background-color: #f2fff5; }
+        .etiqueta-id { background: #333; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-weight: bold; font-size: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="header-app"><h2>GESTIÓN PREVENTIVOS - VISTA DISPERSA</h2></div>
-
-    <div class="resumen-estados">
-        <div class="card-conteo" style="border-color: #333">TOTAL <span id="res-total">0</span></div>
-        <div class="card-conteo" style="border-color: #dc3545">PENDIENTES <span id="res-pend">0</span></div>
-        <div class="card-conteo" style="border-color: #007bff">EN PROCESO <span id="res-proc">0</span></div>
-        <div class="card-conteo" style="border-color: #28a745">FINALIZADOS <span id="res-fin">0</span></div>
-        <div class="card-conteo" style="border-color: #6c757d">OTROS <span id="res-nr">0</span></div>
+    <div class="header-app">
+        <img src="img/logo.png" alt="Logo">
+        <h2>GESTIÓN PREVENTIVOS V1.0 - FULL SYNC MODE</h2>
     </div>
 
-    <div id="mapa-general"></div>
+    <div class="resumen-estados">
+        <div class="card-conteo">TOTAL <span id="res-total">0</span></div>
+        <div class="card-conteo conteo-pendiente">PENDIENTES <span id="res-pend">0</span></div>
+        <div class="card-conteo conteo-noreparable">NO REPARABLE <span id="res-nr">0</span></div>
+        <div class="card-conteo conteo-proceso">EN PROCESO <span id="res-proc">0</span></div>
+        <div class="card-conteo conteo-finalizado">FINALIZADOS <span id="res-fin">0</span></div>
+    </div>
+
+    <div class="panel-central">
+        <div id="mapa-general"></div>
+        <div class="stats-columna">
+            <div class="stats-box"><h3>📅 Historial Cierres</h3><div id="stats-mes"></div></div>
+            <div class="stats-box"><h3>📍 Top Zonas</h3><div id="stats-zona"></div></div>
+            <div class="stats-box"><h3>🏷️ Categorías</h3><div id="stats-categoria"></div></div>
+        </div>
+    </div>
 
     <div class="controles">
-        <button class="btn-drive" onclick="cargarDesdeGoogleSheets()">Sincronizar Drive</button>
-        <button class="btn-import" onclick="document.getElementById('inputFile').click()">Importar CSV Local</button>
-        <input type="file" id="inputFile" style="display:none" onchange="importarLocal(event)">
+        <div>
+            <button class="btn-nueva" onclick="agregarFila()">➕ Nueva tarea</button>
+            <button class="btn-drive" id="btnSincronizar" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar Sheets</button>
+            <button class="btn-export" onclick="exportarCSV()">📤 Exportar CSV</button>
+            <input type="file" id="inputFile" accept=".csv" onchange="importarCSV(event)" style="display:none">
+            <button class="btn-import" onclick="document.getElementById('inputFile').click()">📥 Importar CSV</button>
+            <button class="btn-borrar" onclick="borrarTodo()">🗑 Borrar todo</button>
+        </div>
+        
+        <div class="filtros-grid">
+            <div class="grupo-filtro"><label>ID Tarea</label><input type="text" id="filtroId" class="input-busqueda" onkeyup="buscar()"></div>
+            <div class="grupo-filtro"><label>Fecha</label><input type="text" id="filtroFecha" class="input-busqueda" placeholder="Buscar fecha..." onkeyup="buscar()"></div>
+            <div class="grupo-filtro"><label>Zona</label><select id="filtroZona" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
+            <div class="grupo-filtro"><label>Categoría</label><select id="filtroCateg" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
+            <div class="grupo-filtro"><label>Estado</label><select id="filtroEstado" class="input-busqueda" onchange="buscar()"><option value="">Todos</option><option value="Pendiente">Pendiente</option><option value="No Reparable">No Reparable</option><option value="En proceso">En proceso</option><option value="Finalizado">Finalizado</option></select></div>
+        </div>
     </div>
 
     <div class="contenedor-tabla">
-        <table id="tabla-datos">
+        <table class="tabla-principal" id="tabla">
             <thead>
-                <tr><th>ID</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESTADO</th><th>ACCIONES</th></tr>
+                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>CIERRE</th><th>COMENT</th><th>ACCIONES</th></tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        const URL_SHEET = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
-        let map, markerLayer;
-        let datos = [];
 
-        window.onload = () => {
-            map = L.map('mapa-general').setView([-27.46, -58.83], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            markerLayer = L.layerGroup().addTo(map);
-            cargarDesdeGoogleSheets();
-        };
+<script>
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
 
-        async function cargarDesdeGoogleSheets() {
-            try {
-                const r = await fetch(URL_SHEET + "&nocache=" + Date.now());
-                const texto = await r.text();
-                procesarTexto(texto);
-            } catch(e) { alert("Error al conectar con Drive"); }
-        }
+let datos = [];
+let map;
+let markerLayer = L.layerGroup();
+let db;
 
-        function importarLocal(e) {
-            const reader = new FileReader();
-            reader.onload = () => procesarTexto(reader.result);
-            reader.readAsText(e.target.files[0], "ISO-8859-1");
-        }
+const request = indexedDB.open("PreventivasDB", 1);
+request.onupgradeneeded = (e) => {
+    db = e.target.result;
+    if (!db.objectStoreNames.contains("tareas")) db.createObjectStore("tareas", { keyPath: "id_db", autoIncrement: true });
+};
+request.onsuccess = (e) => {
+    db = e.target.result;
+    initMap();
+    cargarDesdeDB();
+    cargarDesdeGoogleSheets();
+};
 
-        function procesarTexto(texto) {
-            const lineas = texto.split(/\r?\n/);
-            const sep = lineas[0].includes(";") ? ";" : ",";
-            datos = [];
-            
-            for(let i = 1; i < lineas.length; i++) {
-                if(!lineas[i].trim()) continue;
-                const c = lineas[i].split(sep).map(v => v.replace(/"/g,'').trim());
-                if(c.length < 6) continue;
-                
+function initMap() {
+    map = L.map('mapa-general').setView([-27.46, -58.83], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    markerLayer.addTo(map);
+}
+
+async function cargarDesdeGoogleSheets() {
+    const btn = document.getElementById("btnSincronizar");
+    btn.innerText = "⏳ Sincronizando...";
+    try {
+        const resp = await fetch(SHEET_CSV_URL + "&cb=" + new Date().getTime());
+        const csvText = await resp.text();
+        const lineas = csvText.split(/\r?\n/);
+        const mapExistente = new Map(datos.map(d => [String(d.ID), d]));
+
+        for(let i = 1; i < lineas.length; i++) {
+            if(!lineas[i].trim()) continue;
+            const d = lineas[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+            const c = d.map(v => v.replace(/^"|"$/g, '').trim());
+
+            const id = c[0];
+            if(!mapExistente.has(id)) {
                 datos.push({
-                    ID: c[0], ZONA: c[2], DETALLE: c[3],
-                    LAT: parseFloat((c[4]||"").replace(',','.')),
-                    LON: parseFloat((c[5]||"").replace(',','.')),
-                    ESTADO: c[8] || "Pendiente"
+                    ID: id, FECHA: c[1], ZONA: c[2], DETALLE: c[3], 
+                    LATITUD: (c[4] || "").replace(',', '.'), 
+                    LONGITUD: (c[5] || "").replace(',', '.'), 
+                    ESCALERA: c[6], CATEGORIA: c[7], 
+                    ESTADO: c[8] || "Pendiente", 
+                    FINALIZACION: c[9], COMENTARIO: c[10]
                 });
             }
-            render();
+        }
+        guardarEnDB();
+        buscar();
+    } catch (err) { console.error(err); }
+    btn.innerText = "🔄 Sincronizar Sheets";
+}
+
+function cargarDesdeDB() {
+    db.transaction("tareas", "readonly").objectStore("tareas").getAll().onsuccess = (e) => {
+        datos = e.target.result;
+        buscar();
+    };
+}
+
+function guardarEnDB() {
+    const tx = db.transaction("tareas", "readwrite");
+    const store = tx.objectStore("tareas");
+    store.clear().onsuccess = () => { 
+        datos.forEach(d => { 
+            const c = {...d}; delete c.id_db; 
+            store.add(c); 
+        }); 
+    };
+}
+
+function buscar() {
+    const fId = document.getElementById("filtroId").value.toLowerCase();
+    const fFecha = document.getElementById("filtroFecha").value.toLowerCase();
+    const fZ = document.getElementById("filtroZona").value;
+    const fC = document.getElementById("filtroCateg").value;
+    const fE = document.getElementById("filtroEstado").value.toLowerCase();
+
+    const filtrados = datos.filter(d => {
+        return (String(d.ID).toLowerCase().includes(fId)) &&
+               (String(d.FECHA).toLowerCase().includes(fFecha)) &&
+               (fZ === "" || d.ZONA === fZ) &&
+               (fC === "" || d.CATEGORIA === fC) &&
+               (fE === "" || String(d.ESTADO).toLowerCase() === fE);
+    });
+    actualizarSelects();
+    render(filtrados);
+}
+
+function render(lista) {
+    const tbody = document.querySelector("#tabla tbody");
+    tbody.innerHTML = "";
+    markerLayer.clearLayers();
+    let c = { pend: 0, nr: 0, proc: 0, fin: 0 };
+    let pZ = {}; let pC = {}; let bounds = [];
+    
+    // Objeto para llevar cuenta de posiciones repetidas
+    let offsetMap = {};
+
+    lista.forEach((d) => {
+        const est = (d.ESTADO || "Pendiente").trim();
+        const estL = est.toLowerCase().replace(/\s/g, '');
+        
+        if(estL === "pendiente") c.pend++;
+        else if(estL === "noreparable") c.nr++;
+        else if(estL === "enproceso") c.proc++;
+        else if(estL === "finalizado") c.fin++;
+
+        pZ[d.ZONA || "S/Z"] = (pZ[d.ZONA || "S/Z"] || 0) + 1;
+        pC[d.CATEGORIA || "S/C"] = (pC[d.CATEGORIA || "S/C"] || 0) + 1;
+
+        let lat = parseFloat(d.LATITUD);
+        let lon = parseFloat(d.LONGITUD);
+        
+        if(!isNaN(lat) && !isNaN(lon) && lat !== 0) {
+            // Lógica de dispersión (Anti-Juntado)
+            let key = lat.toFixed(6) + "_" + lon.toFixed(6);
+            if(offsetMap[key]) {
+                let angle = offsetMap[key] * (Math.PI / 4);
+                lat += Math.cos(angle) * 0.00015;
+                lon += Math.sin(angle) * 0.00015;
+                offsetMap[key]++;
+            } else {
+                offsetMap[key] = 1;
+            }
+
+            const color = estL==="pendiente"?"#dc3545":estL==="enproceso"?"#007bff":estL==="finalizado"?"#28a745":"#6c757d";
+            const m = L.circleMarker([lat, lon], { radius: 7, fillColor: color, color: "#fff", weight: 2, fillOpacity: 1 });
+            m.bindTooltip(`${d.ID}`, { permanent: true, className: 'etiqueta-id', offset: [0,-8] });
+            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
+            markerLayer.addLayer(m);
+            bounds.push([lat, lon]);
         }
 
-        function render() {
-            markerLayer.clearLayers();
-            const tbody = document.querySelector("#tabla-datos tbody");
-            tbody.innerHTML = "";
-            let counts = { tot:0, p:0, ep:0, f:0, o:0 };
-            let coordsUsadas = {}; // Para detectar duplicados de ubicación
+        const realIdx = datos.findIndex(orig => orig === d);
+        const tr = document.createElement("tr");
+        tr.className = `estado-${estL}`;
+        tr.innerHTML = `
+            <td contenteditable onblur="saveCell(${realIdx},'ID',this)">${d.ID||""}</td>
+            <td contenteditable onblur="saveCell(${realIdx},'FECHA',this)">${d.FECHA||""}</td>
+            <td contenteditable onblur="saveCell(${realIdx},'ZONA',this)">${d.ZONA||""}</td>
+            <td contenteditable onblur="saveCell(${realIdx},'DETALLE',this)">${d.DETALLE||""}</td>
+            <td contenteditable onblur="saveCell(${realIdx},'LATITUD',this)">${d.LATITUD||""}</td>
+            <td contenteditable onblur="saveCell(${realIdx},'LONGITUD',this)">${d.LONGITUD||""}</td>
+            <td contenteditable onblur="saveCell(${realIdx},'ESCALERA',this)">${d.ESCALERA||""}</td>
+            <td contenteditable onblur="saveCell(${realIdx},'CATEGORIA',this)">${d.CATEGORIA||""}</td>
+            <td><select onchange="cambiarEstado(${realIdx},this.value)">${["Pendiente","No Reparable","En proceso","Finalizado"].map(e=>`<option ${est===e?"selected":""}>${e}</option>`).join("")}</select></td>
+            <td contenteditable onblur="saveCell(${realIdx},'FINALIZACION',this)">${d.FINALIZACION||""}</td>
+            <td contenteditable onblur="saveCell(${realIdx},'COMENTARIO',this)">${d.COMENTARIO||""}</td>
+            <td>
+                <button onclick="zoomTo(${lat},${lon})" style="background:#6c757d; padding: 4px 8px;">📍</button>
+                <button onclick="borrarFila(${realIdx})" style="background:#dc3545; padding: 4px 8px;">❌</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
 
-            datos.forEach(d => {
-                counts.tot++;
-                let est = d.ESTADO.toLowerCase();
-                let color = "#6c757d"; // Gris por defecto
-                
-                if(est.includes("pendiente")) { color = "#dc3545"; counts.p++; }
-                else if(est.includes("proceso")) { color = "#007bff"; counts.ep++; }
-                else if(est.includes("finalizado")) { color = "#28a745"; counts.f++; }
-                else { counts.o++; }
+    document.getElementById("res-total").innerText = lista.length;
+    document.getElementById("res-pend").innerText = c.pend;
+    document.getElementById("res-nr").innerText = c.nr;
+    document.getElementById("res-proc").innerText = c.proc;
+    document.getElementById("res-fin").innerText = c.fin;
+    actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC);
+    if(bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
+}
 
-                if(!isNaN(d.LAT) && !isNaN(d.LON)) {
-                    // --- LÓGICA DE DISPERSIÓN (ANTI-JUNTADO) ---
-                    let llave = `${d.LAT}_${d.LON}`;
-                    let latFinal = d.LAT;
-                    let lonFinal = d.LON;
+function saveCell(idx, campo, cell) { datos[idx][campo] = cell.innerText.trim(); guardarEnDB(); }
+function cambiarEstado(idx, val) { datos[idx].ESTADO = val; guardarEnDB(); buscar(); }
+function zoomTo(la, lo) { if(!isNaN(la)) map.setView([la, lo], 17); }
+function agregarFila() { datos.unshift({ ID: "NUEVO", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente" }); buscar(); guardarEnDB(); }
+function borrarFila(idx) { if(confirm("¿Eliminar?")) { datos.splice(idx, 1); guardarEnDB(); buscar(); } }
+function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; guardarEnDB(); buscar(); } }
 
-                    if (coordsUsadas[llave]) {
-                        // Si la coordenada ya existe, le sumamos un pequeñísimo margen
-                        // para que el punto se vea al lado del otro
-                        let angulo = coordsUsadas[llave] * (Math.PI / 4); 
-                        latFinal += Math.cos(angulo) * 0.00015; 
-                        lonFinal += Math.sin(angulo) * 0.00015;
-                        coordsUsadas[llave]++;
-                    } else {
-                        coordsUsadas[llave] = 1;
-                    }
+function actualizarSelects() {
+    const selZ = document.getElementById("filtroZona");
+    const selC = document.getElementById("filtroCateg");
+    const zonas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
+    const categs = [...new Set(datos.map(d => d.CATEGORIA).filter(c => c))].sort();
+    const curZ = selZ.value; const curC = selC.value;
+    selZ.innerHTML = '<option value="">Todas</option>' + zonas.map(z => `<option value="${z}">${z}</option>`).join("");
+    selC.innerHTML = '<option value="">Todas</option>' + categs.map(c => `<option value="${c}">${c}</option>`).join("");
+    selZ.value = curZ; selC.value = curC;
+}
 
-                    const m = L.circleMarker([latFinal, lonFinal], {
-                        radius: 7, fillColor: color, color: "#fff", weight: 2, fillOpacity: 0.9
-                    });
-                    
-                    m.bindTooltip(d.ID, { permanent: true, className: 'etiqueta-id', direction: 'top', offset: [0,-5] });
-                    m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.ZONA}<br>${d.DETALLE}`);
-                    markerLayer.addLayer(m);
-                }
+function actualizarBox(id, obj) {
+    const box = document.getElementById(id);
+    let items = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+    box.innerHTML = items.length ? '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join("") + '</table>' : '<small>Sin datos</small>';
+}
 
-                tbody.innerHTML += `<tr>
-                    <td>${d.ID}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td>
-                    <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESTADO}</td>
-                    <td><button onclick="map.setView([${d.LAT},${d.LON}],18)">📍 IR</button></td>
-                </tr>`;
+function importarCSV(e) {
+    const reader = new FileReader();
+    reader.onload = () => {
+        const text = reader.result;
+        const lineas = text.split(/\r?\n/);
+        const sep = lineas[0].includes(";") ? ";" : ",";
+        lineas.shift();
+        lineas.forEach(l => {
+            if(!l.trim()) return;
+            const d = l.match(new RegExp(`(".*?"|[^"${sep}\\s]+)(?=\\s*${sep}|\\s*$)`, 'g')) || [];
+            const c = d.map(v => v.replace(/^"|"$/g, '').trim());
+            datos.push({ 
+                ID:c[0], FECHA:c[1], ZONA:c[2], DETALLE:c[3], 
+                LATITUD: (c[4]||"").replace(',','.'), 
+                LONGITUD: (c[5]||"").replace(',','.'), 
+                ESCALERA:c[6], CATEGORIA:c[7], 
+                ESTADO:c[8]||"Pendiente", 
+                FINALIZACION:c[9], COMENTARIO:c[10] 
             });
+        });
+        guardarEnDB(); buscar();
+    };
+    reader.readAsText(e.target.files[0], "ISO-8859-1");
+}
 
-            document.getElementById("res-total").innerText = counts.tot;
-            document.getElementById("res-pend").innerText = counts.p;
-            document.getElementById("res-proc").innerText = counts.ep;
-            document.getElementById("res-fin").innerText = counts.f;
-            document.getElementById("res-nr").innerText = counts.o;
-        }
-    </script>
+function exportarCSV() {
+    let csv = "ID,FECHA,ZONA,DETALLE,LATITUD,LONGITUD,ESCALERA,CATEGORIA,ESTADO,FINALIZACION,COMENTARIO\n";
+    datos.forEach(d => csv += [d.ID, d.FECHA, d.ZONA, d.DETALLE, d.LATITUD, d.LONGITUD, d.ESCALERA, d.CATEGORIA, d.ESTADO, d.FINALIZACION, d.COMENTARIO].map(v => `"${v||""}"`).join(",") + "\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = "preventivos.csv"; a.click();
+}
+</script>
 </body>
 </html>
