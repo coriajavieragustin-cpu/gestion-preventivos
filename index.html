@@ -36,7 +36,6 @@
 
         /* Controles */
         .controles { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        /* Ajuste de grid para acomodar el 5to filtro */
         .filtros-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; }
         .grupo-filtro { display: flex; flex-direction: column; gap: 5px; }
         .grupo-filtro label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; }
@@ -156,9 +155,17 @@ function initGoogleAuth() {
                 callback: (tokenResponse) => {
                     if (tokenResponse.error) return;
                     accessToken = tokenResponse.access_token;
+                    sessionStorage.setItem("g_token", accessToken); // Guardar para recargas
                     sincronizarConDrive();
                 },
             });
+
+            // Intento de recuperación automática de token en la misma sesión
+            const savedToken = sessionStorage.getItem("g_token");
+            if (savedToken) {
+                accessToken = savedToken;
+                setTimeout(() => sincronizarConDrive(), 1000);
+            }
             console.log("✅ Google Auth Listo");
         }
     }, 500);
@@ -186,10 +193,16 @@ async function sincronizarConDrive() {
             });
             const cloudData = await resDl.json();
             
-            const mapLocal = new Map(datos.map(d => [d.ID, d]));
-            cloudData.forEach(d => mapLocal.set(d.ID, d));
+            // LÓGICA DE ADOSADO (Merge) SIN DUPLICADOS
+            const mapLocal = new Map();
+            // 1. Cargamos lo que viene de la nube
+            cloudData.forEach(d => { if(d.ID) mapLocal.set(String(d.ID), d); });
+            // 2. Adosamos lo que tenemos local (si el ID ya existe, prevalece lo local más reciente)
+            datos.forEach(d => { if(d.ID) mapLocal.set(String(d.ID), d); });
+            
             datos = Array.from(mapLocal.values());
             
+            // Guardamos todo en la DB local y actualizamos la nube para que queden espejadas
             await actualizarEnDrive(fileId);
         } else {
             await crearEnDrive();
@@ -197,10 +210,11 @@ async function sincronizarConDrive() {
         
         guardarEnDB();
         buscar();
-        alert("¡Sincronización con Drive completada!");
+        console.log("¡Sincronización completada!");
     } catch (err) {
         console.error(err);
-        alert("Error al sincronizar con Drive.");
+        // Si el token expiró, lo limpiamos
+        if(err.status === 401) accessToken = null;
     }
     btn.innerText = "☁️ Sincronizar Drive";
 }
@@ -378,5 +392,4 @@ function exportarCSV() {
 }
 </script>
 </body>
-
 </html>
