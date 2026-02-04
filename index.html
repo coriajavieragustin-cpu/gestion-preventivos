@@ -2,98 +2,89 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión Preventivos V1.5 - Fix Layout</title>
+    <title>Gestión Preventivos V1.6 - Compacto</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --pend: #dc3545; --norep: #6c757d; --proc: #007bff; --fin: #28a745; }
-        
-        /* Reset básico para evitar saltos de línea extraños */
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; display: flex; flex-direction: column; height: 100vh; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; height: 100vh; display: flex; flex-direction: column; }
 
-        /* Contenedor Superior (Fijo) */
-        .top-panel { background: white; padding: 10px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        /* PANEL SUPERIOR COMPACTO */
+        .top-bar { background: white; padding: 10px 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1000; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         
-        .resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
-        .card { background: #f8f9fa; padding: 8px; border-radius: 6px; text-align: center; border-top: 3px solid #ccc; font-size: 11px; }
-        .card span { display: block; font-size: 18px; font-weight: bold; }
+        .resumen-compacto { display: flex; gap: 10px; flex-wrap: wrap; }
+        .card-mini { background: #f8f9fa; padding: 5px 12px; border-radius: 4px; border-left: 3px solid #ccc; font-size: 11px; font-weight: bold; }
+        .card-mini span { color: #333; font-size: 14px; margin-left: 5px; }
 
-        /* Área Central (Mapa y Stats) */
-        .main-content { display: flex; flex: 1; min-height: 400px; gap: 10px; padding: 10px; overflow: hidden; }
-        #map { flex: 2; border-radius: 8px; border: 1px solid #ddd; z-index: 1; } /* Z-index bajo para que no tape menús */
-        .side-stats { flex: 1; background: white; border-radius: 8px; padding: 15px; overflow-y: auto; border: 1px solid #ddd; }
+        /* FILTROS INTEGRADOS */
+        .filtros-inline { display: flex; gap: 15px; align-items: flex-end; background: #f0f2f5; padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .f-group { display: flex; flex-direction: column; gap: 3px; }
+        .f-group label { font-size: 9px; font-weight: bold; color: #666; }
+        input, select { padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
 
-        /* Panel de Control (Filtros) */
-        .control-panel { background: #e9ecef; padding: 15px; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
-        .filtros-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
-        
-        /* Tabla (Sección inferior con scroll propio) */
-        .table-container { flex: 1; overflow: auto; background: white; padding: 0 10px 10px 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1000px; }
-        th { position: sticky; top: 0; background: #343a40; color: white; padding: 10px; text-align: left; z-index: 10; }
-        td { padding: 8px; border-bottom: 1px solid #eee; }
+        /* SECCIÓN MAPA (MÁS PEQUEÑA) */
+        .map-section { display: flex; height: 300px; /* ALTURA REDUCIDA */ gap: 10px; padding: 10px; }
+        #map { flex: 3; border-radius: 8px; border: 1px solid #ddd; z-index: 1; }
+        .side-stats-mini { flex: 1; background: white; border-radius: 8px; padding: 10px; overflow-y: auto; border: 1px solid #ddd; font-size: 11px; }
 
-        /* Clases de estado */
-        .fila-pendiente { border-left: 5px solid var(--pend); background: #fff5f5; }
-        .fila-finalizado { border-left: 5px solid var(--fin); background: #f2fff5; }
-        .btn { cursor: pointer; padding: 6px 12px; border: none; border-radius: 4px; color: white; font-weight: bold; }
+        /* TABLA (ÁREA PRINCIPAL) */
+        .table-area { flex: 1; overflow: auto; padding: 0 10px 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; background: white; }
+        th { position: sticky; top: 0; background: #444; color: white; padding: 8px; text-align: left; z-index: 10; }
+        td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+
+        /* ESTADOS */
+        .fila-pendiente { border-left: 4px solid var(--pend); background: #fff5f5; }
+        .fila-finalizado { border-left: 4px solid var(--fin); background: #f2fff5; }
+        .btn-sync { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="top-panel">
-        <div class="header">
-            <h2 style="margin:0; color:#1a73e8;">SISTEMA DE GESTIÓN V1.5</h2>
-            <div id="reloj">Cargando datos...</div>
+    <div class="top-bar">
+        <div class="header-flex">
+            <h4 style="margin:0; color:#1a73e8;">GESTIÓN PREVENTIVOS V1.6</h4>
+            <div class="resumen-compacto">
+                <div class="card-mini" style="border-color:#333">TOTAL <span id="t-total">0</span></div>
+                <div class="card-mini" style="border-color:var(--pend)">PEND <span id="t-pend">0</span></div>
+                <div class="card-mini" style="border-color:var(--fin)">FIN <span id="t-fin">0</span></div>
+                <button class="btn-sync" onclick="cargarDrive()">🔄 Sincronizar</button>
+            </div>
         </div>
-        <div class="resumen">
-            <div class="card" style="border-color:#333">TOTAL <span id="t-total">0</span></div>
-            <div class="card" style="border-color:var(--pend)">PENDIENTES <span id="t-pend">0</span></div>
-            <div class="card" style="border-color:var(--norep)">NO REPARABLES <span id="t-norep">0</span></div>
-            <div class="card" style="border-color:var(--fin)">FINALIZADOS <span id="t-fin">0</span></div>
+
+        <div class="filtros-inline">
+            <div class="f-group"><label>ID TAREA</label><input type="text" id="f-id" onkeyup="buscar()" placeholder="Buscar..."></div>
+            <div class="f-group">
+                <label>ESTADO</label>
+                <select id="f-estado" onchange="buscar()">
+                    <option value="">Todos</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="finalizado">Finalizado</option>
+                    <option value="no reparable">No Reparable</option>
+                </select>
+            </div>
+            <div class="f-group"><label>ZONA</label><select id="f-zona" onchange="buscar()"><option value="">Todas</option></select></div>
         </div>
     </div>
 
-    <div class="main-content">
+    <div class="map-section">
         <div id="map"></div>
-        <div class="side-stats">
-            <h4 style="margin-top:0">Estadísticas por Zona</h4>
+        <div class="side-stats-mini">
+            <h5 style="margin:0 0 5px 0">Zonas</h5>
             <div id="lista-zonas"></div>
             <hr>
-            <h4>Categorías</h4>
+            <h5 style="margin:5px 0">Categorías</h5>
             <div id="lista-cats"></div>
         </div>
     </div>
 
-    <div class="control-panel">
-        <div class="filtros-grid">
-            <div>
-                <label style="font-size:10px; font-weight:bold;">BUSCAR ID</label>
-                <input type="text" id="f-id" onkeyup="buscar()" style="width:100%; padding:5px;">
-            </div>
-            <div>
-                <label style="font-size:10px; font-weight:bold;">ESTADO</label>
-                <select id="f-estado" onchange="buscar()" style="width:100%; padding:5px;">
-                    <option value="">Todos</option>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="no reparable">No Reparable</option>
-                    <option value="finalizado">Finalizado</option>
-                </select>
-            </div>
-            <div style="display:flex; align-items:flex-end; gap:5px;">
-                <button class="btn" style="background:#28a745" onclick="cargarDrive()">Sincronizar</button>
-                <button class="btn" style="background:#17a2b8" onclick="exportar()">Exportar</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="table-container">
+    <div class="table-area">
         <table>
             <thead>
                 <tr>
                     <th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th>
-                    <th>LAT</th><th>LON</th><th>ESTADO</th><th>ACCIÓN</th>
+                    <th>LAT</th><th>LON</th><th>ESTADO</th><th>ACC</th>
                 </tr>
             </thead>
             <tbody id="cuerpo-tabla"></tbody>
@@ -108,7 +99,6 @@
         let markers = L.layerGroup().addTo(map);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // Función corregida para tus coordenadas con comas de miles
         function limpiarCoord(v) {
             if(!v) return NaN;
             let n = v.toString().replace(/[^0-9-]/g, '');
@@ -124,21 +114,28 @@
                 for(let i=1; i<filas.length; i++){
                     const c = filas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
                     if(c.length < 8) continue;
-                    datos.push({ id:c[0], fec:c[1], zon:c[2], det:c[3], lat:c[4], lon:c[5], est:c[8] });
+                    datos.push({ id:c[0], fec:c[1], zon:c[2], det:c[3], lat:c[4], lon:c[5], est:c[8], cat:c[7] });
                 }
+                llenarFiltroZona();
                 buscar();
-                document.getElementById("reloj").innerText = "Sincronizado: " + new Date().toLocaleTimeString();
                 setTimeout(() => map.invalidateSize(), 200);
             } catch(e) { console.log(e); }
         }
 
+        function llenarFiltroZona() {
+            const z = [...new Set(datos.map(d => d.zon))].sort();
+            document.getElementById("f-zona").innerHTML = '<option value="">Todas</option>' + z.map(x => `<option value="${x.toLowerCase()}">${x}</option>`).join("");
+        }
+
         function buscar() {
-            const idBusq = document.getElementById("f-id").value.toLowerCase();
-            const estBusq = document.getElementById("f-estado").value.toLowerCase();
+            const idB = document.getElementById("f-id").value.toLowerCase();
+            const estB = document.getElementById("f-estado").value.toLowerCase();
+            const zonB = document.getElementById("f-zona").value.toLowerCase();
             
             const filtrados = datos.filter(d => 
-                d.id.toLowerCase().includes(idBusq) && 
-                (estBusq === "" || d.est.toLowerCase().includes(estBusq))
+                d.id.toLowerCase().includes(idB) && 
+                (estB === "" || d.est.toLowerCase().includes(estB)) &&
+                (zonB === "" || d.zon.toLowerCase() === zonB)
             );
             renderizar(filtrados);
         }
@@ -147,40 +144,40 @@
             const tbody = document.getElementById("cuerpo-tabla");
             tbody.innerHTML = "";
             markers.clearLayers();
-            let c = { t:0, p:0, n:0, f:0 };
-            let bounds = [];
+            let c = { t:0, p:0, f:0 }; let bounds = [];
+            let sz = {}; let sc = {};
 
             lista.forEach(d => {
                 c.t++;
                 let est = d.est.toLowerCase();
-                let clase = ""; let color = "gray";
+                let cl = ""; let col = "gray";
 
-                if(est.includes("pend")) { clase="fila-pendiente"; color="red"; c.p++; }
-                else if(est.includes("reparable")) { color="orange"; c.n++; }
-                else if(est.includes("fin")) { clase="fila-finalizado"; color="green"; c.f++; }
+                if(est.includes("pend")) { cl="fila-pendiente"; col="red"; c.p++; }
+                else if(est.includes("fin")) { cl="fila-finalizado"; col="green"; c.f++; }
+                
+                sz[d.zon] = (sz[d.zon] || 0) + 1;
+                sc[d.cat] = (sc[d.cat] || 0) + 1;
 
-                let lt = limpiarCoord(d.lat);
-                let ln = limpiarCoord(d.lon);
-
+                let lt = limpiarCoord(d.lat); let ln = limpiarCoord(d.lon);
                 if(!isNaN(lt)) {
-                    L.circleMarker([lt, ln], {radius:6, color:color, fillOpacity:0.8}).addTo(markers);
+                    L.circleMarker([lt, ln], {radius:5, color:col, fillOpacity:0.7}).addTo(markers);
                     bounds.push([lt, ln]);
                 }
 
-                tbody.innerHTML += `
-                    <tr class="${clase}">
-                        <td>${d.id}</td><td>${d.fec}</td><td>${d.zon}</td>
-                        <td title="${d.det}">${d.det.substring(0,30)}...</td>
-                        <td>${lt.toFixed(4)}</td><td>${ln.toFixed(4)}</td>
-                        <td><b>${d.est}</b></td>
-                        <td><button onclick="map.setView([${lt},${ln}],18)">📍</button></td>
-                    </tr>`;
+                tbody.innerHTML += `<tr class="${cl}">
+                    <td>${d.id}</td><td>${d.fec}</td><td>${d.zon}</td>
+                    <td>${d.det.substring(0,25)}...</td><td>${lt.toFixed(3)}</td><td>${ln.toFixed(3)}</td>
+                    <td><b>${d.est}</b></td><td><button onclick="map.setView([${lt},${ln}],18)">📍</button></td>
+                </tr>`;
             });
 
             document.getElementById("t-total").innerText = c.t;
             document.getElementById("t-pend").innerText = c.p;
-            document.getElementById("t-norep").innerText = c.n;
             document.getElementById("t-fin").innerText = c.f;
+
+            document.getElementById("lista-zonas").innerHTML = Object.entries(sz).map(([k,v])=>`<div>${k}: <b>${v}</b></div>`).join("");
+            document.getElementById("lista-cats").innerHTML = Object.entries(sc).map(([k,v])=>`<div>${k}: <b>${v}</b></div>`).join("");
+            
             if(bounds.length > 0) map.fitBounds(bounds);
         }
 
