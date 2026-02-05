@@ -187,10 +187,9 @@ function actualizarAviso(tipo, mensaje) {
 function limpiarCoordenada(valor) {
     if (!valor) return NaN;
     let s = valor.toString().replace(/\s/g, '').trim();
-    let soloNumeros = s.replace(/[^0-9]/g, '');
-    if (soloNumeros.length < 4) return NaN;
-    let res = parseFloat((s.startsWith('-') ? '-' : '') + soloNumeros.substring(0, 2) + "." + soloNumeros.substring(2));
-    return (res > 90 || res < -90) ? NaN : res;
+    let soloNumeros = s.replace(/[^0-9.-]/g, '');
+    let res = parseFloat(soloNumeros);
+    return (isNaN(res) || res > 180 || res < -180) ? NaN : res;
 }
 
 async function cargarDesdeGoogleSheets() {
@@ -226,19 +225,19 @@ function render(lista) {
     lista.forEach((entry) => {
         const d = entry.item || entry;
         const originalIndex = entry.originalIndex !== undefined ? entry.originalIndex : datos.indexOf(d);
-        const estL = (d.ESTADO || '').toLowerCase();
+        const estL = (d.ESTADO || '').toLowerCase().trim();
         
-        if(estL.includes("pend")) cnt.pend++;
-        else if(estL.includes("proc")) cnt.proc++;
-        else if(estL.includes("resu")) cnt.res++;
+        if(estL === "pendiente") cnt.pend++;
+        else if(estL === "en proceso") cnt.proc++;
+        else if(estL === "resuelto") cnt.res++;
 
         pZ[d.ZONA] = (pZ[d.ZONA] || 0) + 1;
         pC[d.CAT] = (pC[d.CAT] || 0) + 1;
 
         let lat = limpiarCoordenada(d.LAT);
         let lon = limpiarCoordenada(d.LON);
-        if(!isNaN(lat)) {
-            const col = estL.includes("pend") ? "red" : estL.includes("proc") ? "blue" : "green";
+        if(!isNaN(lat) && !isNaN(lon)) {
+            const col = estL === "pendiente" ? "red" : estL === "en proceso" ? "blue" : "green";
             L.circleMarker([lat, lon], { radius: 7, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(markerLayer);
             bounds.push([lat, lon]);
         }
@@ -262,22 +261,34 @@ function centrarEnMapa(lat, lon) {
     map.setView([lat, lon], 18);
 }
 
+// FUNCIÓN BUSCAR CORREGIDA PARA FILTRAR PENDIENTE CORRECTAMENTE
 function buscar() {
-    const id = document.getElementById("fId").value.toLowerCase();
-    const fec = document.getElementById("fFec").value.toLowerCase();
-    const zon = document.getElementById("fZon").value;
-    const cat = document.getElementById("fCat").value;
-    const est = document.getElementById("fEst").value;
+    const fId = document.getElementById("fId").value.toLowerCase().trim();
+    const fFec = document.getElementById("fFec").value.toLowerCase().trim();
+    const fZon = document.getElementById("fZon").value.trim();
+    const fCat = document.getElementById("fCat").value.trim();
+    const fEst = document.getElementById("fEst").value.toUpperCase().trim(); // Pasamos el filtro a MAYÚSCULAS
 
     const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
-        .filter(({ item: d }) => d.ID.toLowerCase().includes(id) && d.FECHA.toLowerCase().includes(fec) && (zon === "" || d.ZONA === zon) && (cat === "" || d.CAT === cat) && (est === "" || d.ESTADO === est));
+        .filter(({ item: d }) => {
+            const matchId = d.ID.toLowerCase().includes(fId);
+            const matchFec = d.FECHA.toLowerCase().includes(fFec);
+            const matchZon = (fZon === "" || d.ZONA === fZon);
+            const matchCat = (fCat === "" || d.CAT === fCat);
+            
+            // Compara el estado quitando espacios y pasando a MAYÚSCULAS
+            const estadoData = (d.ESTADO || "").toUpperCase().trim();
+            const matchEst = (fEst === "" || estadoData === fEst);
+
+            return matchId && matchFec && matchZon && matchCat && matchEst;
+        });
     render(filtrados);
 }
 
 function actualizarSelects() {
-    const zs = [...new Set(datos.map(d => d.ZONA))].sort();
-    const cs = [...new Set(datos.map(d => d.CAT))].sort();
-    const unionCats = [...new Set([...CATEGORIES_FROM_IMAGE, ...cs.filter(Boolean)])];
+    const zs = [...new Set(datos.map(d => d.ZONA))].filter(Boolean).sort();
+    const cs = [...new Set(datos.map(d => d.CAT))].filter(Boolean).sort();
+    const unionCats = [...new Set([...CATEGORIES_FROM_IMAGE, ...cs])];
     document.getElementById("fZon").innerHTML = '<option value="">Todas</option>' + zs.map(z=>`<option>${z}</option>`).join("");
     document.getElementById("fCat").innerHTML = '<option value="">Todas</option>' + unionCats.map(c=>`<option>${c}</option>`).join("");
 }
@@ -355,6 +366,3 @@ window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
-
-
-
