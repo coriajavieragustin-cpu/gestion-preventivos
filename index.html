@@ -227,9 +227,9 @@ function render(lista) {
         const originalIndex = entry.originalIndex !== undefined ? entry.originalIndex : datos.indexOf(d);
         const estL = (d.ESTADO || '').toLowerCase().trim();
         
-        if(estL === "pendiente") cnt.pend++;
-        else if(estL === "en proceso") cnt.proc++;
-        else if(estL === "resuelto") cnt.res++;
+        if(estL.includes("pend")) cnt.pend++;
+        else if(estL.includes("proceso")) cnt.proc++;
+        else if(estL.includes("resuel")) cnt.res++;
 
         pZ[d.ZONA] = (pZ[d.ZONA] || 0) + 1;
         pC[d.CAT] = (pC[d.CAT] || 0) + 1;
@@ -237,7 +237,7 @@ function render(lista) {
         let lat = limpiarCoordenada(d.LAT);
         let lon = limpiarCoordenada(d.LON);
         if(!isNaN(lat) && !isNaN(lon)) {
-            const col = estL === "pendiente" ? "red" : estL === "en proceso" ? "blue" : "green";
+            const col = estL.includes("pend") ? "red" : estL.includes("proceso") ? "blue" : "green";
             L.circleMarker([lat, lon], { radius: 7, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(markerLayer);
             bounds.push([lat, lon]);
         }
@@ -261,13 +261,13 @@ function centrarEnMapa(lat, lon) {
     map.setView([lat, lon], 18);
 }
 
-// FUNCIÓN BUSCAR CORREGIDA PARA FILTRAR PENDIENTE CORRECTAMENTE
+// CORRECCIÓN FINAL DE BÚSQUEDA: CASE-INSENSITIVE PARA TODOS LOS ESTADOS
 function buscar() {
     const fId = document.getElementById("fId").value.toLowerCase().trim();
     const fFec = document.getElementById("fFec").value.toLowerCase().trim();
     const fZon = document.getElementById("fZon").value.trim();
     const fCat = document.getElementById("fCat").value.trim();
-    const fEst = document.getElementById("fEst").value.toUpperCase().trim(); // Pasamos el filtro a MAYÚSCULAS
+    const fEst = document.getElementById("fEst").value.toLowerCase().trim(); // Pasamos a minúsculas
 
     const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
         .filter(({ item: d }) => {
@@ -276,8 +276,8 @@ function buscar() {
             const matchZon = (fZon === "" || d.ZONA === fZon);
             const matchCat = (fCat === "" || d.CAT === fCat);
             
-            // Compara el estado quitando espacios y pasando a MAYÚSCULAS
-            const estadoData = (d.ESTADO || "").toUpperCase().trim();
+            // Compara datos del Drive con el filtro sin importar mayúsculas
+            const estadoData = (d.ESTADO || "").toLowerCase().trim();
             const matchEst = (fEst === "" || estadoData === fEst);
 
             return matchId && matchFec && matchZon && matchCat && matchEst;
