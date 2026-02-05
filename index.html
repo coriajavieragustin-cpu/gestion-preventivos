@@ -59,8 +59,9 @@
 
         .action-btn { padding:6px 8px; border-radius:6px; font-size:12px; color:#fff; border:none; cursor:pointer; }
         .btn-edit { background:#007bff; }
+        .btn-pin { background:#6c757d; }
 
-        /* ESTILOS DEL MODAL MODERNO */
+        /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); }
         .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 500px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
         .modal-content h3 { margin: 0 0 20px 0; font-size: 20px; color: #1a202c; font-weight: bold; }
@@ -148,7 +149,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-save-modal" onclick="guardarCambiosModal()">💾 Guardar Cambios</button>
-                <button class="btn-delete-modal" onclick="eliminarFila()">🗑️ Eliminar Fila</button>
+                <button class="btn-delete-modal" onclick="eliminarFila()">🗑️ Eliminar Tarea Permanentemente</button>
                 <button class="btn-close-modal" onclick="cerrarModal()">Cerrar</button>
             </div>
         </div>
@@ -219,7 +220,7 @@ function render(lista) {
     tbody.innerHTML = "";
     markerLayer.clearLayers();
     let cnt = { pend: 0, proc: 0, fin: 0 };
-    let pZ = {}; let pC = {}; let pM = {}; let bounds = [];
+    let pZ = {}; let pC = {}; let bounds = [];
 
     lista.forEach((entry) => {
         const d = entry.item !== undefined ? entry.item : entry;
@@ -250,7 +251,8 @@ function render(lista) {
             <td style="max-width:350px; overflow:hidden;">${d.DETALLE}</td>
             <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
             <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
-            <td>
+            <td style="display:flex; gap:5px;">
+                <button class="action-btn btn-pin" onclick="centrarEnMapa(${lat}, ${lon})">📍</button>
                 <button class="action-btn btn-edit" onclick="editarFila(${originalIndex})">Editar</button>
             </td>
         `;
@@ -262,7 +264,15 @@ function render(lista) {
     document.getElementById("res-proc").innerText = cnt.proc;
     document.getElementById("res-fin").innerText = cnt.fin;
     actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC); 
-    if(bounds.length > 0) map.fitBounds(bounds, {padding:[30,30]});
+    if(bounds.length > 0 && !isNaN(bounds[0][0])) map.fitBounds(bounds, {padding:[30,30]});
+}
+
+function centrarEnMapa(lat, lon) {
+    if(isNaN(lat) || isNaN(lon)) {
+        alert("Esta fila no tiene coordenadas válidas.");
+        return;
+    }
+    map.setView([lat, lon], 18);
 }
 
 function buscar() {
@@ -275,8 +285,8 @@ function buscar() {
     const filtrados = datos
         .map((d, i) => ({ item: d, originalIndex: i }))
         .filter(({ item: d }) =>
-            d.ID.toLowerCase().includes(id) && 
-            d.FECHA.toLowerCase().includes(fec) &&
+            String(d.ID).toLowerCase().includes(id) && 
+            String(d.FECHA).toLowerCase().includes(fec) &&
             (zon === "" || d.ZONA === zon) &&
             (cat === "" || d.CAT === cat) &&
             (est === "" || d.ESTADO === est)
@@ -304,7 +314,7 @@ function agregarFila() {
     editarFila(0);
 }
 
-function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; render([]); } }
+function borrarTodo() { if(confirm("¿Borrar todo permanentemente?")) { datos = []; render([]); } }
 
 function exportarCSV() {
     let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO,CIERRE\n";
@@ -313,8 +323,7 @@ function exportarCSV() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'preventivos.csv'; a.click();
 }
 
-/* --- LOGICA DEL MODAL --- */
-
+/* MODAL */
 function editarFila(idx) {
     const d = datos[idx];
     document.getElementById("modal_index").value = idx;
@@ -331,7 +340,6 @@ function editarFila(idx) {
     const catSel = document.getElementById("m_cat");
     const cs = [...new Set([...CATEGORIES_FROM_IMAGE, ...datos.map(x=>x.CAT).filter(Boolean)])];
     catSel.innerHTML = cs.map(c => `<option ${c===d.CAT?'selected':''}>${c}</option>`).join("");
-
     document.getElementById("editModal").style.display = "flex";
 }
 
@@ -358,9 +366,10 @@ async function guardarCambiosModal() {
 }
 
 async function eliminarFila() {
-    if(!confirm("¿Eliminar permanentemente?")) return;
+    if(!confirm("¿Eliminar esta fila de Google Sheets permanentemente?")) return;
     const idx = document.getElementById("modal_index").value;
     const rowObj = datos[idx];
+    actualizarAviso('loading', '🗑️ Eliminando...');
     await enviarADrive('delete', rowObj);
     datos.splice(idx, 1);
     cerrarModal();
@@ -371,7 +380,6 @@ async function enviarADrive(accion, objeto) {
     const params = new URLSearchParams();
     params.append('action', accion);
     params.append('row', JSON.stringify(objeto));
-    actualizarAviso('loading', '⏳ Sincronizando...');
     try {
         await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
         actualizarAviso('ok', '✅ Sincronizado');
@@ -382,6 +390,4 @@ window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
-
-
 
