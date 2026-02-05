@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        /* MANTENGO TUS ESTILOS ORIGINALES EXACTAMENTE IGUAL */
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
         .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
         .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
@@ -22,7 +21,7 @@
         .card-conteo span { display: block; font-size: 22px; margin-top: 4px; }
         .conteo-pendiente { border-top: 4px solid #dc3545; color: #dc3545; }
         .conteo-proceso { border-top: 4px solid #007bff; color: #007bff; }
-        .conteo-finalizado { border-top: 4px solid #28a745; color: #28a745; }
+        .conteo-resuelto { border-top: 4px solid #28a745; color: #28a745; }
 
         .panel-central { display: grid; grid-template-columns: 1.6fr 1fr; gap: 15px; margin-bottom: 15px; height: 450px; }
         #mapa-general { height: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -57,7 +56,6 @@
         .btn-edit { background:#007bff; }
         .btn-pin { background:#6c757d; }
 
-        /* ESTILOS DEL MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); }
         .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 500px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
         .modal-content h3 { margin: 0 0 20px 0; font-size: 20px; color: #1a202c; font-weight: bold; }
@@ -87,7 +85,7 @@
         <div class="card-conteo">TOTAL <span id="res-total">0</span></div>
         <div class="card-conteo conteo-pendiente">PENDIENTES <span id="res-pend">0</span></div>
         <div class="card-conteo conteo-proceso">EN PROCESO <span id="res-proc">0</span></div>
-        <div class="card-conteo conteo-finalizado">FINALIZADOS <span id="res-fin">0</span></div>
+        <div class="card-conteo conteo-resuelto">RESUELTOS <span id="res-fin">0</span></div>
     </div>
 
     <div class="panel-central">
@@ -114,12 +112,12 @@
             <div class="grupo-filtro"><label>Fecha</label><input type="text" id="fFec" class="input-busqueda" onkeyup="buscar()"></div>
             <div class="grupo-filtro"><label>Zona</label><select id="fZon" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
             <div class="grupo-filtro"><label>Categoría</label><select id="fCat" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
-            <div class="grupo-filtro"><label>Estado</label>
+            <div class="grupo-filtro">
+                <label>Estado</label>
                 <select id="fEst" class="input-busqueda" onchange="buscar()">
                     <option value="">Todos</option>
-                    <option value="En proceso">En proceso</option>
-                    <option value="Finalizado">Finalizado</option>
                     <option value="PENDIENTE">PENDIENTE</option>
+                    <option value="En proceso">En proceso</option>
                     <option value="RESUELTO">RESUELTO</option>
                 </select>
             </div>
@@ -148,11 +146,11 @@
                 <div class="form-group"><label>Longitud</label><input type="text" id="m_lon"></div>
                 <div class="form-group"><label>Escalera</label><select id="m_esc"><option>SI</option><option>NO</option></select></div>
                 <div class="form-group"><label>Categoría</label><select id="m_cat"></select></div>
-                <div class="form-group"><label>Estado</label>
+                <div class="form-group">
+                    <label>Estado</label>
                     <select id="m_estado">
                         <option value="PENDIENTE">PENDIENTE</option>
                         <option value="En proceso">En proceso</option>
-                        <option value="Finalizado">Finalizado</option>
                         <option value="RESUELTO">RESUELTO</option>
                     </select>
                 </div>
@@ -160,7 +158,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-save-modal" onclick="guardarCambiosModal()">💾 Guardar Cambios</button>
-                <button class="btn-delete-modal" onclick="eliminarFila()">🗑️ Eliminar Fila</button>
+                <button class="btn-delete-modal" onclick="eliminarFila()">🗑️ Eliminar Fila Permanentemente</button>
                 <button class="btn-close-modal" onclick="cerrarModal()">Cerrar</button>
             </div>
         </div>
@@ -177,11 +175,7 @@ let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
 let markerLayer = L.layerGroup().addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// TUS CATEGORÍAS ORIGINALES
-const CATEGORIES_FROM_IMAGE = [
-    "POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJ E", "PODA", 
-    "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"
-];
+const CATEGORIES_FROM_IMAGE = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJ E", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
 function actualizarAviso(tipo, mensaje) {
     const bar = document.getElementById("statusBar");
@@ -193,21 +187,20 @@ function actualizarAviso(tipo, mensaje) {
 function limpiarCoordenada(valor) {
     if (!valor) return NaN;
     let s = valor.toString().replace(/\s/g, '').trim();
-    let esNegativo = s.startsWith('-');
     let soloNumeros = s.replace(/[^0-9]/g, '');
     if (soloNumeros.length < 4) return NaN;
-    let res = parseFloat((esNegativo ? '-' : '') + soloNumeros.substring(0, 2) + "." + soloNumeros.substring(2));
+    let res = parseFloat((s.startsWith('-') ? '-' : '') + soloNumeros.substring(0, 2) + "." + soloNumeros.substring(2));
     return (res > 90 || res < -90) ? NaN : res;
 }
 
 async function cargarDesdeGoogleSheets() {
-    actualizarAviso('loading', '⏳ Conectando con Google Drive...');
+    actualizarAviso('loading', '⏳ Sincronizando Drive...');
     try {
         const resp = await fetch(SHEET_URL + "&cb=" + Date.now());
         const csvText = await resp.text();
         procesarCSV(csvText);
-        actualizarAviso('ok', '✅ Datos de Drive cargados');
-    } catch (e) { actualizarAviso('error', '❌ Error de sincronización'); }
+        actualizarAviso('ok', '✅ Sincronizado');
+    } catch (e) { actualizarAviso('error', '❌ Error Drive'); }
 }
 
 function procesarCSV(texto) {
@@ -217,32 +210,27 @@ function procesarCSV(texto) {
         if(!lineas[i].trim()) continue;
         const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
         if(c.length < 6) continue;
-        datos.push({
-            ID: c[0], FECHA: c[1], ZONA: c[2], DETALLE: c[3],
-            LAT: c[4], LON: c[5], ESC: c[6], CAT: c[7],
-            ESTADO: c[8] || "PENDIENTE", CIERRE: c[9] || ""
-        });
+        datos.push({ ID: c[0], FECHA: c[1], ZONA: c[2], DETALLE: c[3], LAT: c[4], LON: c[5], ESC: c[6], CAT: c[7], ESTADO: c[8] || "PENDIENTE", CIERRE: c[9] || "" });
     }
     actualizarSelects();
     buscar();
 }
 
-// RENDER CORREGIDO CON BOTÓN PIN Y BORRAR
 function render(lista) {
     const tbody = document.querySelector("#tabla tbody");
     tbody.innerHTML = "";
     markerLayer.clearLayers();
-    let cnt = { pend: 0, proc: 0, fin: 0 };
+    let cnt = { pend: 0, proc: 0, res: 0 };
     let pZ = {}; let pC = {}; let bounds = [];
 
     lista.forEach((entry) => {
-        const d = entry.item !== undefined ? entry.item : entry;
+        const d = entry.item || entry;
         const originalIndex = entry.originalIndex !== undefined ? entry.originalIndex : datos.indexOf(d);
         const estL = (d.ESTADO || '').toLowerCase();
         
         if(estL.includes("pend")) cnt.pend++;
         else if(estL.includes("proc")) cnt.proc++;
-        else if(estL.includes("fin") || estL.includes("resu")) cnt.fin++;
+        else if(estL.includes("resu")) cnt.res++;
 
         pZ[d.ZONA] = (pZ[d.ZONA] || 0) + 1;
         pC[d.CAT] = (pC[d.CAT] || 0) + 1;
@@ -251,40 +239,29 @@ function render(lista) {
         let lon = limpiarCoordenada(d.LON);
         if(!isNaN(lat)) {
             const col = estL.includes("pend") ? "red" : estL.includes("proc") ? "blue" : "green";
-            const m = L.circleMarker([lat, lon], { radius: 7, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
-            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
-            markerLayer.addLayer(m);
+            L.circleMarker([lat, lon], { radius: 7, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 }).addTo(markerLayer);
             bounds.push([lat, lon]);
         }
 
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
-            <td style="max-width:350px;">${d.DETALLE}</td>
-            <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
-            <td><b>${d.ESTADO}</b></td><td>${d.CIERRE}</td>
-            <td style="display:flex; gap:5px;">
-                <button class="action-btn btn-pin" onclick="centrarEnMapa(${lat}, ${lon})">📍</button>
-                <button class="action-btn btn-edit" onclick="editarFila(${originalIndex})">📝</button>
-            </td>
-        `;
+        tr.innerHTML = `<td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td><td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td><td><b>${d.ESTADO}</b></td><td>${d.CIERRE}</td>
+            <td style="display:flex; gap:5px;"><button class="action-btn btn-pin" onclick="centrarEnMapa(${lat}, ${lon})">📍</button><button class="action-btn btn-edit" onclick="editarFila(${originalIndex})">📝</button></td>`;
         tbody.appendChild(tr);
     });
 
     document.getElementById("res-total").innerText = lista.length;
     document.getElementById("res-pend").innerText = cnt.pend;
     document.getElementById("res-proc").innerText = cnt.proc;
-    document.getElementById("res-fin").innerText = cnt.fin;
+    document.getElementById("res-fin").innerText = cnt.res;
     actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC); 
     if(bounds.length > 0) map.fitBounds(bounds, {padding:[30,30]});
 }
 
 function centrarEnMapa(lat, lon) {
-    if(isNaN(lat) || isNaN(lon)) return alert("Sin coordenadas válidas");
+    if(isNaN(lat) || isNaN(lon)) return alert("Sin coordenadas.");
     map.setView([lat, lon], 18);
 }
 
-// BUSCAR CORREGIDO CON TUS NUEVOS ESTADOS
 function buscar() {
     const id = document.getElementById("fId").value.toLowerCase();
     const fec = document.getElementById("fFec").value.toLowerCase();
@@ -292,15 +269,8 @@ function buscar() {
     const cat = document.getElementById("fCat").value;
     const est = document.getElementById("fEst").value;
 
-    const filtrados = datos
-        .map((d, i) => ({ item: d, originalIndex: i }))
-        .filter(({ item: d }) =>
-            d.ID.toLowerCase().includes(id) && 
-            d.FECHA.toLowerCase().includes(fec) &&
-            (zon === "" || d.ZONA === zon) &&
-            (cat === "" || d.CAT === cat) &&
-            (est === "" || d.ESTADO === est) // Comparación exacta para los nuevos estados
-        );
+    const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
+        .filter(({ item: d }) => d.ID.toLowerCase().includes(id) && d.FECHA.toLowerCase().includes(fec) && (zon === "" || d.ZONA === zon) && (cat === "" || d.CAT === cat) && (est === "" || d.ESTADO === est));
     render(filtrados);
 }
 
@@ -340,18 +310,7 @@ function cerrarModal() { document.getElementById("editModal").style.display = "n
 
 async function guardarCambiosModal() {
     const idx = document.getElementById("modal_index").value;
-    const rowObj = {
-        ID: document.getElementById("m_id").value,
-        FECHA: document.getElementById("m_fecha").value,
-        ZONA: document.getElementById("m_zona").value,
-        DETALLE: document.getElementById("m_detalle").value,
-        LAT: document.getElementById("m_lat").value,
-        LON: document.getElementById("m_lon").value,
-        ESC: document.getElementById("m_esc").value,
-        CAT: document.getElementById("m_cat").value,
-        ESTADO: document.getElementById("m_estado").value,
-        CIERRE: document.getElementById("m_cierre").value
-    };
+    const rowObj = { ID: document.getElementById("m_id").value, FECHA: document.getElementById("m_fecha").value, ZONA: document.getElementById("m_zona").value, DETALLE: document.getElementById("m_detalle").value, LAT: document.getElementById("m_lat").value, LON: document.getElementById("m_lon").value, ESC: document.getElementById("m_esc").value, CAT: document.getElementById("m_cat").value, ESTADO: document.getElementById("m_estado").value, CIERRE: document.getElementById("m_cierre").value };
     datos[idx] = rowObj;
     cerrarModal();
     buscar();
@@ -359,10 +318,9 @@ async function guardarCambiosModal() {
 }
 
 async function eliminarFila() {
-    if(!confirm("¿Eliminar permanentemente?")) return;
+    if(!confirm("¿Eliminar tarea permanentemente?")) return;
     const idx = document.getElementById("modal_index").value;
-    const rowObj = datos[idx];
-    await enviarADrive('delete', rowObj);
+    await enviarADrive('delete', datos[idx]);
     datos.splice(idx, 1);
     cerrarModal();
     buscar();
@@ -380,15 +338,21 @@ async function enviarADrive(accion, objeto) {
 }
 
 function agregarFila() { 
-    const nuevoId = "N-" + Math.floor(Math.random()*1000);
-    datos.unshift({ ID: nuevoId, FECHA: new Date().toLocaleDateString(), ZONA: "", DETALLE: "", LAT: "", LON: "", ESC: "NO", CAT: "", ESTADO: "PENDIENTE", CIERRE: "" }); 
+    datos.unshift({ ID: "N-" + Math.floor(Math.random()*1000), FECHA: new Date().toLocaleDateString(), ZONA: "", DETALLE: "", LAT: "", LON: "", ESC: "NO", CAT: "", ESTADO: "PENDIENTE", CIERRE: "" }); 
     buscar(); 
     editarFila(0);
 }
 
 function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; render([]); } }
 
+function exportarCSV() {
+    let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO,CIERRE\n";
+    datos.forEach(d => { csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}","${d.CIERRE}"\n`; });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'preventivos.csv'; a.click();
+}
+
 window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
+
