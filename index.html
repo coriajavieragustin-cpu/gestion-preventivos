@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Gestión Preventiva - Versión Final</title>
+    <title>Panel de Gestión Preventiva - Full Sync</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -36,7 +36,6 @@
         .controles { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
 
-        /* ESTILOS BOTONES SEGUN IMAGEN */
         button { padding: 10px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
         .btn-nueva { background: #28a745; } 
         .btn-drive { background: #1fa463; }
@@ -54,16 +53,26 @@
         .tabla-principal th { padding: 12px; background: #f8f9fa; color: #666; font-size: 11px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
         .tabla-principal td { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #eee; }
         
-        /* FILAS POR ESTADO */
         .estado-pendiente { background-color: #fff5f5; }
         .estado-enproceso { background-color: #f0f7ff; }
         .estado-finalizado { background-color: #f2fff5; }
-        .etiqueta-id { background: #333; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 10px; }
 
         .action-btn { padding:6px 8px; border-radius:6px; font-size:12px; color:#fff; border:none; cursor:pointer; }
         .btn-edit { background:#007bff; }
-        .btn-save { background:#28a745; }
-        .btn-cancel { background:#6c757d; }
+
+        /* ESTILOS DEL MODAL MODERNO */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 500px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+        .modal-content h3 { margin: 0 0 20px 0; font-size: 20px; color: #1a202c; font-weight: bold; }
+        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full-width { grid-column: span 2; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 12px; font-weight: 600; color: #4a5568; }
+        .form-group input, .form-group select { padding: 10px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #f8fafc; width: 100%; box-sizing: border-box; }
+        .modal-footer { margin-top: 25px; display: flex; flex-direction: column; gap: 10px; }
+        .btn-save-modal { background: #5d5fef; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .btn-delete-modal { background: transparent; color: #e53e3e; border: 1px solid #e53e3e; padding: 10px; border-radius: 12px; cursor: pointer; font-size: 14px; }
+        .btn-close-modal { background: #edf2f7; color: #4a5568; border: none; padding: 10px; border-radius: 12px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -105,7 +114,7 @@
         
         <div class="filtros-grid">
             <div class="grupo-filtro"><label>ID Tarea</label><input type="text" id="fId" class="input-busqueda" onkeyup="buscar()"></div>
-            <div class="grupo-filtro"><label>Fecha</label><input type="text" id="fFec" class="input-busqueda" placeholder="Buscar fecha..." onkeyup="buscar()"></div>
+            <div class="grupo-filtro"><label>Fecha</label><input type="text" id="fFec" class="input-busqueda" onkeyup="buscar()"></div>
             <div class="grupo-filtro"><label>Zona</label><select id="fZon" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
             <div class="grupo-filtro"><label>Categoría</label><select id="fCat" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
             <div class="grupo-filtro"><label>Estado</label><select id="fEst" class="input-busqueda" onchange="buscar()"><option value="">Todos</option><option>Pendiente</option><option>En proceso</option><option>Finalizado</option></select></div>
@@ -119,6 +128,30 @@
             </thead>
             <tbody></tbody>
         </table>
+    </div>
+
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Detalle de Tarea</h3>
+            <input type="hidden" id="modal_index">
+            <div class="grid-form">
+                <div class="form-group"><label>ID</label><input type="text" id="m_id" readonly style="background:#eee"></div>
+                <div class="form-group"><label>Fecha</label><input type="text" id="m_fecha"></div>
+                <div class="form-group full-width"><label>Zona</label><input type="text" id="m_zona"></div>
+                <div class="form-group full-width"><label>Detalle / Actividad</label><input type="text" id="m_detalle"></div>
+                <div class="form-group"><label>Latitud</label><input type="text" id="m_lat"></div>
+                <div class="form-group"><label>Longitud</label><input type="text" id="m_lon"></div>
+                <div class="form-group"><label>Escalera</label><select id="m_esc"><option>SI</option><option>NO</option></select></div>
+                <div class="form-group"><label>Categoría</label><select id="m_cat"></select></div>
+                <div class="form-group"><label>Estado</label><select id="m_estado"><option>Pendiente</option><option>En proceso</option><option>Finalizado</option></select></div>
+                <div class="form-group"><label>Cierre</label><input type="text" id="m_cierre"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-save-modal" onclick="guardarCambiosModal()">💾 Guardar Cambios</button>
+                <button class="btn-delete-modal" onclick="eliminarFila()">🗑️ Eliminar Fila</button>
+                <button class="btn-close-modal" onclick="cerrarModal()">Cerrar</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -191,21 +224,14 @@ function render(lista) {
     lista.forEach((entry) => {
         const d = entry.item !== undefined ? entry.item : entry;
         const originalIndex = entry.originalIndex !== undefined ? entry.originalIndex : datos.indexOf(d);
-
         const estL = (d.ESTADO || '').toLowerCase();
+        
         if(estL.includes("pend")) cnt.pend++;
         else if(estL.includes("proc")) cnt.proc++;
         else if(estL.includes("fin")) cnt.fin++;
 
         pZ[d.ZONA] = (pZ[d.ZONA] || 0) + 1;
         pC[d.CAT] = (pC[d.CAT] || 0) + 1;
-        if ((d.CIERRE || '').includes("/")) {
-            let parts = d.CIERRE.split("/");
-            if(parts.length >= 3) {
-                let m = parts[1] + "/" + parts[2];
-                pM[m] = (pM[m] || 0) + 1;
-            }
-        }
 
         let lat = limpiarCoordenada(d.LAT);
         let lon = limpiarCoordenada(d.LON);
@@ -220,17 +246,11 @@ function render(lista) {
         const tr = document.createElement("tr");
         tr.className = `estado-${estL.replace(" ","")}`;
         tr.innerHTML = `
-            <td>${escapeHtml(d.ID)}</td><td>${escapeHtml(d.FECHA)}</td><td>${escapeHtml(d.ZONA)}</td>
-            <td style="max-width:350px; overflow:hidden;">${escapeHtml(d.DETALLE)}</td>
-            <td>${escapeHtml(d.LAT)}</td><td>${escapeHtml(d.LON)}</td><td>${escapeHtml(d.ESC)}</td><td>${escapeHtml(d.CAT)}</td>
-            <td><select onchange="cambiarEstadoDirecto(${originalIndex},this.value)">
-                <option ${estL.includes("pend")?"selected":""}>Pendiente</option>
-                <option ${estL.includes("proc")?"selected":""}>En proceso</option>
-                <option ${estL.includes("fin")?"selected":""}>Finalizado</option>
-            </select></td>
-            <td>${escapeHtml(d.CIERRE)}</td>
+            <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
+            <td style="max-width:350px; overflow:hidden;">${d.DETALLE}</td>
+            <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
+            <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
             <td>
-                <button onclick="centrarMapa(${isNaN(lat)?'null':lat},${isNaN(lon)?'null':lon})" style="background:#666">📍</button>
                 <button class="action-btn btn-edit" onclick="editarFila(${originalIndex})">Editar</button>
             </td>
         `;
@@ -241,7 +261,7 @@ function render(lista) {
     document.getElementById("res-pend").innerText = cnt.pend;
     document.getElementById("res-proc").innerText = cnt.proc;
     document.getElementById("res-fin").innerText = cnt.fin;
-    actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC); actualizarBox("stats-mes", pM);
+    actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC); 
     if(bounds.length > 0) map.fitBounds(bounds, {padding:[30,30]});
 }
 
@@ -264,32 +284,10 @@ function buscar() {
     render(filtrados);
 }
 
-function exportarCSV() {
-    let csv = "ID,FECHA,ZONA,DETALLE,LATITUD,LONGITUD,ESCALERA,CATEGORIA,ESTADO,FINALIZACION\n";
-    datos.forEach(d => {
-        csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}","${d.CIERRE}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "preventivos_export_" + new Date().toLocaleDateString() + ".csv";
-    link.click();
-}
-
-function importarCSV(e) {
-    const reader = new FileReader();
-    reader.onload = () => {
-        procesarCSV(reader.result);
-        actualizarAviso('ok', '📤 Archivo CSV importado');
-    };
-    reader.readAsText(e.target.files[0]);
-}
-
 function actualizarSelects() {
     const zs = [...new Set(datos.map(d => d.ZONA))].sort();
     const cs = [...new Set(datos.map(d => d.CAT))].sort();
     const unionCats = [...new Set([...CATEGORIES_FROM_IMAGE, ...cs.filter(Boolean)])];
-
     document.getElementById("fZon").innerHTML = '<option value="">Todas</option>' + zs.map(z=>`<option>${z}</option>`).join("");
     document.getElementById("fCat").innerHTML = '<option value="">Todas</option>' + unionCats.map(c=>`<option>${c}</option>`).join("");
 }
@@ -299,127 +297,84 @@ function actualizarBox(id, obj) {
     document.getElementById(id).innerHTML = '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
 }
 
-function agregarFila() { datos.unshift({ ID:"NUEVO", FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" }); actualizarSelects(); buscar(); }
-
-function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; render([]); actualizarSelects(); } }
-
-function centrarMapa(lat, lon) {
-    if (lat === null || lon === null || isNaN(lat) || isNaN(lon)) { alert("Coordenadas no válidas."); return; }
-    map.setView([lat, lon], 18);
+function agregarFila() { 
+    const nuevoId = "N-" + Math.floor(Math.random()*1000);
+    datos.unshift({ ID: nuevoId, FECHA: new Date().toLocaleDateString(), ZONA: "", DETALLE: "", LAT: "", LON: "", ESC: "NO", CAT: "", ESTADO: "Pendiente", CIERRE: "" }); 
+    buscar(); 
+    editarFila(0);
 }
 
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/&/g, "&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; render([]); } }
+
+function exportarCSV() {
+    let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO,CIERRE\n";
+    datos.forEach(d => { csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}","${d.CIERRE}"\n`; });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'preventivos.csv'; a.click();
 }
 
-/* ------------------ Edición y sincronización SIN CORS ------------------ */
+/* --- LOGICA DEL MODAL --- */
 
-let filaEditando = null;
+function editarFila(idx) {
+    const d = datos[idx];
+    document.getElementById("modal_index").value = idx;
+    document.getElementById("m_id").value = d.ID;
+    document.getElementById("m_fecha").value = d.FECHA;
+    document.getElementById("m_zona").value = d.ZONA;
+    document.getElementById("m_detalle").value = d.DETALLE;
+    document.getElementById("m_lat").value = d.LAT;
+    document.getElementById("m_lon").value = d.LON;
+    document.getElementById("m_esc").value = d.ESC;
+    document.getElementById("m_estado").value = d.ESTADO;
+    document.getElementById("m_cierre").value = d.CIERRE;
+    
+    const catSel = document.getElementById("m_cat");
+    const cs = [...new Set([...CATEGORIES_FROM_IMAGE, ...datos.map(x=>x.CAT).filter(Boolean)])];
+    catSel.innerHTML = cs.map(c => `<option ${c===d.CAT?'selected':''}>${c}</option>`).join("");
 
-function editarFila(originalIndex) {
-    if (filaEditando !== null) { alert("Guarda o cancela la edición actual."); return; }
-    const rowData = datos[originalIndex];
-    filaEditando = originalIndex;
-    const tbody = document.querySelector("#tabla tbody");
-    const trs = Array.from(tbody.querySelectorAll("tr"));
-    let tr = trs.find(t => t.children[0] && t.children[0].innerText === String(rowData.ID));
-    if(!tr) tr = trs[originalIndex];
-
-    tr.innerHTML = `
-        <td><input style="width:90px" id="e_id" value="${escapeAttr(rowData.ID)}"></td>
-        <td><input style="width:110px" id="e_fecha" value="${escapeAttr(rowData.FECHA)}"></td>
-        <td><input style="width:120px" id="e_zona" value="${escapeAttr(rowData.ZONA)}"></td>
-        <td><input style="width:100%;max-width:350px" id="e_detalle" value="${escapeAttr(rowData.DETALLE)}"></td>
-        <td><input style="width:80px" id="e_lat" value="${escapeAttr(rowData.LAT)}"></td>
-        <td><input style="width:80px" id="e_lon" value="${escapeAttr(rowData.LON)}"></td>
-        <td><input style="width:70px" id="e_esc" value="${escapeAttr(rowData.ESC)}"></td>
-        <td><select id="e_cat">${getCategoryOptions(rowData.CAT)}</select></td>
-        <td><select id="e_estado">
-            <option ${rowData.ESTADO === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-            <option ${rowData.ESTADO === 'En proceso' ? 'selected' : ''}>En proceso</option>
-            <option ${rowData.ESTADO === 'Finalizado' ? 'selected' : ''}>Finalizado</option>
-        </select></td>
-        <td><input style="width:120px" id="e_cierre" value="${escapeAttr(rowData.CIERRE)}"></td>
-        <td>
-            <button class="action-btn btn-save" onclick="guardarEdicion(${originalIndex})">Guardar</button>
-            <button class="action-btn btn-cancel" onclick="cancelarEdicion()">Cancelar</button>
-        </td>
-    `;
+    document.getElementById("editModal").style.display = "flex";
 }
 
-function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;').replace(/'/g,"&#39;"); }
+function cerrarModal() { document.getElementById("editModal").style.display = "none"; }
 
-function getCategoryOptions(selected) {
-    const cs = [...new Set(datos.map(d => d.CAT).filter(Boolean))];
-    const union = [...new Set([...CATEGORIES_FROM_IMAGE, ...cs])];
-    return union.map(c => `<option ${c === selected ? 'selected' : ''}>${c}</option>`).join("");
-}
-
-function cancelarEdicion() { filaEditando = null; buscar(); }
-
-// Función principal para guardar evitando el error CORS
-async function guardarEdicion(originalIndex) {
+async function guardarCambiosModal() {
+    const idx = document.getElementById("modal_index").value;
     const rowObj = {
-        ID: document.getElementById("e_id").value,
-        FECHA: document.getElementById("e_fecha").value,
-        ZONA: document.getElementById("e_zona").value,
-        DETALLE: document.getElementById("e_detalle").value,
-        LAT: document.getElementById("e_lat").value,
-        LON: document.getElementById("e_lon").value,
-        ESC: document.getElementById("e_esc").value,
-        CAT: document.getElementById("e_cat").value,
-        ESTADO: document.getElementById("e_estado").value,
-        CIERRE: document.getElementById("e_cierre").value
+        ID: document.getElementById("m_id").value,
+        FECHA: document.getElementById("m_fecha").value,
+        ZONA: document.getElementById("m_zona").value,
+        DETALLE: document.getElementById("m_detalle").value,
+        LAT: document.getElementById("m_lat").value,
+        LON: document.getElementById("m_lon").value,
+        ESC: document.getElementById("m_esc").value,
+        CAT: document.getElementById("m_cat").value,
+        ESTADO: document.getElementById("m_estado").value,
+        CIERRE: document.getElementById("m_cierre").value
     };
-
-    datos[originalIndex] = rowObj;
-    filaEditando = null;
+    datos[idx] = rowObj;
+    cerrarModal();
     buscar();
-
-    if (!GAPP_URL) { actualizarAviso('error', '❌ Falta GAPP_URL'); return; }
-
-    actualizarAviso('loading', '⏳ Sincronizando con Drive...');
-
-    try {
-        // SOLUCIÓN AL CORS: Usar modo 'no-cors' y formato formulario
-        const params = new URLSearchParams();
-        params.append('action', 'update');
-        params.append('row', JSON.stringify(rowObj));
-
-        await fetch(GAPP_URL, {
-            method: 'POST',
-            mode: 'no-cors', 
-            cache: 'no-cache',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: params
-        });
-
-        // Con no-cors no podemos leer la respuesta del servidor, 
-        // pero si no saltó al 'catch', el envío fue exitoso.
-        actualizarAviso('ok', '✅ Cambios enviados a Drive');
-    } catch (err) {
-        console.error(err);
-        actualizarAviso('error', '❌ Error al conectar con Drive');
-    }
+    await enviarADrive('update', rowObj);
 }
 
-// Función para cambiar estado rápido desde el select de la tabla
-async function cambiarEstadoDirecto(idx, val) {
-    datos[idx].ESTADO = val;
-    // Si es finalizado, poner fecha de hoy si está vacío
-    if(val === "Finalizado" && !datos[idx].CIERRE) datos[idx].CIERRE = new Date().toLocaleDateString();
-    
-    // Simular clic en guardar para sincronizar
+async function eliminarFila() {
+    if(!confirm("¿Eliminar permanentemente?")) return;
+    const idx = document.getElementById("modal_index").value;
+    const rowObj = datos[idx];
+    await enviarADrive('delete', rowObj);
+    datos.splice(idx, 1);
+    cerrarModal();
+    buscar();
+}
+
+async function enviarADrive(accion, objeto) {
     const params = new URLSearchParams();
-    params.append('action', 'update');
-    params.append('row', JSON.stringify(datos[idx]));
-    
-    actualizarAviso('loading', '⏳ Actualizando estado...');
+    params.append('action', accion);
+    params.append('row', JSON.stringify(objeto));
+    actualizarAviso('loading', '⏳ Sincronizando...');
     try {
         await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
-        actualizarAviso('ok', '✅ Estado actualizado');
-        buscar();
+        actualizarAviso('ok', '✅ Sincronizado');
     } catch(e) { actualizarAviso('error', '❌ Error'); }
 }
 
@@ -427,7 +382,6 @@ window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
-
 
 
 
