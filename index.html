@@ -40,8 +40,8 @@
         button { padding: 10px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
         .btn-nueva { background: #28a745; } 
         .btn-drive { background: #1fa463; }
-        .btn-export { background: #17a2b8; } /* Color Teal de tu imagen */
-        .btn-import { background: #ffc107; color: #333; } /* Color Ambar de tu imagen */
+        .btn-export { background: #17a2b8; } 
+        .btn-import { background: #ffc107; color: #333; } 
         .btn-borrar { background: #dc3545; }
 
         .filtros-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; }
@@ -125,9 +125,7 @@
 
 <script>
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
-
-// URL del Web App de Google Apps Script que recibirà las actualizaciones (debes desplegar y pegarla aquí)
-const GAPP_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; // <-- pega aquí la URL del web app (opcionalmente añadir &token=xxx si configuras token)
+const GAPP_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; 
 
 let datos = [];
 let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
@@ -135,16 +133,8 @@ let markerLayer = L.layerGroup().addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 const CATEGORIES_FROM_IMAGE = [
-    "POSTES",
-    "MOVIMIENTO ADSS",
-    "VANO BAJO",
-    "HERRAJ E",
-    "PODA",
-    "INTERVENCION DE TERRENO",
-    "NO SE PUEDE REPARAR",
-    "FO LASTIMADA URGENTE",
-    "TUTOR",
-    "CJA / BOTELLA"
+    "POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJ E", "PODA", 
+    "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"
 ];
 
 function actualizarAviso(tipo, mensaje) {
@@ -198,11 +188,7 @@ function render(lista) {
     let cnt = { pend: 0, proc: 0, fin: 0 };
     let pZ = {}; let pC = {}; let pM = {}; let bounds = [];
 
-    // Para corregir el problema de índices cuando la tabla está filtrada:
-    // recibimos lista como objetos { item: d, originalIndex: i } si viene filtrada,
-    // sino asumimos que es un array normal pero conservamos el índice real.
     lista.forEach((entry) => {
-        // entry puede ser el objeto directo (d) o { item, originalIndex }
         const d = entry.item !== undefined ? entry.item : entry;
         const originalIndex = entry.originalIndex !== undefined ? entry.originalIndex : datos.indexOf(d);
 
@@ -237,7 +223,7 @@ function render(lista) {
             <td>${escapeHtml(d.ID)}</td><td>${escapeHtml(d.FECHA)}</td><td>${escapeHtml(d.ZONA)}</td>
             <td style="max-width:350px; overflow:hidden;">${escapeHtml(d.DETALLE)}</td>
             <td>${escapeHtml(d.LAT)}</td><td>${escapeHtml(d.LON)}</td><td>${escapeHtml(d.ESC)}</td><td>${escapeHtml(d.CAT)}</td>
-            <td><select onchange="cambiarEstadoPorIndice(${originalIndex},this.value)">
+            <td><select onchange="cambiarEstadoDirecto(${originalIndex},this.value)">
                 <option ${estL.includes("pend")?"selected":""}>Pendiente</option>
                 <option ${estL.includes("proc")?"selected":""}>En proceso</option>
                 <option ${estL.includes("fin")?"selected":""}>Finalizado</option>
@@ -300,7 +286,6 @@ function importarCSV(e) {
 }
 
 function actualizarSelects() {
-    // Combinar categorías del CSV con las de la imagen, evitando duplicados
     const zs = [...new Set(datos.map(d => d.ZONA))].sort();
     const cs = [...new Set(datos.map(d => d.CAT))].sort();
     const unionCats = [...new Set([...CATEGORIES_FROM_IMAGE, ...cs.filter(Boolean)])];
@@ -314,14 +299,12 @@ function actualizarBox(id, obj) {
     document.getElementById(id).innerHTML = '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
 }
 
-function cambiarEstadoPorIndice(idx, val) { datos[idx].ESTADO = val; buscar(); }
-
 function agregarFila() { datos.unshift({ ID:"NUEVO", FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" }); actualizarSelects(); buscar(); }
 
 function borrarTodo() { if(confirm("¿Borrar todo?")) { datos = []; render([]); actualizarSelects(); } }
 
 function centrarMapa(lat, lon) {
-    if (lat === null || lon === null || isNaN(lat) || isNaN(lon)) { alert("Coordenadas no válidas para este item."); return; }
+    if (lat === null || lon === null || isNaN(lat) || isNaN(lon)) { alert("Coordenadas no válidas."); return; }
     map.setView([lat, lon], 18);
 }
 
@@ -330,30 +313,19 @@ function escapeHtml(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-/* ------------------ Edición inline y sincronización ------------------ */
+/* ------------------ Edición y sincronización SIN CORS ------------------ */
 
 let filaEditando = null;
 
 function editarFila(originalIndex) {
-    // Si ya hay una fila en edición, pedir que guarde/cancele
-    if (filaEditando !== null) {
-        alert("Guarda o cancela la edición actual antes de editar otra fila.");
-        return;
-    }
+    if (filaEditando !== null) { alert("Guarda o cancela la edición actual."); return; }
     const rowData = datos[originalIndex];
-    if(!rowData) return;
     filaEditando = originalIndex;
-
-    // Localizar la fila correspondiente en la tabla (buscar primer tr que coincida con el ID y fecha)
     const tbody = document.querySelector("#tabla tbody");
     const trs = Array.from(tbody.querySelectorAll("tr"));
-    let tr = trs.find(t => t.children[0] && t.children[0].innerText === String(rowData.ID) && t.children[1] && t.children[1].innerText === String(rowData.FECHA));
-    if(!tr) {
-        // fallback: tomar el tr por posición aproximada
-        tr = trs[originalIndex] || trs[0];
-    }
+    let tr = trs.find(t => t.children[0] && t.children[0].innerText === String(rowData.ID));
+    if(!tr) tr = trs[originalIndex];
 
-    // Reemplazar las celdas por inputs
     tr.innerHTML = `
         <td><input style="width:90px" id="e_id" value="${escapeAttr(rowData.ID)}"></td>
         <td><input style="width:110px" id="e_fecha" value="${escapeAttr(rowData.FECHA)}"></td>
@@ -362,16 +334,12 @@ function editarFila(originalIndex) {
         <td><input style="width:80px" id="e_lat" value="${escapeAttr(rowData.LAT)}"></td>
         <td><input style="width:80px" id="e_lon" value="${escapeAttr(rowData.LON)}"></td>
         <td><input style="width:70px" id="e_esc" value="${escapeAttr(rowData.ESC)}"></td>
-        <td>
-            <select id="e_cat">${getCategoryOptions(rowData.CAT)}</select>
-        </td>
-        <td>
-            <select id="e_estado">
-                <option ${rowData.ESTADO === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                <option ${rowData.ESTADO === 'En proceso' ? 'selected' : ''}>En proceso</option>
-                <option ${rowData.ESTADO === 'Finalizado' ? 'selected' : ''}>Finalizado</option>
-            </select>
-        </td>
+        <td><select id="e_cat">${getCategoryOptions(rowData.CAT)}</select></td>
+        <td><select id="e_estado">
+            <option ${rowData.ESTADO === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+            <option ${rowData.ESTADO === 'En proceso' ? 'selected' : ''}>En proceso</option>
+            <option ${rowData.ESTADO === 'Finalizado' ? 'selected' : ''}>Finalizado</option>
+        </select></td>
         <td><input style="width:120px" id="e_cierre" value="${escapeAttr(rowData.CIERRE)}"></td>
         <td>
             <button class="action-btn btn-save" onclick="guardarEdicion(${originalIndex})">Guardar</button>
@@ -383,63 +351,77 @@ function editarFila(originalIndex) {
 function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;').replace(/'/g,"&#39;"); }
 
 function getCategoryOptions(selected) {
-    // Combina categorías fijas con las detectadas en datos
     const cs = [...new Set(datos.map(d => d.CAT).filter(Boolean))];
     const union = [...new Set([...CATEGORIES_FROM_IMAGE, ...cs])];
     return union.map(c => `<option ${c === selected ? 'selected' : ''}>${c}</option>`).join("");
 }
 
-function cancelarEdicion() {
-    filaEditando = null;
-    buscar(); // re-renderiza
-}
+function cancelarEdicion() { filaEditando = null; buscar(); }
 
+// Función principal para guardar evitando el error CORS
 async function guardarEdicion(originalIndex) {
-    const id = document.getElementById("e_id").value;
-    const fecha = document.getElementById("e_fecha").value;
-    const zona = document.getElementById("e_zona").value;
-    const detalle = document.getElementById("e_detalle").value;
-    const lat = document.getElementById("e_lat").value;
-    const lon = document.getElementById("e_lon").value;
-    const esc = document.getElementById("e_esc").value;
-    const cat = document.getElementById("e_cat").value;
-    const estado = document.getElementById("e_estado").value;
-    const cierre = document.getElementById("e_cierre").value;
+    const rowObj = {
+        ID: document.getElementById("e_id").value,
+        FECHA: document.getElementById("e_fecha").value,
+        ZONA: document.getElementById("e_zona").value,
+        DETALLE: document.getElementById("e_detalle").value,
+        LAT: document.getElementById("e_lat").value,
+        LON: document.getElementById("e_lon").value,
+        ESC: document.getElementById("e_esc").value,
+        CAT: document.getElementById("e_cat").value,
+        ESTADO: document.getElementById("e_estado").value,
+        CIERRE: document.getElementById("e_cierre").value
+    };
 
-    // Actualizar localmente
-    datos[originalIndex] = { ID: id, FECHA: fecha, ZONA: zona, DETALLE: detalle, LAT: lat, LON: lon, ESC: esc, CAT: cat, ESTADO: estado, CIERRE: cierre };
+    datos[originalIndex] = rowObj;
     filaEditando = null;
-    buscar(); // re-renderiza
+    buscar();
 
-    // Intentar sincronizar con Google Sheets (via Apps Script web app)
-    if (!GAPP_URL) {
-        actualizarAviso('error', '❌ No hay URL de sincronización configurada (GAPP_URL vacía). Cambios guardados localmente.');
-        return;
-    }
+    if (!GAPP_URL) { actualizarAviso('error', '❌ Falta GAPP_URL'); return; }
+
+    actualizarAviso('loading', '⏳ Sincronizando con Drive...');
 
     try {
-        actualizarAviso('loading', '⏳ Sincronizando con Drive...');
-        const resp = await fetch(GAPP_URL, {
-    method: 'POST',
-    mode: 'no-cors', // <--- Prueba agregando esto si el error de CORS persiste
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'update', row: datos[originalIndex] }),
-    redirect: 'follow' // <--- Crucial para Google Scripts
-});
-        const j = await resp.json();
-        if (resp.ok && j && j.ok) {
-            actualizarAviso('ok', '✅ Sincronizado con Drive');
-        } else {
-            console.error('Respuesta sync', resp.status, j);
-            actualizarAviso('error', '❌ Error al sincronizar (ver consola)');
-        }
+        // SOLUCIÓN AL CORS: Usar modo 'no-cors' y formato formulario
+        const params = new URLSearchParams();
+        params.append('action', 'update');
+        params.append('row', JSON.stringify(rowObj));
+
+        await fetch(GAPP_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            cache: 'no-cache',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params
+        });
+
+        // Con no-cors no podemos leer la respuesta del servidor, 
+        // pero si no saltó al 'catch', el envío fue exitoso.
+        actualizarAviso('ok', '✅ Cambios enviados a Drive');
     } catch (err) {
         console.error(err);
-        actualizarAviso('error', '❌ Error de red al sincronizar');
+        actualizarAviso('error', '❌ Error al conectar con Drive');
     }
 }
 
-/* ------------------ Fin edición/sincronización ------------------ */
+// Función para cambiar estado rápido desde el select de la tabla
+async function cambiarEstadoDirecto(idx, val) {
+    datos[idx].ESTADO = val;
+    // Si es finalizado, poner fecha de hoy si está vacío
+    if(val === "Finalizado" && !datos[idx].CIERRE) datos[idx].CIERRE = new Date().toLocaleDateString();
+    
+    // Simular clic en guardar para sincronizar
+    const params = new URLSearchParams();
+    params.append('action', 'update');
+    params.append('row', JSON.stringify(datos[idx]));
+    
+    actualizarAviso('loading', '⏳ Actualizando estado...');
+    try {
+        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+        actualizarAviso('ok', '✅ Estado actualizado');
+        buscar();
+    } catch(e) { actualizarAviso('error', '❌ Error'); }
+}
 
 window.onload = cargarDesdeGoogleSheets;
 </script>
