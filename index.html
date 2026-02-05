@@ -420,10 +420,12 @@ async function guardarEdicion(originalIndex) {
     try {
         actualizarAviso('loading', '⏳ Sincronizando con Drive...');
         const resp = await fetch(GAPP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'update', row: datos[originalIndex] })
-        });
+    method: 'POST',
+    mode: 'no-cors', // <--- Prueba agregando esto si el error de CORS persiste
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'update', row: datos[originalIndex] }),
+    redirect: 'follow' // <--- Crucial para Google Scripts
+});
         const j = await resp.json();
         if (resp.ok && j && j.ok) {
             actualizarAviso('ok', '✅ Sincronizado con Drive');
@@ -443,5 +445,7 @@ window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
+
+
 
 
