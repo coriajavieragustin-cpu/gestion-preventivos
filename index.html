@@ -1,10 +1,11 @@
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Panel de Gestión Preventiva V1.4 - RealTime</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- TUS ESTILOS ORIGINALES MANTENIDOS --- */
+        /* --- ESTILOS MANTENIDOS --- */
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
         .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
         .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
@@ -184,7 +185,6 @@
 
 <script>
 // --- CONFIGURACIÓN ---
-// Ya no usamos SHEET_URL para cargar, sino directamente GAPP_URL
 const GAPP_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; 
 
 let datos = [];
@@ -203,9 +203,21 @@ function actualizarAviso(tipo, mensaje) {
     bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
 }
 
+// Función para obtener valores de un objeto buscando múltiples nombres de llaves posibles
+function getV(obj, keys) {
+    for (let k of keys) {
+        let upperK = k.toUpperCase();
+        // Busca la llave ignorando mayúsculas/minúsculas y espacios
+        let foundKey = Object.keys(obj).find(key => key.toUpperCase().trim() === upperK);
+        if (foundKey && obj[foundKey] !== undefined && obj[foundKey] !== null) return obj[foundKey];
+    }
+    return "";
+}
+
 function limpiarCoordenada(v) {
     if (!v) return NaN;
     let s = v.toString().replace(/\s/g, '').trim();
+    if (s === "" || s.toLowerCase() === "undefined") return NaN;
     let esNeg = s.startsWith('-');
     let n = s.replace(/[^0-9]/g, '');
     if (n.length < 4) return NaN;
@@ -213,16 +225,27 @@ function limpiarCoordenada(v) {
     return (res > 90 || res < -90) ? NaN : res;
 }
 
-// --- DATOS (MODIFICADO PARA REAL TIME) ---
+// --- DATOS ---
 async function cargarDesdeGoogleSheets() {
     actualizarAviso('loading', '⏳ Consultando datos reales en Drive...');
     try {
-        // Consultamos al script (acción GET) que devuelve JSON directo de la hoja
         const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
         const json = await resp.json();
         
         if (Array.isArray(json)) {
-            datos = json;
+            // Normalizamos los datos para asegurar que las propiedades existan
+            datos = json.map(d => ({
+                ID: getV(d, ["ID", "ID TAREA"]),
+                FECHA: getV(d, ["FECHA"]),
+                ZONA: getV(d, ["ZONA"]),
+                DETALLE: getV(d, ["DETALLE", "ACTIVIDAD"]),
+                LAT: getV(d, ["LAT", "LATITUD"]),
+                LON: getV(d, ["LON", "LONGITUD"]),
+                ESC: getV(d, ["ESC", "ESCALADO"]),
+                CAT: getV(d, ["CAT", "CATEG", "CATEGORIA", "CATEGORÍA"]),
+                ESTADO: getV(d, ["ESTADO"]),
+                CIERRE: getV(d, ["CIERRE"])
+            }));
             actualizarSelects();
             buscar();
             actualizarAviso('ok', '✅ Datos actualizados en tiempo real');
@@ -233,23 +256,6 @@ async function cargarDesdeGoogleSheets() {
         actualizarAviso('error', '❌ Error de sincronización directa');
         console.error(e);
     }
-}
-
-// Mantenemos esta para compatibilidad con la Importación de CSV local
-function procesarCSV(texto) {
-    const lineas = texto.split(/\r?\n/);
-    datos = [];
-    for(let i = 1; i < lineas.length; i++) {
-        if(!lineas[i].trim()) continue;
-        const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-        datos.push({
-            ID: c[0]||'', FECHA: c[1]||'', ZONA: c[2]||'', DETALLE: c[3]||'',
-            LAT: c[4]||'', LON: c[5]||'', ESC: c[6]||'NO', CAT: c[7]||'',
-            ESTADO: c[8] || "Pendiente", CIERRE: c[9] || ""
-        });
-    }
-    actualizarSelects();
-    buscar();
 }
 
 function render(lista) {
@@ -268,12 +274,12 @@ function render(lista) {
         else if(estL.includes("proc")) cnt.proc++;
         else if(estL.includes("fin")) cnt.fin++;
 
-        pZ[d.ZONA] = (pZ[d.ZONA] || 0) + 1;
-        pC[d.CAT] = (pC[d.CAT] || 0) + 1;
+        if(d.ZONA) pZ[d.ZONA] = (pZ[d.ZONA] || 0) + 1;
+        if(d.CAT) pC[d.CAT] = (pC[d.CAT] || 0) + 1;
         
         let lat = limpiarCoordenada(d.LAT);
         let lon = limpiarCoordenada(d.LON);
-        if(!isNaN(lat)) {
+        if(!isNaN(lat) && !isNaN(lon)) {
             const col = estL.includes("pend") ? "red" : estL.includes("proc") ? "blue" : "green";
             const m = L.circleMarker([lat, lon], { radius: 7, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
             m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
@@ -315,10 +321,10 @@ function activarEdicion(idx) {
     document.getElementById("m_lon").value = d.LON;
     document.getElementById("m_esc").value = d.ESC || "NO";
     document.getElementById("m_cie").value = d.CIERRE;
-    document.getElementById("m_est").value = d.ESTADO;
+    document.getElementById("m_est").value = d.ESTADO || "Pendiente";
 
     const mCat = document.getElementById("m_cat");
-    mCat.innerHTML = CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
+    mCat.innerHTML = '<option value="">Seleccionar...</option>' + CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
     
     document.getElementById("modalTarea").style.display = "flex";
 }
@@ -395,8 +401,11 @@ function buscar() {
     const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
         .filter(({ item: d }) => {
             const eD = (d.ESTADO || "").toLowerCase();
-            return d.ID.toString().toLowerCase().includes(id) && 
-                   d.FECHA.toString().toLowerCase().includes(fec) &&
+            const idD = (d.ID || "").toString().toLowerCase();
+            const fecD = (d.FECHA || "").toString().toLowerCase();
+            
+            return idD.includes(id) && 
+                   fecD.includes(fec) &&
                    (zon === "" || d.ZONA === zon) &&
                    (cat === "" || d.CAT === cat) &&
                    (est === "" || eD.includes(est.substring(0,4)));
@@ -405,7 +414,7 @@ function buscar() {
 }
 
 function centrarMapa(lat, lon, id) {
-    if (isNaN(lat) || isNaN(lon)) { alert("Sin coordenadas"); return; }
+    if (isNaN(lat) || isNaN(lon)) { alert("Sin coordenadas válidas"); return; }
     map.setView([lat, lon], 18);
     markerLayer.eachLayer(l => {
         if(l.getLatLng().lat === lat && l.getLatLng().lng === lon) l.openPopup();
@@ -413,13 +422,17 @@ function centrarMapa(lat, lon, id) {
 }
 
 function actualizarSelects() {
-    const zs = [...new Set(datos.map(d => d.ZONA))].sort();
+    const zs = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
     document.getElementById("fZon").innerHTML = '<option value="">Todas</option>' + zs.map(z=>`<option>${z}</option>`).join("");
     document.getElementById("fCat").innerHTML = '<option value="">Todas</option>' + CATS.map(c=>`<option>${c}</option>`).join("");
 }
 
 function actualizarBox(id, obj) {
     const items = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+    if (items.length === 0) {
+        document.getElementById(id).innerHTML = "<p style='font-size:10px; color:gray;'>Sin datos</p>";
+        return;
+    }
     document.getElementById(id).innerHTML = '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
 }
 
@@ -442,7 +455,22 @@ function exportarCSV() {
 
 function importarCSV(e) {
     const reader = new FileReader();
-    reader.onload = () => { procesarCSV(reader.result); actualizarAviso('ok', '📤 CSV Importado localmente'); };
+    reader.onload = () => { 
+        const lineas = reader.result.split(/\r?\n/);
+        datos = [];
+        for(let i = 1; i < lineas.length; i++) {
+            if(!lineas[i].trim()) continue;
+            const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+            datos.push({
+                ID: c[0]||'', FECHA: c[1]||'', ZONA: c[2]||'', DETALLE: c[3]||'',
+                LAT: c[4]||'', LON: c[5]||'', ESC: c[6]||'NO', CAT: c[7]||'',
+                ESTADO: c[8] || "Pendiente", CIERRE: c[9] || ""
+            });
+        }
+        actualizarSelects();
+        buscar();
+        actualizarAviso('ok', '📤 CSV Importado localmente'); 
+    };
     reader.readAsText(e.target.files[0]);
 }
 
