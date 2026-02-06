@@ -4,6 +4,7 @@
     <title>Panel de Gestión Preventiva V1.2 - Full</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        /* --- ESTILOS ORIGINALES --- */
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
         .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
         .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
@@ -45,8 +46,39 @@
         .estado-finalizado { background-color: #f2fff5; }
         .action-btn { padding:6px 8px; border-radius:6px; font-size:11px; color:#fff; border:none; cursor:pointer; }
         .btn-edit { background:#007bff; }
-        .btn-save { background:#28a745; }
-        .btn-cancel { background:#6c757d; }
+
+        /* --- NUEVOS ESTILOS MODAL --- */
+        .modal-overlay {
+            display: none; 
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px);
+        }
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 16px;
+            width: 480px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modal-content h3 { margin: 0 0 10px 0; font-size: 20px; color: #1a237e; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .campo-full { grid-column: span 2; }
+        .modal-content label { font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 4px; }
+        .modal-content input, .modal-content select {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;
+        }
+        .modal-buttons { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
+        .btn-modal-save { background: #4f46e5; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-modal-close { background: #fff; color: #444; border: 1px solid #ddd; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 14px; }
+        .btn-modal-save:hover { background: #4338ca; }
     </style>
 </head>
 <body>
@@ -101,6 +133,65 @@
         </table>
     </div>
 
+    <div id="modalTarea" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Detalle de Tarea</h3>
+            <div class="modal-grid">
+                <div class="campo-full">
+                    <label>ID Tarea</label>
+                    <input type="text" id="m_id">
+                </div>
+                <div>
+                    <label>Fecha</label>
+                    <input type="text" id="m_fec">
+                </div>
+                <div>
+                    <label>Zona</label>
+                    <input type="text" id="m_zon">
+                </div>
+                <div class="campo-full">
+                    <label>Actividad / Detalle</label>
+                    <input type="text" id="m_det">
+                </div>
+                <div>
+                    <label>Latitud</label>
+                    <input type="text" id="m_lat">
+                </div>
+                <div>
+                    <label>Longitud</label>
+                    <input type="text" id="m_lon">
+                </div>
+                <div>
+                    <label>Categoría</label>
+                    <select id="m_cat"></select>
+                </div>
+                <div>
+                    <label>Estado</label>
+                    <select id="m_est">
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En proceso">En proceso</option>
+                        <option value="Finalizado">Finalizado</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Escalado</label>
+                    <select id="m_esc">
+                        <option value="NO">NO</option>
+                        <option value="SI">SI</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Cierre</label>
+                    <input type="text" id="m_cie">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-modal-save" onclick="guardarDesdeModal()">💾 Guardar Cambios</button>
+                <button class="btn-modal-close" onclick="cerrarModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
@@ -108,7 +199,7 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBW
 const GAPP_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; 
 
 let datos = [];
-let editandoIdx = null;
+let filaActualIdx = null; // Para saber qué estamos editando en el modal
 let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
 let markerLayer = L.layerGroup().addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -150,7 +241,7 @@ function procesarCSV(texto) {
         const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
         datos.push({
             ID: c[0]||'', FECHA: c[1]||'', ZONA: c[2]||'', DETALLE: c[3]||'',
-            LAT: c[4]||'', LON: c[5]||'', ESC: c[6]||'', CAT: c[7]||'',
+            LAT: c[4]||'', LON: c[5]||'', ESC: c[6]||'NO', CAT: c[7]||'',
             ESTADO: c[8] || "Pendiente", CIERRE: c[9] || ""
         });
     }
@@ -163,7 +254,7 @@ function render(lista) {
     tbody.innerHTML = "";
     markerLayer.clearLayers();
     let cnt = { pend: 0, proc: 0, fin: 0 };
-    let pZ = {}; let pC = {}; let bounds = [];
+    let pZ = {}; let pC = {};
 
     lista.forEach((entry) => {
         const d = entry.item;
@@ -184,41 +275,20 @@ function render(lista) {
             const m = L.circleMarker([lat, lon], { radius: 7, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
             m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
             markerLayer.addLayer(m);
-            bounds.push([lat, lon]);
         }
 
         const tr = document.createElement("tr");
         tr.className = `estado-${estL.replace(/\s/g, '')}`;
-
-        if (editandoIdx === idx) {
-            tr.innerHTML = `
-                <td><input value="${d.ID}" id="e_id"></td>
-                <td><input value="${d.FECHA}" id="e_fec"></td>
-                <td><input value="${d.ZONA}" id="e_zon"></td>
-                <td><input value="${d.DETALLE}" id="e_det"></td>
-                <td><input value="${d.LAT}" id="e_lat"></td>
-                <td><input value="${d.LON}" id="e_lon"></td>
-                <td><input value="${d.ESC}" id="e_esc"></td>
-                <td><select id="e_cat">${CATS.map(c=>`<option ${c==d.CAT?'selected':''}>${c}</option>`).join("")}</select></td>
-                <td><select id="e_est"><option ${d.ESTADO=='Pendiente'?'selected':''}>Pendiente</option><option ${d.ESTADO=='En proceso'?'selected':''}>En proceso</option><option ${d.ESTADO=='Finalizado'?'selected':''}>Finalizado</option></select></td>
-                <td><input value="${d.CIERRE}" id="e_cie"></td>
-                <td>
-                    <button class="action-btn btn-save" onclick="guardarEdicion(${idx})">💾</button>
-                    <button class="action-btn btn-cancel" onclick="cancelarEdicion()">❌</button>
-                </td>
-            `;
-        } else {
-            tr.innerHTML = `
-                <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
-                <td style="max-width:250px; overflow:hidden;">${d.DETALLE}</td>
-                <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
-                <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
-                <td>
-                    <button onclick="centrarMapa(${lat}, ${lon}, '${d.ID}')" style="background:#666">📍</button>
-                    <button class="action-btn btn-edit" onclick="activarEdicion(${idx})">✎</button>
-                </td>
-            `;
-        }
+        tr.innerHTML = `
+            <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
+            <td style="max-width:250px; overflow:hidden;">${d.DETALLE}</td>
+            <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
+            <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
+            <td>
+                <button onclick="centrarMapa(${lat}, ${lon}, '${d.ID}')" style="background:#666">📍</button>
+                <button class="action-btn btn-edit" onclick="activarEdicion(${idx})">✎</button>
+            </td>
+        `;
         tbody.appendChild(tr);
     });
 
@@ -229,32 +299,60 @@ function render(lista) {
     actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC);
 }
 
-function activarEdicion(idx) { editandoIdx = idx; buscar(); }
-function cancelarEdicion() { editandoIdx = null; buscar(); }
+/* --- LOGICA DEL MODAL --- */
+function activarEdicion(idx) {
+    filaActualIdx = idx;
+    const d = datos[idx];
+    
+    // Rellenar campos del modal
+    document.getElementById("m_id").value = d.ID;
+    document.getElementById("m_fec").value = d.FECHA;
+    document.getElementById("m_zon").value = d.ZONA;
+    document.getElementById("m_det").value = d.DETALLE;
+    document.getElementById("m_lat").value = d.LAT;
+    document.getElementById("m_lon").value = d.LON;
+    document.getElementById("m_esc").value = d.ESC || "NO";
+    document.getElementById("m_cie").value = d.CIERRE;
+    document.getElementById("m_est").value = d.ESTADO;
 
-async function guardarEdicion(idx) {
+    const mCat = document.getElementById("m_cat");
+    mCat.innerHTML = CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
+    
+    document.getElementById("modalTarea").style.display = "flex";
+}
+
+function cerrarModal() {
+    document.getElementById("modalTarea").style.display = "none";
+    filaActualIdx = null;
+}
+
+async function guardarDesdeModal() {
+    if (filaActualIdx === null) return;
+
     const r = {
-        ID: document.getElementById("e_id").value,
-        FECHA: document.getElementById("e_fec").value,
-        ZONA: document.getElementById("e_zon").value,
-        DETALLE: document.getElementById("e_det").value,
-        LAT: document.getElementById("e_lat").value,
-        LON: document.getElementById("e_lon").value,
-        ESC: document.getElementById("e_esc").value,
-        CAT: document.getElementById("e_cat").value,
-        ESTADO: document.getElementById("e_est").value,
-        CIERRE: document.getElementById("e_cie").value
+        ID: document.getElementById("m_id").value,
+        FECHA: document.getElementById("m_fec").value,
+        ZONA: document.getElementById("m_zon").value,
+        DETALLE: document.getElementById("m_det").value,
+        LAT: document.getElementById("m_lat").value,
+        LON: document.getElementById("m_lon").value,
+        ESC: document.getElementById("m_esc").value,
+        CAT: document.getElementById("m_cat").value,
+        ESTADO: document.getElementById("m_est").value,
+        CIERRE: document.getElementById("m_cie").value
     };
-    
-    datos[idx] = r;
-    editandoIdx = null;
+
+    datos[filaActualIdx] = r;
+    cerrarModal();
     actualizarAviso('loading', '⏳ Sincronizando cambio...');
-    
+
     try {
         await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({action:'update', row: JSON.stringify(r)}) });
         actualizarAviso('ok', '✅ Cambios guardados');
         buscar();
-    } catch(e) { actualizarAviso('error', '❌ Error de red'); }
+    } catch(e) { 
+        actualizarAviso('error', '❌ Error de red'); 
+    }
 }
 
 function buscar() {
@@ -295,7 +393,11 @@ function actualizarBox(id, obj) {
     document.getElementById(id).innerHTML = '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
 }
 
-function agregarFila() { datos.unshift({ ID:"NUEVO", FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" }); editandoIdx = 0; buscar(); }
+function agregarFila() {
+    const nueva = { ID:"NUEVO", FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" };
+    datos.unshift(nueva);
+    activarEdicion(0);
+}
 
 function borrarTodo() { if(confirm("¿Borrar?")) { datos = []; render([]); } }
 
@@ -318,3 +420,4 @@ window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
+
