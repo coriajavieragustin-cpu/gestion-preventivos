@@ -2,10 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Gestión Preventiva V1.4 - RealTime</title>
+    <title>Panel de Gestión Preventiva V1.5 - RealTime</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- ESTILOS MANTENIDOS --- */
+        /* --- ESTILOS MANTENIDOS Y MEJORADOS --- */
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
         .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
         .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
@@ -71,7 +71,7 @@
 </head>
 <body>
 
-    <div class="header-app"><h2>GESTIÓN PREVENTIVOS V1.4 - REAL TIME</h2></div>
+    <div class="header-app"><h2>GESTIÓN PREVENTIVOS V1.5 - REAL TIME</h2></div>
 
     <div id="statusBar" class="status-bar">
         <span id="statusText">Sistema preparado</span>
@@ -115,7 +115,11 @@
     <div class="contenedor-tabla">
         <table class="tabla-principal" id="tabla">
             <thead>
-                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>CIERRE</th><th>ACCIONES</th></tr>
+                <tr>
+                    <th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th>
+                    <th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th>
+                    <th>TÉCNICO</th><th>PTS</th><th>ESTADO</th><th>CIERRE</th><th>ACCIONES</th>
+                </tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -162,6 +166,14 @@
                     </select>
                 </div>
                 <div>
+                    <label>Técnico</label>
+                    <select id="m_tec"></select>
+                </div>
+                <div>
+                    <label>Puntaje</label>
+                    <input type="number" id="m_pts">
+                </div>
+                <div>
                     <label>Escalado</label>
                     <select id="m_esc">
                         <option value="NO">NO</option>
@@ -193,7 +205,8 @@ let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
 let markerLayer = L.layerGroup().addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJ E", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
+const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJ E", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA", "ARMADO Y SANGRADO DE CAJAS"];
+const TECNICOS = ["Vicens Cristian", "Rodriguez Gabriel", "Altamirano Cesar", "Emmanuel Lopez"];
 
 // --- UTILIDADES ---
 function actualizarAviso(tipo, mensaje) {
@@ -203,11 +216,21 @@ function actualizarAviso(tipo, mensaje) {
     bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
 }
 
-// Función para obtener valores de un objeto buscando múltiples nombres de llaves posibles
+// --- LIMPIEZA DE FECHA (SOLUCIÓN A LA HORA "T") ---
+function limpiarFecha(f) {
+    if (!f || f.toString().toLowerCase() === "undefined") return "";
+    let texto = f.toString();
+    if (texto.includes("T")) {
+        // Convierte 2026-06-01T07:00:00Z -> 01/06/2026
+        let partes = texto.split("T")[0].split("-");
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+    return texto;
+}
+
 function getV(obj, keys) {
     for (let k of keys) {
-        let upperK = k.toUpperCase();
-        // Busca la llave ignorando mayúsculas/minúsculas y espacios
+        let upperK = k.toUpperCase().trim();
         let foundKey = Object.keys(obj).find(key => key.toUpperCase().trim() === upperK);
         if (foundKey && obj[foundKey] !== undefined && obj[foundKey] !== null) return obj[foundKey];
     }
@@ -233,10 +256,9 @@ async function cargarDesdeGoogleSheets() {
         const json = await resp.json();
         
         if (Array.isArray(json)) {
-            // Normalizamos los datos para asegurar que las propiedades existan
             datos = json.map(d => ({
                 ID: getV(d, ["ID", "ID TAREA"]),
-                FECHA: getV(d, ["FECHA"]),
+                FECHA: limpiarFecha(getV(d, ["FECHA"])), // Limpiamos aquí
                 ZONA: getV(d, ["ZONA"]),
                 DETALLE: getV(d, ["DETALLE", "ACTIVIDAD"]),
                 LAT: getV(d, ["LAT", "LATITUD"]),
@@ -244,17 +266,16 @@ async function cargarDesdeGoogleSheets() {
                 ESC: getV(d, ["ESC", "ESCALADO"]),
                 CAT: getV(d, ["CAT", "CATEG", "CATEGORIA", "CATEGORÍA"]),
                 ESTADO: getV(d, ["ESTADO"]),
-                CIERRE: getV(d, ["CIERRE"])
+                CIERRE: getV(d, ["CIERRE"]),
+                TECNICO: getV(d, ["TECNICO", "TÉCNICO"]), // Nuevo
+                PUNTAJE: getV(d, ["PUNTAJE", "PTS"])      // Nuevo
             }));
             actualizarSelects();
             buscar();
             actualizarAviso('ok', '✅ Datos actualizados en tiempo real');
-        } else {
-            throw new Error("Formato inválido");
         }
     } catch (e) { 
         actualizarAviso('error', '❌ Error de sincronización directa');
-        console.error(e);
     }
 }
 
@@ -289,9 +310,13 @@ function render(lista) {
         const tr = document.createElement("tr");
         tr.className = `estado-${estL.replace(/\s/g, '')}`;
         tr.innerHTML = `
-            <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
+            <td>${d.ID}</td>
+            <td>${limpiarFecha(d.FECHA)}</td>
+            <td>${d.ZONA}</td>
             <td style="max-width:250px; overflow:hidden;">${d.DETALLE}</td>
             <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
+            <td><b>${d.TECNICO || '-'}</b></td>
+            <td>${d.PUNTAJE || 0}</td>
             <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
             <td>
                 <button onclick="centrarMapa(${lat}, ${lon}, '${d.ID}')" style="background:#666; border:none; color:white; cursor:pointer; padding:5px; border-radius:4px;">📍</button>
@@ -314,7 +339,7 @@ function activarEdicion(idx) {
     const d = datos[idx];
     
     document.getElementById("m_id").value = d.ID;
-    document.getElementById("m_fec").value = d.FECHA;
+    document.getElementById("m_fec").value = limpiarFecha(d.FECHA); // Limpieza en el modal
     document.getElementById("m_zon").value = d.ZONA;
     document.getElementById("m_det").value = d.DETALLE;
     document.getElementById("m_lat").value = d.LAT;
@@ -322,10 +347,14 @@ function activarEdicion(idx) {
     document.getElementById("m_esc").value = d.ESC || "NO";
     document.getElementById("m_cie").value = d.CIERRE;
     document.getElementById("m_est").value = d.ESTADO || "Pendiente";
+    document.getElementById("m_pts").value = d.PUNTAJE || 0;
 
     const mCat = document.getElementById("m_cat");
     mCat.innerHTML = '<option value="">Seleccionar...</option>' + CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
     
+    const mTec = document.getElementById("m_tec");
+    mTec.innerHTML = '<option value="">Asignar Técnico...</option>' + TECNICOS.map(t => `<option value="${t}" ${t === d.TECNICO ? 'selected' : ''}>${t}</option>`).join("");
+
     document.getElementById("modalTarea").style.display = "flex";
 }
 
@@ -347,7 +376,9 @@ async function guardarDesdeModal() {
         ESC: document.getElementById("m_esc").value,
         CAT: document.getElementById("m_cat").value,
         ESTADO: document.getElementById("m_est").value,
-        CIERRE: document.getElementById("m_cie").value
+        CIERRE: document.getElementById("m_cie").value,
+        TECNICO: document.getElementById("m_tec").value,
+        PUNTAJE: document.getElementById("m_pts").value
     };
 
     datos[filaActualIdx] = r;
@@ -416,9 +447,6 @@ function buscar() {
 function centrarMapa(lat, lon, id) {
     if (isNaN(lat) || isNaN(lon)) { alert("Sin coordenadas válidas"); return; }
     map.setView([lat, lon], 18);
-    markerLayer.eachLayer(l => {
-        if(l.getLatLng().lat === lat && l.getLatLng().lng === lon) l.openPopup();
-    });
 }
 
 function actualizarSelects() {
@@ -437,42 +465,12 @@ function actualizarBox(id, obj) {
 }
 
 function agregarFila() {
-    const nueva = { ID:"NUEVO", FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" };
+    const nueva = { ID:"NUEVO", FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"", TECNICO:"", PUNTAJE:0 };
     datos.unshift(nueva);
     activarEdicion(0);
 }
 
 function borrarTodo() { if(confirm("¿Borrar todos los datos de la vista actual?")) { datos = []; render([]); } }
-
-function exportarCSV() {
-    let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO,CIERRE\n";
-    datos.forEach(d => csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}","${d.CIERRE}"\n`);
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    link.download = "preventivos_export.csv";
-    link.click();
-}
-
-function importarCSV(e) {
-    const reader = new FileReader();
-    reader.onload = () => { 
-        const lineas = reader.result.split(/\r?\n/);
-        datos = [];
-        for(let i = 1; i < lineas.length; i++) {
-            if(!lineas[i].trim()) continue;
-            const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-            datos.push({
-                ID: c[0]||'', FECHA: c[1]||'', ZONA: c[2]||'', DETALLE: c[3]||'',
-                LAT: c[4]||'', LON: c[5]||'', ESC: c[6]||'NO', CAT: c[7]||'',
-                ESTADO: c[8] || "Pendiente", CIERRE: c[9] || ""
-            });
-        }
-        actualizarSelects();
-        buscar();
-        actualizarAviso('ok', '📤 CSV Importado localmente'); 
-    };
-    reader.readAsText(e.target.files[0]);
-}
 
 window.onload = cargarDesdeGoogleSheets;
 </script>
