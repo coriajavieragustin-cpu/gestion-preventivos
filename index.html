@@ -1,10 +1,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Gestión Preventiva V1.2 - Full</title>
+    <title>Panel de Gestión Preventiva V1.3 - Full</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- ESTILOS ORIGINALES --- */
+        /* --- ESTILOS GENERALES --- */
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
         .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
         .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
@@ -12,12 +12,14 @@
         .status-ok { border-left-color: #28a745; color: #28a745; }
         .status-error { border-left-color: #dc3545; color: #dc3545; }
         .status-loading { border-left-color: #ffc107; color: #856404; }
+        
         .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .card-conteo { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border: 1px solid #ddd; font-size: 10px; }
         .card-conteo span { display: block; font-size: 22px; margin-top: 4px; }
         .conteo-pendiente { border-top: 4px solid #dc3545; color: #dc3545; }
         .conteo-proceso { border-top: 4px solid #007bff; color: #007bff; }
         .conteo-finalizado { border-top: 4px solid #28a745; color: #28a745; }
+
         .panel-central { display: grid; grid-template-columns: 1.6fr 1fr; gap: 15px; margin-bottom: 15px; height: 450px; }
         #mapa-general { height: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .stats-columna { display: flex; flex-direction: column; gap: 10px; height: 100%; overflow: hidden; }
@@ -25,6 +27,7 @@
         .stats-box h3 { margin: 0 0 8px 0; font-size: 13px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 4px; }
         .stats-table { width: 100%; border-collapse: collapse; font-size: 11px; }
         .stats-table td { padding: 4px 0; border-bottom: 1px dotted #eee; }
+
         .controles { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
         button { padding: 10px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
@@ -33,21 +36,25 @@
         .btn-export { background: #17a2b8; } 
         .btn-import { background: #ffc107; color: #333; }
         .btn-borrar { background: #dc3545; }
+
         .filtros-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; }
         .grupo-filtro { display: flex; flex-direction: column; gap: 5px; }
         .grupo-filtro label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; }
         .input-busqueda { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+
         .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 500px; }
         table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1400px; }
         .tabla-principal th { padding: 12px; background: #f8f9fa; color: #666; font-size: 11px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
         .tabla-principal td { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #eee; }
+        
         .estado-pendiente { background-color: #fff5f5; }
         .estado-enproceso { background-color: #f0f7ff; }
         .estado-finalizado { background-color: #f2fff5; }
+        
         .action-btn { padding:6px 8px; border-radius:6px; font-size:11px; color:#fff; border:none; cursor:pointer; }
         .btn-edit { background:#007bff; }
 
-        /* --- NUEVOS ESTILOS MODAL --- */
+        /* --- ESTILOS DEL MODAL --- */
         .modal-overlay {
             display: none; 
             position: fixed;
@@ -76,14 +83,18 @@
             width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;
         }
         .modal-buttons { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
-        .btn-modal-save { background: #4f46e5; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .btn-modal-close { background: #fff; color: #444; border: 1px solid #ddd; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 14px; }
+        
+        .btn-modal-save { background: #4f46e5; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-modal-delete { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+        .btn-modal-close { background: #f8f9fa; color: #444; border: 1px solid #ddd; padding: 12px; border-radius: 10px; cursor: pointer; }
+        
         .btn-modal-save:hover { background: #4338ca; }
+        .btn-modal-delete:hover { background: #fca5a5; }
     </style>
 </head>
 <body>
 
-    <div class="header-app"><h2>GESTIÓN PREVENTIVOS V1.2</h2></div>
+    <div class="header-app"><h2>GESTIÓN PREVENTIVOS V1.3</h2></div>
 
     <div id="statusBar" class="status-bar">
         <span id="statusText">Sistema preparado</span>
@@ -111,7 +122,7 @@
             <button class="btn-drive" onclick="cargarDesdeGoogleSheets()">☁️ Sincronizar Drive</button>
             <button class="btn-export" onclick="exportarCSV()">📥 Exportar CSV</button>
             <button class="btn-import" onclick="document.getElementById('inputImport').click()">📤 Importar CSV</button>
-            <button class="btn-borrar" onclick="borrarTodo()">🗑️ Borrar todo</button>
+            <button class="btn-borrar" onclick="borrarTodo()">🗑️ Borrar todo local</button>
             <input type="file" id="inputImport" accept=".csv" style="display:none" onchange="importarCSV(event)">
         </div>
         
@@ -188,6 +199,7 @@
             <div class="modal-buttons">
                 <button class="btn-modal-save" onclick="guardarDesdeModal()">💾 Guardar Cambios</button>
                 <button class="btn-modal-close" onclick="cerrarModal()">Cerrar</button>
+                <button class="btn-modal-delete" onclick="borrarFilaActual()">🗑️ Eliminar Fila</button>
             </div>
         </div>
     </div>
@@ -195,17 +207,19 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+// --- CONFIGURACIÓN ---
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSMvIGwGPgfBWm-SWC3aJDtBmAeJdI8frsSsOqcpKn7j_NjYHhCfXH_0OxBTCiY_L7vmrON2g6RIbnc/pub?gid=579969097&single=true&output=csv";
 const GAPP_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; 
 
 let datos = [];
-let filaActualIdx = null; // Para saber qué estamos editando en el modal
+let filaActualIdx = null; 
 let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
 let markerLayer = L.layerGroup().addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJ E", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
+// --- UTILIDADES ---
 function actualizarAviso(tipo, mensaje) {
     const bar = document.getElementById("statusBar");
     document.getElementById("statusText").innerText = mensaje;
@@ -223,6 +237,7 @@ function limpiarCoordenada(v) {
     return (res > 90 || res < -90) ? NaN : res;
 }
 
+// --- DATOS ---
 async function cargarDesdeGoogleSheets() {
     actualizarAviso('loading', '⏳ Conectando con Google Drive...');
     try {
@@ -299,12 +314,11 @@ function render(lista) {
     actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC);
 }
 
-/* --- LOGICA DEL MODAL --- */
+// --- GESTIÓN DE MODAL Y EDICIÓN ---
 function activarEdicion(idx) {
     filaActualIdx = idx;
     const d = datos[idx];
     
-    // Rellenar campos del modal
     document.getElementById("m_id").value = d.ID;
     document.getElementById("m_fec").value = d.FECHA;
     document.getElementById("m_zon").value = d.ZONA;
@@ -355,6 +369,36 @@ async function guardarDesdeModal() {
     }
 }
 
+// NUEVA FUNCIÓN: BORRAR FILA
+async function borrarFilaActual() {
+    if (filaActualIdx === null) return;
+    
+    if (!confirm("¿Seguro que deseas eliminar esta tarea permanentemente?")) return;
+
+    const idABorrar = datos[filaActualIdx].ID;
+    actualizarAviso('loading', `⏳ Eliminando ID: ${idABorrar}...`);
+
+    try {
+        // Opcional: Avisar al backend de la eliminación
+        // Depende de si tu Google Apps Script soporta la acción 'delete'
+        await fetch(GAPP_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            body: new URLSearchParams({action:'delete', id: idABorrar}) 
+        });
+
+        // Eliminar del array local
+        datos.splice(filaActualIdx, 1);
+        
+        cerrarModal();
+        actualizarAviso('ok', '🗑️ Fila eliminada correctamente');
+        buscar();
+    } catch(e) {
+        actualizarAviso('error', '❌ Error al intentar borrar');
+    }
+}
+
+// --- FILTROS Y BUSQUEDA ---
 function buscar() {
     const id = document.getElementById("fId").value.toLowerCase();
     const fec = document.getElementById("fFec").value.toLowerCase();
@@ -399,14 +443,14 @@ function agregarFila() {
     activarEdicion(0);
 }
 
-function borrarTodo() { if(confirm("¿Borrar?")) { datos = []; render([]); } }
+function borrarTodo() { if(confirm("¿Borrar todos los datos de la vista actual?")) { datos = []; render([]); } }
 
 function exportarCSV() {
     let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO,CIERRE\n";
     datos.forEach(d => csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}","${d.CIERRE}"\n`);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    link.download = "preventivos.csv";
+    link.download = "preventivos_export.csv";
     link.click();
 }
 
@@ -420,4 +464,3 @@ window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
-
