@@ -118,7 +118,8 @@
                 <tr>
                     <th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th>
                     <th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th>
-                    <th>TÉCNICO</th><th>PTS</th><th>ESTADO</th><th>CIERRE</th><th>ACCIONES</th>
+                   <th>TÉCNICO</th><th>ESTADO</th><th>CIERRE</th>
+                  
                 </tr>
             </thead>
             <tbody></tbody>
@@ -164,14 +165,6 @@
                         <option value="En proceso">En proceso</option>
                         <option value="Finalizado">Finalizado</option>
                     </select>
-                </div>
-                <div>
-                    <label>Técnico</label>
-                    <select id="m_tec"></select>
-                </div>
-                <div>
-                    <label>Puntaje</label>
-                    <input type="number" id="m_pts">
                 </div>
                 <div>
                     <label>Escalado</label>
@@ -315,8 +308,6 @@ function render(lista) {
             <td>${d.ZONA}</td>
             <td style="max-width:250px; overflow:hidden;">${d.DETALLE}</td>
             <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
-            <td><b>${d.TECNICO || '-'}</b></td>
-            <td>${d.PUNTAJE || 0}</td>
             <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
             <td>
                 <button onclick="centrarMapa(${lat}, ${lon}, '${d.ID}')" style="background:#666; border:none; color:white; cursor:pointer; padding:5px; border-radius:4px;">📍</button>
@@ -347,14 +338,10 @@ function activarEdicion(idx) {
     document.getElementById("m_esc").value = d.ESC || "NO";
     document.getElementById("m_cie").value = d.CIERRE;
     document.getElementById("m_est").value = d.ESTADO || "Pendiente";
-    document.getElementById("m_pts").value = d.PUNTAJE || 0;
-
+    
     const mCat = document.getElementById("m_cat");
     mCat.innerHTML = '<option value="">Seleccionar...</option>' + CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
-    
-    const mTec = document.getElementById("m_tec");
-    mTec.innerHTML = '<option value="">Asignar Técnico...</option>' + TECNICOS.map(t => `<option value="${t}" ${t === d.TECNICO ? 'selected' : ''}>${t}</option>`).join("");
-
+   
     document.getElementById("modalTarea").style.display = "flex";
 }
 
@@ -476,3 +463,4 @@ window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
+
