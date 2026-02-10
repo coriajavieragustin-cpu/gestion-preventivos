@@ -2,36 +2,12 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>PGP V1.4 - Javiercito</title>
+    <title>Panel de Gestión Preventiva V1.4 - RealTime</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
-        
-        /* HEADER ACTUALIZADO CON LOGO */
-        .header-app { 
-            display: flex; 
-            align-items: center; 
-            background: #fff; 
-            padding: 10px 25px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-            margin-bottom: 10px; 
-            gap: 20px; 
-        }
-        .header-logo {
-            height: 50px; /* Ajusta el tamaño de tu logo aquí */
-            width: auto;
-            object-fit: contain;
-        }
-        .header-app h2 { 
-            margin: 0; 
-            font-size: 20px; 
-            color: #1a73e8; 
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        /* --- FIN HEADER --- */
-
+        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
+        .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
         .status-bar { display: flex; justify-content: space-between; padding: 8px 20px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 12px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid #ccc; }
         .status-ok { border-left-color: #28a745; color: #28a745; }
         .status-error { border-left-color: #dc3545; color: #dc3545; }
@@ -93,10 +69,7 @@
 </head>
 <body>
 
-    <div class="header-app">
-        <img src="https://cdn-icons-png.flaticon.com/512/1063/1063376.png" alt="Logo" class="header-logo">
-        <h2>GESTIÓN PREVENTIVOS V1.4 - REAL TIME</h2>
-    </div>
+    <div class="header-app"><h2>PGP V1.4 - Javiecito</h2></div>
 
     <div id="statusBar" class="status-bar">
         <span id="statusText">Sistema preparado</span>
@@ -172,7 +145,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-// El script permanece exactamente igual al original para no romper la funcionalidad
 const GAPP_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; 
 
 let datos = [];
@@ -190,6 +162,7 @@ function actualizarAviso(tipo, mensaje) {
     bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
 }
 
+// LIMPIEZA DE "UNDEFINED" Y VALORES NULOS
 function getV(obj, keys) {
     for (let k of keys) {
         let upperK = k.toUpperCase();
@@ -205,6 +178,7 @@ function getV(obj, keys) {
     return "";
 }
 
+// FORMATEO DE FECHA ISO A DD/MM/AAAA
 function formatearFecha(fechaRaw) {
     if (!fechaRaw) return "";
     let stringFecha = fechaRaw.toString();
