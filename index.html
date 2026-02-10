@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Gestión Preventiva V1.5 - Precisión Real</title>
+    <title>Panel PGP V1.6 - Satelital & Precisión</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
@@ -69,7 +69,7 @@
 </head>
 <body>
 
-    <div class="header-app"><h2>PGP V1.5 - Gestión Preventiva</h2></div>
+    <div class="header-app"><h2>PGP V1.6 - Gestión Preventiva</h2></div>
 
     <div id="statusBar" class="status-bar">
         <span id="statusText">Sistema preparado</span>
@@ -149,11 +149,31 @@ const GAPP_URL = "https://script.google.com/macros/s/AKfycbyAK3vkD0-TYHtjLmPpN0_
 
 let datos = [];
 let filaActualIdx = null; 
-let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
-let markerLayer = L.layerGroup().addTo(map);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+// --- CONFIGURACIÓN DE CAPAS DE MAPA ---
+let mapaCalle = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
-}).addTo(map);
+});
+
+let mapaSatelital = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri'
+});
+
+// Inicializamos el mapa con el Satélite como capa principal
+let map = L.map('mapa-general', {
+    center: [-27.46, -58.83],
+    zoom: 13,
+    layers: [mapaSatelital] 
+});
+
+let capasBase = {
+    "Satelital": mapaSatelital,
+    "Calles": mapaCalle
+};
+
+L.control.layers(capasBase).addTo(map);
+let markerLayer = L.layerGroup().addTo(map);
+// ---------------------------------------
 
 const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJE", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
@@ -196,7 +216,6 @@ function limpiarCoordenada(v) {
     let soloNumeros = s.replace(/-/g, '').replace(/\./g, '').replace(/,/g, '');
     if (soloNumeros === "" || soloNumeros.toLowerCase().includes("undefined")) return NaN;
 
-    // Forzamos el punto después del 27 o 58/59 conservando todos los dígitos originales
     let formateado = soloNumeros.slice(0, 2) + "." + soloNumeros.slice(2);
     let num = parseFloat(formateado);
     return esNegativo ? num * -1 : num;
@@ -311,7 +330,7 @@ function buscar() {
 
 function centrarMapa(lat, lon) {
     if (!isNaN(lat) && !isNaN(lon)) {
-        map.setView([lat, lon], 17);
+        map.setView([lat, lon], 19); // Más zoom para el modo satelital
     } else {
         alert("Esta tarea no tiene coordenadas válidas.");
     }
