@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Gestión Preventiva V1.4 - RealTime</title>
+    <title>Panel de Gestión Preventiva V1.4 - Fixed Coordinates</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
@@ -188,37 +188,27 @@ function formatearFecha(fechaRaw) {
     return stringFecha;
 }
 
-// FUNCIÓN CORREGIDA - REPARACIÓN PROFUNDA DE COORDENADAS
+// ESTA FUNCIÓN ES LA SOLUCIÓN FINAL AL PROBLEMA DE LOS PUNTOS DE MILES
 function limpiarCoordenada(v) {
     if (!v) return NaN;
     
-    // 1. Quitar todos los espacios
-    let s = v.toString().replace(/\s/g, '').trim();
+    // 1. Eliminar espacios, puntos y comas (limpieza total)
+    let s = v.toString().replace(/\s/g, '').replace(/\./g, '').replace(',', '').trim();
     if (s === "" || s.toLowerCase().includes("undefined")) return NaN;
-    
-    // 2. Reparar múltiples puntos (ej: -2.747.844.886 -> -2747844886)
-    s = s.split('.').join('');
-    
-    // 3. Reemplazar coma por punto decimal
-    s = s.replace(',', '.');
 
-    // 4. Inserción lógica del punto decimal según zona (Sur y Oeste)
-    if (s.startsWith('-')) {
-        // Para Latitudes/Longitudes negativas de la zona (ej: -27 o -58)
-        if (s.length > 3 && s[3] !== '.') {
-            s = s.substring(0, 3) + "." + s.substring(3);
-        }
-    } else {
-        // Para valores positivos
-        if (s.length > 2 && s[2] !== '.') {
-            s = s.substring(0, 2) + "." + s.substring(2);
-        }
-    }
+    // 2. Determinar el signo (latitud negativa habitual en tu zona)
+    let esNegativo = s.startsWith('-');
+    let soloNumeros = s.replace(/-/g, '');
 
-    let res = parseFloat(s);
+    // 3. REGLA DE ORO: En tu región (Corrientes/Resistencia), las coord. empiezan con 27 o 58/59.
+    // Forzamos el punto decimal después del segundo dígito.
+    let formateado = soloNumeros.slice(0, 2) + "." + soloNumeros.slice(2);
     
-    // Validación de rango terrestre estándar
-    return (isNaN(res) || res > 180 || res < -180) ? NaN : res;
+    let num = parseFloat(formateado);
+    if (esNegativo) num = num * -1;
+
+    // 4. Validación de rango (si el número quedó fuera de lo lógico para la zona, devolver NaN)
+    return (isNaN(num) || Math.abs(num) > 90) ? NaN : num;
 }
 
 async function cargarDesdeGoogleSheets() {
@@ -268,12 +258,13 @@ function render(lista) {
         if(d.ZONA) pZ[d.ZONA] = (pZ[d.ZONA] || 0) + 1;
         if(d.CAT) pC[d.CAT] = (pC[d.CAT] || 0) + 1;
         
-        let lat = limpiarCoordenada(d.LAT);
-        let lon = limpiarCoordenada(d.LON);
+        // APLICAMOS LA NUEVA LIMPIEZA AGRESIVA
+        let latLimpia = limpiarCoordenada(d.LAT);
+        let lonLimpia = limpiarCoordenada(d.LON);
         
-        if(!isNaN(lat) && !isNaN(lon)) {
+        if(!isNaN(latLimpia) && !isNaN(lonLimpia)) {
             const col = estL.includes("pend") ? "#dc3545" : estL.includes("proc") ? "#007bff" : "#28a745";
-            const m = L.circleMarker([lat, lon], { 
+            const m = L.circleMarker([latLimpia, lonLimpia], { 
                 radius: 8, 
                 fillColor: col, 
                 color: "#fff", 
@@ -289,10 +280,12 @@ function render(lista) {
         tr.innerHTML = `
             <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
             <td style="max-width:250px;">${d.DETALLE}</td>
-            <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
+            <td style="color: blue; font-weight: bold;">${isNaN(latLimpia) ? d.LAT : latLimpia.toFixed(8)}</td>
+            <td style="color: blue; font-weight: bold;">${isNaN(lonLimpia) ? d.LON : lonLimpia.toFixed(8)}</td>
+            <td>${d.ESC}</td><td>${d.CAT}</td>
             <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
             <td>
-                <button onclick="centrarMapa(${lat}, ${lon})" style="background:#666; border:none; color:white; padding:5px; border-radius:4px; cursor:pointer;">📍</button>
+                <button onclick="centrarMapa(${latLimpia}, ${lonLimpia})" style="background:#666; border:none; color:white; padding:5px; border-radius:4px; cursor:pointer;">📍</button>
                 <button class="action-btn btn-edit" onclick="activarEdicion(${idx})">✎</button>
             </td>
         `;
