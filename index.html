@@ -5,7 +5,6 @@
     <title>Panel de Gestión Preventiva V1.4 - RealTime</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* --- ESTILOS MANTENIDOS --- */
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
         .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
         .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
@@ -55,7 +54,6 @@
         .action-btn { padding:6px 8px; border-radius:6px; font-size:11px; color:#fff; border:none; cursor:pointer; }
         .btn-edit { background:#007bff; }
 
-        /* --- MODAL --- */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
         .modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 480px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 12px; }
         .modal-content h3 { margin: 0 0 10px 0; font-size: 20px; color: #1a237e; }
@@ -125,53 +123,16 @@
         <div class="modal-content">
             <h3>Detalle de Tarea</h3>
             <div class="modal-grid">
-                <div class="campo-full">
-                    <label>ID Tarea</label>
-                    <input type="text" id="m_id">
-                </div>
-                <div>
-                    <label>Fecha</label>
-                    <input type="text" id="m_fec">
-                </div>
-                <div>
-                    <label>Zona</label>
-                    <input type="text" id="m_zon">
-                </div>
-                <div class="campo-full">
-                    <label>Actividad / Detalle</label>
-                    <input type="text" id="m_det">
-                </div>
-                <div>
-                    <label>Latitud</label>
-                    <input type="text" id="m_lat">
-                </div>
-                <div>
-                    <label>Longitud</label>
-                    <input type="text" id="m_lon">
-                </div>
-                <div>
-                    <label>Categoría</label>
-                    <select id="m_cat"></select>
-                </div>
-                <div>
-                    <label>Estado</label>
-                    <select id="m_est">
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="En proceso">En proceso</option>
-                        <option value="Finalizado">Finalizado</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Escalado</label>
-                    <select id="m_esc">
-                        <option value="NO">NO</option>
-                        <option value="SI">SI</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Cierre</label>
-                    <input type="text" id="m_cie">
-                </div>
+                <div class="campo-full"><label>ID Tarea</label><input type="text" id="m_id"></div>
+                <div><label>Fecha</label><input type="text" id="m_fec"></div>
+                <div><label>Zona</label><input type="text" id="m_zon"></div>
+                <div class="campo-full"><label>Actividad / Detalle</label><input type="text" id="m_det"></div>
+                <div><label>Latitud</label><input type="text" id="m_lat"></div>
+                <div><label>Longitud</label><input type="text" id="m_lon"></div>
+                <div><label>Categoría</label><select id="m_cat"></select></div>
+                <div><label>Estado</label><select id="m_est"><option value="Pendiente">Pendiente</option><option value="En proceso">En proceso</option><option value="Finalizado">Finalizado</option></select></div>
+                <div><label>Escalado</label><select id="m_esc"><option value="NO">NO</option><option value="SI">SI</option></select></div>
+                <div><label>Cierre</label><input type="text" id="m_cie"></div>
             </div>
             <div class="modal-buttons">
                 <button class="btn-modal-save" onclick="guardarDesdeModal()">💾 Guardar Cambios</button>
@@ -184,7 +145,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-// --- CONFIGURACIÓN ---
 const GAPP_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; 
 
 let datos = [];
@@ -195,7 +155,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJ E", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
-// --- UTILIDADES ---
 function actualizarAviso(tipo, mensaje) {
     const bar = document.getElementById("statusBar");
     document.getElementById("statusText").innerText = mensaje;
@@ -203,21 +162,39 @@ function actualizarAviso(tipo, mensaje) {
     bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
 }
 
-// Función para obtener valores de un objeto buscando múltiples nombres de llaves posibles
+// LIMPIEZA DE "UNDEFINED" Y VALORES NULOS
 function getV(obj, keys) {
     for (let k of keys) {
         let upperK = k.toUpperCase();
-        // Busca la llave ignorando mayúsculas/minúsculas y espacios
         let foundKey = Object.keys(obj).find(key => key.toUpperCase().trim() === upperK);
-        if (foundKey && obj[foundKey] !== undefined && obj[foundKey] !== null) return obj[foundKey];
+        if (foundKey && obj[foundKey] !== undefined && obj[foundKey] !== null) {
+            let valor = obj[foundKey].toString().trim();
+            if (valor.toLowerCase().includes("undefined")) {
+                valor = valor.replace(/undefined\/?/gi, "");
+            }
+            return valor || "";
+        }
     }
     return "";
+}
+
+// FORMATEO DE FECHA ISO A DD/MM/AAAA
+function formatearFecha(fechaRaw) {
+    if (!fechaRaw) return "";
+    let stringFecha = fechaRaw.toString();
+    if (stringFecha.includes("T")) {
+        const d = new Date(stringFecha);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+    }
+    return stringFecha;
 }
 
 function limpiarCoordenada(v) {
     if (!v) return NaN;
     let s = v.toString().replace(/\s/g, '').trim();
-    if (s === "" || s.toLowerCase() === "undefined") return NaN;
+    if (s === "" || s.toLowerCase().includes("undefined")) return NaN;
     let esNeg = s.startsWith('-');
     let n = s.replace(/[^0-9]/g, '');
     if (n.length < 4) return NaN;
@@ -225,18 +202,15 @@ function limpiarCoordenada(v) {
     return (res > 90 || res < -90) ? NaN : res;
 }
 
-// --- DATOS ---
 async function cargarDesdeGoogleSheets() {
     actualizarAviso('loading', '⏳ Consultando datos reales en Drive...');
     try {
         const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
         const json = await resp.json();
-        
         if (Array.isArray(json)) {
-            // Normalizamos los datos para asegurar que las propiedades existan
             datos = json.map(d => ({
                 ID: getV(d, ["ID", "ID TAREA"]),
-                FECHA: getV(d, ["FECHA"]),
+                FECHA: formatearFecha(getV(d, ["FECHA"])),
                 ZONA: getV(d, ["ZONA"]),
                 DETALLE: getV(d, ["DETALLE", "ACTIVIDAD"]),
                 LAT: getV(d, ["LAT", "LATITUD"]),
@@ -249,12 +223,9 @@ async function cargarDesdeGoogleSheets() {
             actualizarSelects();
             buscar();
             actualizarAviso('ok', '✅ Datos actualizados en tiempo real');
-        } else {
-            throw new Error("Formato inválido");
         }
     } catch (e) { 
         actualizarAviso('error', '❌ Error de sincronización directa');
-        console.error(e);
     }
 }
 
@@ -308,11 +279,9 @@ function render(lista) {
     actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC);
 }
 
-// --- GESTIÓN DE MODAL Y EDICIÓN ---
 function activarEdicion(idx) {
     filaActualIdx = idx;
     const d = datos[idx];
-    
     document.getElementById("m_id").value = d.ID;
     document.getElementById("m_fec").value = d.FECHA;
     document.getElementById("m_zon").value = d.ZONA;
@@ -322,10 +291,8 @@ function activarEdicion(idx) {
     document.getElementById("m_esc").value = d.ESC || "NO";
     document.getElementById("m_cie").value = d.CIERRE;
     document.getElementById("m_est").value = d.ESTADO || "Pendiente";
-
     const mCat = document.getElementById("m_cat");
     mCat.innerHTML = '<option value="">Seleccionar...</option>' + CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
-    
     document.getElementById("modalTarea").style.display = "flex";
 }
 
@@ -336,7 +303,6 @@ function cerrarModal() {
 
 async function guardarDesdeModal() {
     if (filaActualIdx === null) return;
-
     const r = {
         ID: document.getElementById("m_id").value,
         FECHA: document.getElementById("m_fec").value,
@@ -349,48 +315,28 @@ async function guardarDesdeModal() {
         ESTADO: document.getElementById("m_est").value,
         CIERRE: document.getElementById("m_cie").value
     };
-
     datos[filaActualIdx] = r;
     cerrarModal();
-    actualizarAviso('loading', '⏳ Sincronizando cambio con Drive...');
-
+    actualizarAviso('loading', '⏳ Sincronizando con Drive...');
     try {
-        await fetch(GAPP_URL, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: new URLSearchParams({action:'update', row: JSON.stringify(r)}) 
-        });
-        actualizarAviso('ok', '✅ Cambios guardados y sincronizados');
+        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({action:'update', row: JSON.stringify(r)}) });
+        actualizarAviso('ok', '✅ Cambios guardados');
         buscar();
-    } catch(e) { 
-        actualizarAviso('error', '❌ Error al guardar en Drive'); 
-    }
+    } catch(e) { actualizarAviso('error', '❌ Error al guardar'); }
 }
 
 async function borrarFilaActual() {
-    if (filaActualIdx === null) return;
-    if (!confirm("¿Seguro que deseas eliminar esta tarea permanentemente de Drive?")) return;
-
+    if (filaActualIdx === null || !confirm("¿Eliminar tarea de Drive?")) return;
     const idABorrar = datos[filaActualIdx].ID;
-    actualizarAviso('loading', `⏳ Eliminando de Drive ID: ${idABorrar}...`);
-
     try {
-        await fetch(GAPP_URL, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: new URLSearchParams({action:'delete', id: idABorrar}) 
-        });
-
+        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({action:'delete', id: idABorrar}) });
         datos.splice(filaActualIdx, 1);
         cerrarModal();
-        actualizarAviso('ok', '🗑️ Fila eliminada de Drive');
         buscar();
-    } catch(e) {
-        actualizarAviso('error', '❌ Error al intentar borrar');
-    }
+        actualizarAviso('ok', '🗑️ Fila eliminada');
+    } catch(e) { actualizarAviso('error', '❌ Error al borrar'); }
 }
 
-// --- FILTROS Y BUSQUEDA ---
 function buscar() {
     const id = document.getElementById("fId").value.toLowerCase();
     const fec = document.getElementById("fFec").value.toLowerCase();
@@ -403,37 +349,26 @@ function buscar() {
             const eD = (d.ESTADO || "").toLowerCase();
             const idD = (d.ID || "").toString().toLowerCase();
             const fecD = (d.FECHA || "").toString().toLowerCase();
-            
-            return idD.includes(id) && 
-                   fecD.includes(fec) &&
-                   (zon === "" || d.ZONA === zon) &&
-                   (cat === "" || d.CAT === cat) &&
-                   (est === "" || eD.includes(est.substring(0,4)));
+            return idD.includes(id) && fecD.includes(fec) && (zon === "" || d.ZONA === zon) && (cat === "" || d.CAT === cat) && (est === "" || eD.includes(est.substring(0,4)));
         });
     render(filtrados);
 }
 
 function centrarMapa(lat, lon, id) {
-    if (isNaN(lat) || isNaN(lon)) { alert("Sin coordenadas válidas"); return; }
+    if (isNaN(lat) || isNaN(lon)) return;
     map.setView([lat, lon], 18);
-    markerLayer.eachLayer(l => {
-        if(l.getLatLng().lat === lat && l.getLatLng().lng === lon) l.openPopup();
-    });
 }
 
 function actualizarSelects() {
     const zs = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
     document.getElementById("fZon").innerHTML = '<option value="">Todas</option>' + zs.map(z=>`<option>${z}</option>`).join("");
-    document.getElementById("fCat").innerHTML = '<option value="">Todas</option>' + CATS.map(c=>`<option>${c}</option>`).join("");
+    const cs = [...new Set(datos.map(d => d.CAT).filter(c => c))].sort();
+    document.getElementById("fCat").innerHTML = '<option value="">Todas</option>' + cs.map(c=>`<option>${c}</option>`).join("");
 }
 
 function actualizarBox(id, obj) {
     const items = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
-    if (items.length === 0) {
-        document.getElementById(id).innerHTML = "<p style='font-size:10px; color:gray;'>Sin datos</p>";
-        return;
-    }
-    document.getElementById(id).innerHTML = '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
+    document.getElementById(id).innerHTML = items.length === 0 ? "<p>Sin datos</p>" : '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
 }
 
 function agregarFila() {
@@ -442,14 +377,14 @@ function agregarFila() {
     activarEdicion(0);
 }
 
-function borrarTodo() { if(confirm("¿Borrar todos los datos de la vista actual?")) { datos = []; render([]); } }
+function borrarTodo() { if(confirm("¿Borrar vista local?")) { datos = []; render([]); } }
 
 function exportarCSV() {
     let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO,CIERRE\n";
     datos.forEach(d => csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}","${d.CIERRE}"\n`);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    link.download = "preventivos_export.csv";
+    link.download = "preventivos.csv";
     link.click();
 }
 
@@ -457,19 +392,11 @@ function importarCSV(e) {
     const reader = new FileReader();
     reader.onload = () => { 
         const lineas = reader.result.split(/\r?\n/);
-        datos = [];
-        for(let i = 1; i < lineas.length; i++) {
-            if(!lineas[i].trim()) continue;
-            const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-            datos.push({
-                ID: c[0]||'', FECHA: c[1]||'', ZONA: c[2]||'', DETALLE: c[3]||'',
-                LAT: c[4]||'', LON: c[5]||'', ESC: c[6]||'NO', CAT: c[7]||'',
-                ESTADO: c[8] || "Pendiente", CIERRE: c[9] || ""
-            });
-        }
-        actualizarSelects();
-        buscar();
-        actualizarAviso('ok', '📤 CSV Importado localmente'); 
+        datos = lineas.slice(1).filter(l => l.trim()).map(linea => {
+            const c = linea.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+            return { ID:c[0], FECHA:formatearFecha(c[1]), ZONA:c[2], DETALLE:c[3], LAT:c[4], LON:c[5], ESC:c[6], CAT:c[7], ESTADO:c[8], CIERRE:c[9] };
+        });
+        actualizarSelects(); buscar();
     };
     reader.readAsText(e.target.files[0]);
 }
@@ -478,7 +405,3 @@ window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
-
-
-
-
