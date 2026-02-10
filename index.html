@@ -69,7 +69,7 @@
 </head>
 <body>
 
-    <div class="header-app"><h2>PGP V1.4 - Javiecito</h2></div>
+    <div class="header-app"><h2>PGP V1.4 - Gestión Preventiva</h2></div>
 
     <div id="statusBar" class="status-bar">
         <span id="statusText">Sistema preparado</span>
@@ -145,15 +145,17 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-const GAPP_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; 
+const GAPP_URL = "https://script.google.com/macros/s/AKfycbyAK3vkD0-TYHtjLmPpN0_UzzhfF_uo5UlUoDAgv3Ebq8YmmaoyYFRPp0wwv4KVW3-g/exec"; 
 
 let datos = [];
 let filaActualIdx = null; 
 let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
 let markerLayer = L.layerGroup().addTo(map);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
 
-const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJ E", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
+const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJE", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
 function actualizarAviso(tipo, mensaje) {
     const bar = document.getElementById("statusBar");
@@ -162,27 +164,22 @@ function actualizarAviso(tipo, mensaje) {
     bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
 }
 
-// LIMPIEZA DE "UNDEFINED" Y VALORES NULOS
 function getV(obj, keys) {
     for (let k of keys) {
-        let upperK = k.toUpperCase();
+        let upperK = k.toUpperCase().trim();
         let foundKey = Object.keys(obj).find(key => key.toUpperCase().trim() === upperK);
         if (foundKey && obj[foundKey] !== undefined && obj[foundKey] !== null) {
             let valor = obj[foundKey].toString().trim();
-            if (valor.toLowerCase().includes("undefined")) {
-                valor = valor.replace(/undefined\/?/gi, "");
-            }
-            return valor || "";
+            return valor.toLowerCase().includes("undefined") ? "" : valor;
         }
     }
     return "";
 }
 
-// FORMATEO DE FECHA ISO A DD/MM/AAAA
 function formatearFecha(fechaRaw) {
     if (!fechaRaw) return "";
     let stringFecha = fechaRaw.toString();
-    if (stringFecha.includes("T")) {
+    if (stringFecha.includes("T") || stringFecha.includes("-")) {
         const d = new Date(stringFecha);
         if (!isNaN(d.getTime())) {
             return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -191,41 +188,64 @@ function formatearFecha(fechaRaw) {
     return stringFecha;
 }
 
+// FUNCIÓN CORREGIDA - REPARACIÓN PROFUNDA DE COORDENADAS
 function limpiarCoordenada(v) {
     if (!v) return NaN;
+    
+    // 1. Quitar todos los espacios
     let s = v.toString().replace(/\s/g, '').trim();
     if (s === "" || s.toLowerCase().includes("undefined")) return NaN;
-    let esNeg = s.startsWith('-');
-    let n = s.replace(/[^0-9]/g, '');
-    if (n.length < 4) return NaN;
-    let res = parseFloat((esNeg ? '-' : '') + n.substring(0, 2) + "." + n.substring(2));
-    return (res > 90 || res < -90) ? NaN : res;
+    
+    // 2. Reparar múltiples puntos (ej: -2.747.844.886 -> -2747844886)
+    s = s.split('.').join('');
+    
+    // 3. Reemplazar coma por punto decimal
+    s = s.replace(',', '.');
+
+    // 4. Inserción lógica del punto decimal según zona (Sur y Oeste)
+    if (s.startsWith('-')) {
+        // Para Latitudes/Longitudes negativas de la zona (ej: -27 o -58)
+        if (s.length > 3 && s[3] !== '.') {
+            s = s.substring(0, 3) + "." + s.substring(3);
+        }
+    } else {
+        // Para valores positivos
+        if (s.length > 2 && s[2] !== '.') {
+            s = s.substring(0, 2) + "." + s.substring(2);
+        }
+    }
+
+    let res = parseFloat(s);
+    
+    // Validación de rango terrestre estándar
+    return (isNaN(res) || res > 180 || res < -180) ? NaN : res;
 }
 
 async function cargarDesdeGoogleSheets() {
-    actualizarAviso('loading', '⏳ Consultando datos reales en Drive...');
+    actualizarAviso('loading', '⏳ Sincronizando datos...');
     try {
         const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
         const json = await resp.json();
         if (Array.isArray(json)) {
             datos = json.map(d => ({
-                ID: getV(d, ["ID", "ID TAREA"]),
+                ID: getV(d, ["ID"]),
                 FECHA: formatearFecha(getV(d, ["FECHA"])),
                 ZONA: getV(d, ["ZONA"]),
-                DETALLE: getV(d, ["DETALLE", "ACTIVIDAD"]),
+                DETALLE: getV(d, ["DETALLE"]),
                 LAT: getV(d, ["LAT", "LATITUD"]),
                 LON: getV(d, ["LON", "LONGITUD"]),
-                ESC: getV(d, ["ESC", "ESCALADO"]),
-                CAT: getV(d, ["CAT", "CATEG", "CATEGORIA", "CATEGORÍA"]),
+                ESC: getV(d, ["ESC", "ESCESCALERA"]),
+                CAT: getV(d, ["CAT", "CATEGORIA"]),
                 ESTADO: getV(d, ["ESTADO"]),
                 CIERRE: getV(d, ["CIERRE"])
             }));
             actualizarSelects();
             buscar();
-            actualizarAviso('ok', '✅ Datos actualizados en tiempo real');
+            actualizarAviso('ok', '✅ Datos actualizados');
         }
     } catch (e) { 
-        actualizarAviso('error', '❌ Error de sincronización directa');
+        console.error(e);
+        actualizarAviso('error', '❌ Error de sincronización');
     }
 }
 
@@ -250,10 +270,17 @@ function render(lista) {
         
         let lat = limpiarCoordenada(d.LAT);
         let lon = limpiarCoordenada(d.LON);
+        
         if(!isNaN(lat) && !isNaN(lon)) {
-            const col = estL.includes("pend") ? "red" : estL.includes("proc") ? "blue" : "green";
-            const m = L.circleMarker([lat, lon], { radius: 7, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
-            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
+            const col = estL.includes("pend") ? "#dc3545" : estL.includes("proc") ? "#007bff" : "#28a745";
+            const m = L.circleMarker([lat, lon], { 
+                radius: 8, 
+                fillColor: col, 
+                color: "#fff", 
+                weight: 2, 
+                fillOpacity: 0.9 
+            });
+            m.bindPopup(`<b>ID: ${d.ID}</b><br><b>Estado:</b> ${d.ESTADO}<br><b>Detalle:</b> ${d.DETALLE}`);
             markerLayer.addLayer(m);
         }
 
@@ -261,11 +288,11 @@ function render(lista) {
         tr.className = `estado-${estL.replace(/\s/g, '')}`;
         tr.innerHTML = `
             <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
-            <td style="max-width:250px; overflow:hidden;">${d.DETALLE}</td>
+            <td style="max-width:250px;">${d.DETALLE}</td>
             <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
             <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
             <td>
-                <button onclick="centrarMapa(${lat}, ${lon}, '${d.ID}')" style="background:#666; border:none; color:white; cursor:pointer; padding:5px; border-radius:4px;">📍</button>
+                <button onclick="centrarMapa(${lat}, ${lon})" style="background:#666; border:none; color:white; padding:5px; border-radius:4px; cursor:pointer;">📍</button>
                 <button class="action-btn btn-edit" onclick="activarEdicion(${idx})">✎</button>
             </td>
         `;
@@ -277,6 +304,34 @@ function render(lista) {
     document.getElementById("res-proc").innerText = cnt.proc;
     document.getElementById("res-fin").innerText = cnt.fin;
     actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC);
+}
+
+function buscar() {
+    const fId = document.getElementById("fId").value.toLowerCase();
+    const fFec = document.getElementById("fFec").value.toLowerCase();
+    const fZon = document.getElementById("fZon").value;
+    const fCat = document.getElementById("fCat").value;
+    const fEst = document.getElementById("fEst").value.toLowerCase();
+
+    const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
+        .filter(({ item: d }) => {
+            const eD = (d.ESTADO || "").toLowerCase();
+            const idD = (d.ID || "").toString().toLowerCase();
+            const fecD = (d.FECHA || "").toString().toLowerCase();
+            return idD.includes(fId) && fecD.includes(fFec) && 
+                   (fZon === "" || d.ZONA === fZon) && 
+                   (fCat === "" || d.CAT === fCat) && 
+                   (fEst === "" || eD.includes(fEst.substring(0,4)));
+        });
+    render(filtrados);
+}
+
+function centrarMapa(lat, lon) {
+    if (!isNaN(lat) && !isNaN(lon)) {
+        map.setView([lat, lon], 17);
+    } else {
+        alert("Esta tarea no tiene coordenadas válidas.");
+    }
 }
 
 function activarEdicion(idx) {
@@ -291,6 +346,7 @@ function activarEdicion(idx) {
     document.getElementById("m_esc").value = d.ESC || "NO";
     document.getElementById("m_cie").value = d.CIERRE;
     document.getElementById("m_est").value = d.ESTADO || "Pendiente";
+    
     const mCat = document.getElementById("m_cat");
     mCat.innerHTML = '<option value="">Seleccionar...</option>' + CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
     document.getElementById("modalTarea").style.display = "flex";
@@ -303,6 +359,7 @@ function cerrarModal() {
 
 async function guardarDesdeModal() {
     if (filaActualIdx === null) return;
+    
     const r = {
         ID: document.getElementById("m_id").value,
         FECHA: document.getElementById("m_fec").value,
@@ -315,48 +372,43 @@ async function guardarDesdeModal() {
         ESTADO: document.getElementById("m_est").value,
         CIERRE: document.getElementById("m_cie").value
     };
-    datos[filaActualIdx] = r;
-    cerrarModal();
-    actualizarAviso('loading', '⏳ Sincronizando con Drive...');
+
+    actualizarAviso('loading', '⏳ Guardando en Drive...');
+    
+    const params = new URLSearchParams();
+    params.append('action', 'update');
+    params.append('row', JSON.stringify(r));
+
     try {
-        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({action:'update', row: JSON.stringify(r)}) });
-        actualizarAviso('ok', '✅ Cambios guardados');
+        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+        datos[filaActualIdx] = r;
+        cerrarModal();
         buscar();
-    } catch(e) { actualizarAviso('error', '❌ Error al guardar'); }
+        actualizarAviso('ok', '✅ Cambios guardados');
+    } catch(e) { 
+        actualizarAviso('error', '❌ Error al guardar'); 
+    }
 }
 
 async function borrarFilaActual() {
-    if (filaActualIdx === null || !confirm("¿Eliminar tarea de Drive?")) return;
+    if (filaActualIdx === null || !confirm("¿Borrar de Drive definitivamente?")) return;
+    
     const idABorrar = datos[filaActualIdx].ID;
+    actualizarAviso('loading', '🗑️ Eliminando...');
+
+    const params = new URLSearchParams();
+    params.append('action', 'delete');
+    params.append('id', idABorrar);
+
     try {
-        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({action:'delete', id: idABorrar}) });
+        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
         datos.splice(filaActualIdx, 1);
         cerrarModal();
         buscar();
         actualizarAviso('ok', '🗑️ Fila eliminada');
-    } catch(e) { actualizarAviso('error', '❌ Error al borrar'); }
-}
-
-function buscar() {
-    const id = document.getElementById("fId").value.toLowerCase();
-    const fec = document.getElementById("fFec").value.toLowerCase();
-    const zon = document.getElementById("fZon").value;
-    const cat = document.getElementById("fCat").value;
-    const est = document.getElementById("fEst").value.toLowerCase();
-
-    const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
-        .filter(({ item: d }) => {
-            const eD = (d.ESTADO || "").toLowerCase();
-            const idD = (d.ID || "").toString().toLowerCase();
-            const fecD = (d.FECHA || "").toString().toLowerCase();
-            return idD.includes(id) && fecD.includes(fec) && (zon === "" || d.ZONA === zon) && (cat === "" || d.CAT === cat) && (est === "" || eD.includes(est.substring(0,4)));
-        });
-    render(filtrados);
-}
-
-function centrarMapa(lat, lon, id) {
-    if (isNaN(lat) || isNaN(lon)) return;
-    map.setView([lat, lon], 18);
+    } catch(e) { 
+        actualizarAviso('error', '❌ Error al borrar'); 
+    }
 }
 
 function actualizarSelects() {
@@ -368,11 +420,12 @@ function actualizarSelects() {
 
 function actualizarBox(id, obj) {
     const items = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
-    document.getElementById(id).innerHTML = items.length === 0 ? "<p>Sin datos</p>" : '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
+    document.getElementById(id).innerHTML = items.length === 0 ? "<p>Sin datos</p>" : 
+        '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
 }
 
 function agregarFila() {
-    const nueva = { ID:"NUEVO", FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" };
+    const nueva = { ID:"N"+Date.now().toString().slice(-4), FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" };
     datos.unshift(nueva);
     activarEdicion(0);
 }
