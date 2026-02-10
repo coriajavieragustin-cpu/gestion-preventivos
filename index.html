@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Gestión Preventiva V1.4 - Fixed Coordinates</title>
+    <title>Panel de Gestión Preventiva V1.5 - Precisión Real</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
@@ -69,7 +69,7 @@
 </head>
 <body>
 
-    <div class="header-app"><h2>PGP V1.4 - Gestión Preventiva</h2></div>
+    <div class="header-app"><h2>PGP V1.5 - Gestión Preventiva</h2></div>
 
     <div id="statusBar" class="status-bar">
         <span id="statusText">Sistema preparado</span>
@@ -188,27 +188,18 @@ function formatearFecha(fechaRaw) {
     return stringFecha;
 }
 
-// ESTA FUNCIÓN ES LA SOLUCIÓN FINAL AL PROBLEMA DE LOS PUNTOS DE MILES
+// LOGICA DE PRESERVACIÓN DE COORDENADAS REALES
 function limpiarCoordenada(v) {
     if (!v) return NaN;
-    
-    // 1. Eliminar espacios, puntos y comas (limpieza total)
-    let s = v.toString().replace(/\s/g, '').replace(/\./g, '').replace(',', '').trim();
-    if (s === "" || s.toLowerCase().includes("undefined")) return NaN;
-
-    // 2. Determinar el signo (latitud negativa habitual en tu zona)
+    let s = v.toString().replace(/\s/g, '').trim();
     let esNegativo = s.startsWith('-');
-    let soloNumeros = s.replace(/-/g, '');
+    let soloNumeros = s.replace(/-/g, '').replace(/\./g, '').replace(/,/g, '');
+    if (soloNumeros === "" || soloNumeros.toLowerCase().includes("undefined")) return NaN;
 
-    // 3. REGLA DE ORO: En tu región (Corrientes/Resistencia), las coord. empiezan con 27 o 58/59.
-    // Forzamos el punto decimal después del segundo dígito.
+    // Forzamos el punto después del 27 o 58/59 conservando todos los dígitos originales
     let formateado = soloNumeros.slice(0, 2) + "." + soloNumeros.slice(2);
-    
     let num = parseFloat(formateado);
-    if (esNegativo) num = num * -1;
-
-    // 4. Validación de rango (si el número quedó fuera de lo lógico para la zona, devolver NaN)
-    return (isNaN(num) || Math.abs(num) > 90) ? NaN : num;
+    return esNegativo ? num * -1 : num;
 }
 
 async function cargarDesdeGoogleSheets() {
@@ -258,7 +249,6 @@ function render(lista) {
         if(d.ZONA) pZ[d.ZONA] = (pZ[d.ZONA] || 0) + 1;
         if(d.CAT) pC[d.CAT] = (pC[d.CAT] || 0) + 1;
         
-        // APLICAMOS LA NUEVA LIMPIEZA AGRESIVA
         let latLimpia = limpiarCoordenada(d.LAT);
         let lonLimpia = limpiarCoordenada(d.LON);
         
@@ -280,8 +270,8 @@ function render(lista) {
         tr.innerHTML = `
             <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
             <td style="max-width:250px;">${d.DETALLE}</td>
-            <td style="color: blue; font-weight: bold;">${isNaN(latLimpia) ? d.LAT : latLimpia.toFixed(8)}</td>
-            <td style="color: blue; font-weight: bold;">${isNaN(lonLimpia) ? d.LON : lonLimpia.toFixed(8)}</td>
+            <td style="color: blue; font-weight: bold;">${isNaN(latLimpia) ? d.LAT : latLimpia}</td>
+            <td style="color: blue; font-weight: bold;">${isNaN(lonLimpia) ? d.LON : lonLimpia}</td>
             <td>${d.ESC}</td><td>${d.CAT}</td>
             <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
             <td>
