@@ -181,19 +181,58 @@
 
     function closeModal() { document.getElementById("taskModal").style.display = "none"; }
 
-    async function saveChanges() {
-        const updatedRow = {
-            ID: document.getElementById("m_id").value,
-            FECHA: document.getElementById("m_fec").value,
-            ZONA: document.getElementById("m_zon").value,
-            DETALLE: document.getElementById("m_det").value,
-            LATITUD: document.getElementById("m_lat").value,
-            LONGITUD: document.getElementById("m_lon").value,
-            CATEGORIA: document.getElementById("m_cat").value,
-            ESTADO: document.getElementById("m_est").value,
-            ESCALERA: document.getElementById("m_esc").value,
-            FINALIZACION: document.getElementById("m_cie").value
-        };
+   async function saveChanges() {
+    console.log("Iniciando guardado..."); // Esto se ve en la consola (F12)
+    
+    // 1. Verificamos que los campos existan en el HTML
+    const id = document.getElementById("m_id").value;
+    if (!id) {
+        alert("Error: No se encontró el ID de la tarea.");
+        return;
+    }
+
+    const updatedRow = {
+        ID: id,
+        FECHA: document.getElementById("m_fec").value,
+        ZONA: document.getElementById("m_zon").value,
+        DETALLE: document.getElementById("m_det").value,
+        LATITUD: document.getElementById("m_lat").value,
+        LONGITUD: document.getElementById("m_lon").value,
+        CATEGORIA: document.getElementById("m_cat").value,
+        ESTADO: document.getElementById("m_est").value,
+        ESCALERA: document.getElementById("m_esc").value,
+        FINALIZACION: document.getElementById("m_cie").value
+    };
+
+    // 2. Verificamos la URL
+    if (G_URL === "TU_URL_AQUI" || G_URL === "") {
+        alert("¡Error Crítico! No configuraste la URL del Script en la línea 'const G_URL'.");
+        return;
+    }
+
+    const formData = new URLSearchParams();
+    formData.append("action", "update");
+    formData.append("row", JSON.stringify(updatedRow));
+
+    try {
+        alert("Enviando datos a Google Sheets... Por favor espera.");
+        
+        const response = await fetch(G_URL, { 
+            method: "POST", 
+            body: formData, 
+            mode: "no-cors" 
+        });
+
+        // Con no-cors no podemos leer la respuesta, pero si llega acá, se envió.
+        alert("✅ Solicitud enviada. La fila con ID " + id + " debería actualizarse en unos segundos.");
+        closeModal();
+        setTimeout(loadData, 2000); // Recarga los datos después de 2 segundos
+        
+    } catch (e) {
+        console.error(e);
+        alert("❌ Error de conexión: " + e.message);
+    }
+}
 
         // ENVIAR AL GOOGLE SHEET
         const formData = new URLSearchParams();
@@ -214,4 +253,5 @@
 </script>
 </body>
 </html>
+
 
