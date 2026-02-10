@@ -2,256 +2,482 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión Preventivos V1.5 - Corrientes</title>
+    <title>Panel de Gestión Preventiva V1.4 - RealTime</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* Estilos base (Mantenidos para no perder tu diseño) */
-        body { font-family: sans-serif; margin:0; background:#f4f7f6; }
-        .header { background:#fff; padding:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); display:flex; align-items:center; }
-        .status-bar { background:#28a745; color:#fff; padding:5px 15px; font-size:12px; }
-        .cards-container { display:flex; gap:10px; padding:15px; }
-        .card { background:#fff; flex:1; padding:15px; border-radius:8px; text-align:center; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
-        .card h3 { margin:0; font-size:12px; color:#666; }
-        .card span { font-size:24px; font-weight:bold; }
-        .main-content { display:grid; grid-template-columns: 2fr 1fr; gap:15px; padding:0 15px; height:400px; }
-        #map { background:#ddd; border-radius:8px; height:100%; }
-        .stats-panel { background:#fff; border-radius:8px; padding:15px; overflow-y:auto; }
-        .table-container { padding:15px; overflow-x:auto; }
-        table { width:100%; border-collapse:collapse; background:#fff; font-size:12px; }
-        th { background:#f8f9fa; padding:10px; text-align:left; border-bottom:2px solid #eee; }
-        td { padding:10px; border-bottom:1px solid #eee; }
+        /* --- ESTILOS MANTENIDOS --- */
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
+        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
+        .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
+        .status-bar { display: flex; justify-content: space-between; padding: 8px 20px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 12px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid #ccc; }
+        .status-ok { border-left-color: #28a745; color: #28a745; }
+        .status-error { border-left-color: #dc3545; color: #dc3545; }
+        .status-loading { border-left-color: #ffc107; color: #856404; }
         
-        /* Modal corregido */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; }
-        .modal-content { background:#fff; padding:20px; border-radius:12px; width:500px; max-height:90vh; overflow-y:auto; }
-        .modal-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-        .full-width { grid-column: span 2; }
-        label { display:block; font-size:11px; font-weight:bold; margin-bottom:2px; }
-        input, select { width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; }
-        .btn-save { background:#4f46e5; color:#fff; border:none; padding:10px; border-radius:8px; width:100%; cursor:pointer; font-weight:bold; }
-        .btn-close { background:#f8f9fa; border:1px solid #ddd; padding:10px; border-radius:8px; width:100%; margin-top:5px; cursor:pointer; }
+        .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .card-conteo { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border: 1px solid #ddd; font-size: 10px; }
+        .card-conteo span { display: block; font-size: 22px; margin-top: 4px; }
+        .conteo-pendiente { border-top: 4px solid #dc3545; color: #dc3545; }
+        .conteo-proceso { border-top: 4px solid #007bff; color: #007bff; }
+        .conteo-finalizado { border-top: 4px solid #28a745; color: #28a745; }
+
+        .panel-central { display: grid; grid-template-columns: 1.6fr 1fr; gap: 15px; margin-bottom: 15px; height: 450px; }
+        #mapa-general { height: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .stats-columna { display: flex; flex-direction: column; gap: 10px; height: 100%; overflow: hidden; }
+        .stats-box { background: #fff; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex: 1; overflow-y: auto; }
+        .stats-box h3 { margin: 0 0 8px 0; font-size: 13px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .stats-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .stats-table td { padding: 4px 0; border-bottom: 1px dotted #eee; }
+
+        .controles { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        button { padding: 10px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .btn-nueva { background: #28a745; } 
+        .btn-drive { background: #1fa463; }
+        .btn-export { background: #17a2b8; } 
+        .btn-import { background: #ffc107; color: #333; }
+        .btn-borrar { background: #dc3545; }
+
+        .filtros-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; }
+        .grupo-filtro { display: flex; flex-direction: column; gap: 5px; }
+        .grupo-filtro label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; }
+        .input-busqueda { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+
+        .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 500px; }
+        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1400px; }
+        .tabla-principal th { padding: 12px; background: #f8f9fa; color: #666; font-size: 11px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
+        .tabla-principal td { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #eee; }
+        
+        .estado-pendiente { background-color: #fff5f5; }
+        .estado-enproceso { background-color: #f0f7ff; }
+        .estado-finalizado { background-color: #f2fff5; }
+        
+        .action-btn { padding:6px 8px; border-radius:6px; font-size:11px; color:#fff; border:none; cursor:pointer; }
+        .btn-edit { background:#007bff; }
+
+        /* --- MODAL --- */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+        .modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 480px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 12px; }
+        .modal-content h3 { margin: 0 0 10px 0; font-size: 20px; color: #1a237e; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .campo-full { grid-column: span 2; }
+        .modal-content label { font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 4px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        .modal-buttons { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
+        .btn-modal-save { background: #4f46e5; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-modal-delete { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 10px; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+        .btn-modal-close { background: #f8f9fa; color: #444; border: 1px solid #ddd; padding: 12px; border-radius: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="status-bar">✔ Datos actualizados en tiempo real</div>
-<div class="header"><h2>GESTIÓN PREVENTIVOS V1.5 - REAL TIME</h2></div>
+    <div class="header-app"><h2>GESTIÓN PREVENTIVOS V1.4 - REAL TIME</h2></div>
 
-<div class="cards-container">
-    <div class="card"><h3>TOTAL</h3><span id="count-total">0</span></div>
-    <div class="card" style="border-bottom:4px solid #dc3545"><h3>PENDIENTES</h3><span id="count-pend" style="color:#dc3545">0</span></div>
-    <div class="card" style="border-bottom:4px solid #007bff"><h3>EN PROCESO</h3><span id="count-proc" style="color:#007bff">0</span></div>
-    <div class="card" style="border-bottom:4px solid #28a745"><h3>FINALIZADOS</h3><span id="count-fin" style="color:#28a745">0</span></div>
-</div>
-
-<div class="main-content">
-    <div id="map"></div>
-    <div class="stats-panel">
-        <h4>🏷️ Categorías</h4>
-        <div id="stats-cat"></div>
+    <div id="statusBar" class="status-bar">
+        <span id="statusText">Sistema preparado</span>
+        <span id="statusTime">--:--:--</span>
     </div>
-</div>
 
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>CIERRE</th><th>ACCIÓN</th>
-            </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-    </table>
-</div>
+    <div class="resumen-estados">
+        <div class="card-conteo">TOTAL <span id="res-total">0</span></div>
+        <div class="card-conteo conteo-pendiente">PENDIENTES <span id="res-pend">0</span></div>
+        <div class="card-conteo conteo-proceso">EN PROCESO <span id="res-proc">0</span></div>
+        <div class="card-conteo conteo-finalizado">FINALIZADOS <span id="res-fin">0</span></div>
+    </div>
 
-<div id="taskModal" class="modal">
-    <div class="modal-content">
-        <h3>Detalle de Tarea</h3>
-        <div class="modal-grid">
-            <div class="full-width"><label>ID Tarea</label><input type="text" id="m_id" readonly></div>
-            <div><label>Fecha</label><input type="text" id="m_fec"></div>
-            <div><label>Zona</label><input type="text" id="m_zon"></div>
-            <div class="full-width"><label>Actividad / Detalle</label><input type="text" id="m_det"></div>
-            <div><label>Latitud</label><input type="text" id="m_lat"></div>
-            <div><label>Longitud</label><input type="text" id="m_lon"></div>
-            <div><label>Categoría</label>
-                <select id="m_cat">
-                    <option value="POSTES">POSTES</option>
-                    <option value="PODA">PODA</option>
-                    <option value="VANO BAJO">VANO BAJO</option>
-                    <option value="TUTOR">TUTOR</option>
-                </select>
-            </div>
-            <div><label>Estado</label>
-                <select id="m_est">
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En proceso">En proceso</option>
-                    <option value="Finalizado">Finalizado</option>
-                </select>
-            </div>
-            <div><label>Escalera</label>
-                <select id="m_esc"><option value="SI">SI</option><option value="NO">NO</option></select>
-            </div>
-            <div><label>Cierre (Finalización)</label><input type="text" id="m_cie"></div>
+    <div class="panel-central">
+        <div id="mapa-general"></div>
+        <div class="stats-columna">
+            <div class="stats-box"><h3>📍 Top Zonas</h3><div id="stats-zona"></div></div>
+            <div class="stats-box"><h3>🏷️ Categorías</h3><div id="stats-categoria"></div></div>
         </div>
-        <button class="btn-save" onclick="saveChanges()">💾 Guardar Cambios</button>
-        <button class="btn-close" onclick="closeModal()">Cerrar</button>
     </div>
-</div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <div class="controles">
+        <div class="btn-group">
+            <button class="btn-nueva" onclick="agregarFila()">➕ Nueva tarea</button>
+            <button class="btn-drive" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar Drive (Real-Time)</button>
+            <button class="btn-export" onclick="exportarCSV()">📥 Exportar CSV</button>
+            <button class="btn-import" onclick="document.getElementById('inputImport').click()">📤 Importar CSV</button>
+            <button class="btn-borrar" onclick="borrarTodo()">🗑️ Borrar todo local</button>
+            <input type="file" id="inputImport" accept=".csv" style="display:none" onchange="importarCSV(event)">
+        </div>
+        
+        <div class="filtros-grid">
+            <div class="grupo-filtro"><label>ID Tarea</label><input type="text" id="fId" class="input-busqueda" onkeyup="buscar()"></div>
+            <div class="grupo-filtro"><label>Fecha</label><input type="text" id="fFec" class="input-busqueda" onkeyup="buscar()"></div>
+            <div class="grupo-filtro"><label>Zona</label><select id="fZon" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
+            <div class="grupo-filtro"><label>Categoría</label><select id="fCat" class="input-busqueda" onchange="buscar()"><option value="">Todas</option></select></div>
+            <div class="grupo-filtro"><label>Estado</label><select id="fEst" class="input-busqueda" onchange="buscar()"><option value="">Todos</option><option value="Pendiente">Pendiente</option><option value="En proceso">En proceso</option><option value="Finalizado">Finalizado</option></select></div>
+        </div>
+    </div>
+
+    <div class="contenedor-tabla">
+        <table class="tabla-principal" id="tabla">
+            <thead>
+                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>CIERRE</th><th>ACCIONES</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="modalTarea" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Detalle de Tarea</h3>
+            <div class="modal-grid">
+                <div class="campo-full">
+                    <label>ID Tarea</label>
+                    <input type="text" id="m_id">
+                </div>
+                <div>
+                    <label>Fecha</label>
+                    <input type="text" id="m_fec">
+                </div>
+                <div>
+                    <label>Zona</label>
+                    <input type="text" id="m_zon">
+                </div>
+                <div class="campo-full">
+                    <label>Actividad / Detalle</label>
+                    <input type="text" id="m_det">
+                </div>
+                <div>
+                    <label>Latitud</label>
+                    <input type="text" id="m_lat">
+                </div>
+                <div>
+                    <label>Longitud</label>
+                    <input type="text" id="m_lon">
+                </div>
+                <div>
+                    <label>Categoría</label>
+                    <select id="m_cat"></select>
+                </div>
+                <div>
+                    <label>Estado</label>
+                    <select id="m_est">
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En proceso">En proceso</option>
+                        <option value="Finalizado">Finalizado</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Escalado</label>
+                    <select id="m_esc">
+                        <option value="NO">NO</option>
+                        <option value="SI">SI</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Cierre</label>
+                    <input type="text" id="m_cie">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-modal-save" onclick="guardarDesdeModal()">💾 Guardar Cambios</button>
+                <button class="btn-modal-close" onclick="cerrarModal()">Cerrar</button>
+                <button class="btn-modal-delete" onclick="borrarFilaActual()">🗑️ Eliminar Fila</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
-    // PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT
-    const G_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; 
-    let allData = [];
+// --- CONFIGURACIÓN ---
+const GAPP_URL = "https://script.google.com/macros/s/AKfycbzGqbeqI_NWa53sFPCRvez-8eMHF34lQn8SQY5CiIMsMpS85f70374SPUHfC31Whuf9/exec"; 
 
-    async function loadData() {
-        const res = await fetch(G_URL);
-        allData = await res.json();
-        renderDashboard();
+let datos = [];
+let filaActualIdx = null; 
+let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
+let markerLayer = L.layerGroup().addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJ E", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
+
+// --- UTILIDADES ---
+function actualizarAviso(tipo, mensaje) {
+    const bar = document.getElementById("statusBar");
+    document.getElementById("statusText").innerText = mensaje;
+    document.getElementById("statusTime").innerText = new Date().toLocaleTimeString();
+    bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
+}
+
+// Función para obtener valores de un objeto buscando múltiples nombres de llaves posibles
+function getV(obj, keys) {
+    for (let k of keys) {
+        let upperK = k.toUpperCase();
+        // Busca la llave ignorando mayúsculas/minúsculas y espacios
+        let foundKey = Object.keys(obj).find(key => key.toUpperCase().trim() === upperK);
+        if (foundKey && obj[foundKey] !== undefined && obj[foundKey] !== null) return obj[foundKey];
     }
+    return "";
+}
 
-    // FIX PARA EL ERROR UNDEFINED: Esta función limpia el texto y evita errores de fecha
-    function cleanVal(val) {
-        if (!val || val == "undefined" || val == "null") return "";
-        return val;
-    }
+function limpiarCoordenada(v) {
+    if (!v) return NaN;
+    let s = v.toString().replace(/\s/g, '').trim();
+    if (s === "" || s.toLowerCase() === "undefined") return NaN;
+    let esNeg = s.startsWith('-');
+    let n = s.replace(/[^0-9]/g, '');
+    if (n.length < 4) return NaN;
+    let res = parseFloat((esNeg ? '-' : '') + n.substring(0, 2) + "." + n.substring(2));
+    return (res > 90 || res < -90) ? NaN : res;
+}
 
-    function renderDashboard() {
-        const tbody = document.getElementById("table-body");
-        tbody.innerHTML = "";
-        let counts = { total: 0, pend: 0, proc: 0, fin: 0 };
-        let catStats = {};
-
-        allData.forEach((d, idx) => {
-            counts.total++;
-            if (d.ESTADO === "Pendiente") counts.pend++;
-            if (d.ESTADO === "En proceso") counts.proc++;
-            if (d.ESTADO === "Finalizado") counts.fin++;
-
-            // Conteo de categorías para el panel derecho
-            let c = cleanVal(d.CATEGORIA) || "S/D";
-            catStats[c] = (catStats[c] || 0) + 1;
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>${d.ID}</td>
-                    <td>${cleanVal(d.FECHA)}</td>
-                    <td>${cleanVal(d.ZONA)}</td>
-                    <td>${cleanVal(d.DETALLE)}</td>
-                    <td>${cleanVal(d.LATITUD)}</td>
-                    <td>${cleanVal(d.LONGITUD)}</td>
-                    <td>${cleanVal(d.ESCALERA)}</td>
-                    <td>${cleanVal(d.CATEGORIA)}</td>
-                    <td>${cleanVal(d.ESTADO)}</td>
-                    <td>${cleanVal(d.FINALIZACION)}</td>
-                    <td><button onclick="openModal(${idx})">✎</button></td>
-                </tr>
-            `;
-        });
-
-        document.getElementById("count-total").innerText = counts.total;
-        document.getElementById("count-pend").innerText = counts.pend;
-        document.getElementById("count-proc").innerText = counts.proc;
-        document.getElementById("count-fin").innerText = counts.fin;
-
-        // Render stats categorías
-        let statHtml = "";
-        for (let cat in catStats) {
-            statHtml += `<div style="font-size:11px; margin-bottom:5px;"><b>${cat}:</b> ${catStats[cat]}</div>`;
-        }
-        document.getElementById("stats-cat").innerHTML = statHtml;
-    }
-
-    let currentIdx = null;
-    function openModal(idx) {
-        currentIdx = idx;
-        const d = allData[idx];
-        document.getElementById("m_id").value = d.ID;
-        document.getElementById("m_fec").value = cleanVal(d.FECHA);
-        document.getElementById("m_zon").value = cleanVal(d.ZONA);
-        document.getElementById("m_det").value = cleanVal(d.DETALLE);
-        document.getElementById("m_lat").value = cleanVal(d.LATITUD);
-        document.getElementById("m_lon").value = cleanVal(d.LONGITUD);
-        document.getElementById("m_cat").value = d.CATEGORIA;
-        document.getElementById("m_est").value = d.ESTADO;
-        document.getElementById("m_esc").value = d.ESCALERA;
-        document.getElementById("m_cie").value = cleanVal(d.FINALIZACION);
-        document.getElementById("taskModal").style.display = "flex";
-    }
-
-    function closeModal() { document.getElementById("taskModal").style.display = "none"; }
-
-   async function saveChanges() {
-    console.log("Iniciando guardado..."); // Esto se ve en la consola (F12)
-    
-    // 1. Verificamos que los campos existan en el HTML
-    const id = document.getElementById("m_id").value;
-    if (!id) {
-        alert("Error: No se encontró el ID de la tarea.");
-        return;
-    }
-
-    const updatedRow = {
-        ID: id,
-        FECHA: document.getElementById("m_fec").value,
-        ZONA: document.getElementById("m_zon").value,
-        DETALLE: document.getElementById("m_det").value,
-        LATITUD: document.getElementById("m_lat").value,
-        LONGITUD: document.getElementById("m_lon").value,
-        CATEGORIA: document.getElementById("m_cat").value,
-        ESTADO: document.getElementById("m_est").value,
-        ESCALERA: document.getElementById("m_esc").value,
-        FINALIZACION: document.getElementById("m_cie").value
-    };
-
-    // 2. Verificamos la URL
-    if (G_URL === "TU_URL_AQUI" || G_URL === "") {
-        alert("¡Error Crítico! No configuraste la URL del Script en la línea 'const G_URL'.");
-        return;
-    }
-
-    const formData = new URLSearchParams();
-    formData.append("action", "update");
-    formData.append("row", JSON.stringify(updatedRow));
-
+// --- DATOS ---
+async function cargarDesdeGoogleSheets() {
+    actualizarAviso('loading', '⏳ Consultando datos reales en Drive...');
     try {
-        alert("Enviando datos a Google Sheets... Por favor espera.");
+        const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
+        const json = await resp.json();
         
-        const response = await fetch(G_URL, { 
-            method: "POST", 
-            body: formData, 
-            mode: "no-cors" 
-        });
-
-        // Con no-cors no podemos leer la respuesta, pero si llega acá, se envió.
-        alert("✅ Solicitud enviada. La fila con ID " + id + " debería actualizarse en unos segundos.");
-        closeModal();
-        setTimeout(loadData, 2000); // Recarga los datos después de 2 segundos
-        
-    } catch (e) {
+        if (Array.isArray(json)) {
+            // Normalizamos los datos para asegurar que las propiedades existan
+            datos = json.map(d => ({
+                ID: getV(d, ["ID", "ID TAREA"]),
+                FECHA: getV(d, ["FECHA"]),
+                ZONA: getV(d, ["ZONA"]),
+                DETALLE: getV(d, ["DETALLE", "ACTIVIDAD"]),
+                LAT: getV(d, ["LAT", "LATITUD"]),
+                LON: getV(d, ["LON", "LONGITUD"]),
+                ESC: getV(d, ["ESC", "ESCALADO"]),
+                CAT: getV(d, ["CAT", "CATEG", "CATEGORIA", "CATEGORÍA"]),
+                ESTADO: getV(d, ["ESTADO"]),
+                CIERRE: getV(d, ["CIERRE"])
+            }));
+            actualizarSelects();
+            buscar();
+            actualizarAviso('ok', '✅ Datos actualizados en tiempo real');
+        } else {
+            throw new Error("Formato inválido");
+        }
+    } catch (e) { 
+        actualizarAviso('error', '❌ Error de sincronización directa');
         console.error(e);
-        alert("❌ Error de conexión: " + e.message);
     }
 }
 
-        // ENVIAR AL GOOGLE SHEET
-        const formData = new URLSearchParams();
-        formData.append("action", "update");
-        formData.append("row", JSON.stringify(updatedRow));
+function render(lista) {
+    const tbody = document.querySelector("#tabla tbody");
+    tbody.innerHTML = "";
+    markerLayer.clearLayers();
+    let cnt = { pend: 0, proc: 0, fin: 0 };
+    let pZ = {}; let pC = {};
 
-        try {
-            await fetch(G_URL, { method: "POST", body: formData, mode: "no-cors" });
-            alert("¡Cambio enviado! Actualizando...");
-            closeModal();
-            loadData(); // Recargar datos para ver el cambio
-        } catch (e) {
-            alert("Error al guardar: " + e.message);
+    lista.forEach((entry) => {
+        const d = entry.item;
+        const idx = entry.originalIndex;
+        const estL = (d.ESTADO || '').toLowerCase();
+        
+        if(estL.includes("pend")) cnt.pend++;
+        else if(estL.includes("proc")) cnt.proc++;
+        else if(estL.includes("fin")) cnt.fin++;
+
+        if(d.ZONA) pZ[d.ZONA] = (pZ[d.ZONA] || 0) + 1;
+        if(d.CAT) pC[d.CAT] = (pC[d.CAT] || 0) + 1;
+        
+        let lat = limpiarCoordenada(d.LAT);
+        let lon = limpiarCoordenada(d.LON);
+        if(!isNaN(lat) && !isNaN(lon)) {
+            const col = estL.includes("pend") ? "red" : estL.includes("proc") ? "blue" : "green";
+            const m = L.circleMarker([lat, lon], { radius: 7, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
+            m.bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`);
+            markerLayer.addLayer(m);
         }
-    }
 
-    window.onload = loadData;
+        const tr = document.createElement("tr");
+        tr.className = `estado-${estL.replace(/\s/g, '')}`;
+        tr.innerHTML = `
+            <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td>
+            <td style="max-width:250px; overflow:hidden;">${d.DETALLE}</td>
+            <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
+            <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
+            <td>
+                <button onclick="centrarMapa(${lat}, ${lon}, '${d.ID}')" style="background:#666; border:none; color:white; cursor:pointer; padding:5px; border-radius:4px;">📍</button>
+                <button class="action-btn btn-edit" onclick="activarEdicion(${idx})">✎</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById("res-total").innerText = lista.length;
+    document.getElementById("res-pend").innerText = cnt.pend;
+    document.getElementById("res-proc").innerText = cnt.proc;
+    document.getElementById("res-fin").innerText = cnt.fin;
+    actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC);
+}
+
+// --- GESTIÓN DE MODAL Y EDICIÓN ---
+function activarEdicion(idx) {
+    filaActualIdx = idx;
+    const d = datos[idx];
+    
+    document.getElementById("m_id").value = d.ID;
+    document.getElementById("m_fec").value = d.FECHA;
+    document.getElementById("m_zon").value = d.ZONA;
+    document.getElementById("m_det").value = d.DETALLE;
+    document.getElementById("m_lat").value = d.LAT;
+    document.getElementById("m_lon").value = d.LON;
+    document.getElementById("m_esc").value = d.ESC || "NO";
+    document.getElementById("m_cie").value = d.CIERRE;
+    document.getElementById("m_est").value = d.ESTADO || "Pendiente";
+
+    const mCat = document.getElementById("m_cat");
+    mCat.innerHTML = '<option value="">Seleccionar...</option>' + CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
+    
+    document.getElementById("modalTarea").style.display = "flex";
+}
+
+function cerrarModal() {
+    document.getElementById("modalTarea").style.display = "none";
+    filaActualIdx = null;
+}
+
+async function guardarDesdeModal() {
+    if (filaActualIdx === null) return;
+
+    const r = {
+        ID: document.getElementById("m_id").value,
+        FECHA: document.getElementById("m_fec").value,
+        ZONA: document.getElementById("m_zon").value,
+        DETALLE: document.getElementById("m_det").value,
+        LAT: document.getElementById("m_lat").value,
+        LON: document.getElementById("m_lon").value,
+        ESC: document.getElementById("m_esc").value,
+        CAT: document.getElementById("m_cat").value,
+        ESTADO: document.getElementById("m_est").value,
+        CIERRE: document.getElementById("m_cie").value
+    };
+
+    datos[filaActualIdx] = r;
+    cerrarModal();
+    actualizarAviso('loading', '⏳ Sincronizando cambio con Drive...');
+
+    try {
+        await fetch(GAPP_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            body: new URLSearchParams({action:'update', row: JSON.stringify(r)}) 
+        });
+        actualizarAviso('ok', '✅ Cambios guardados y sincronizados');
+        buscar();
+    } catch(e) { 
+        actualizarAviso('error', '❌ Error al guardar en Drive'); 
+    }
+}
+
+async function borrarFilaActual() {
+    if (filaActualIdx === null) return;
+    if (!confirm("¿Seguro que deseas eliminar esta tarea permanentemente de Drive?")) return;
+
+    const idABorrar = datos[filaActualIdx].ID;
+    actualizarAviso('loading', `⏳ Eliminando de Drive ID: ${idABorrar}...`);
+
+    try {
+        await fetch(GAPP_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            body: new URLSearchParams({action:'delete', id: idABorrar}) 
+        });
+
+        datos.splice(filaActualIdx, 1);
+        cerrarModal();
+        actualizarAviso('ok', '🗑️ Fila eliminada de Drive');
+        buscar();
+    } catch(e) {
+        actualizarAviso('error', '❌ Error al intentar borrar');
+    }
+}
+
+// --- FILTROS Y BUSQUEDA ---
+function buscar() {
+    const id = document.getElementById("fId").value.toLowerCase();
+    const fec = document.getElementById("fFec").value.toLowerCase();
+    const zon = document.getElementById("fZon").value;
+    const cat = document.getElementById("fCat").value;
+    const est = document.getElementById("fEst").value.toLowerCase();
+
+    const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
+        .filter(({ item: d }) => {
+            const eD = (d.ESTADO || "").toLowerCase();
+            const idD = (d.ID || "").toString().toLowerCase();
+            const fecD = (d.FECHA || "").toString().toLowerCase();
+            
+            return idD.includes(id) && 
+                   fecD.includes(fec) &&
+                   (zon === "" || d.ZONA === zon) &&
+                   (cat === "" || d.CAT === cat) &&
+                   (est === "" || eD.includes(est.substring(0,4)));
+        });
+    render(filtrados);
+}
+
+function centrarMapa(lat, lon, id) {
+    if (isNaN(lat) || isNaN(lon)) { alert("Sin coordenadas válidas"); return; }
+    map.setView([lat, lon], 18);
+    markerLayer.eachLayer(l => {
+        if(l.getLatLng().lat === lat && l.getLatLng().lng === lon) l.openPopup();
+    });
+}
+
+function actualizarSelects() {
+    const zs = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
+    document.getElementById("fZon").innerHTML = '<option value="">Todas</option>' + zs.map(z=>`<option>${z}</option>`).join("");
+    document.getElementById("fCat").innerHTML = '<option value="">Todas</option>' + CATS.map(c=>`<option>${c}</option>`).join("");
+}
+
+function actualizarBox(id, obj) {
+    const items = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+    if (items.length === 0) {
+        document.getElementById(id).innerHTML = "<p style='font-size:10px; color:gray;'>Sin datos</p>";
+        return;
+    }
+    document.getElementById(id).innerHTML = '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
+}
+
+function agregarFila() {
+    const nueva = { ID:"NUEVO", FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" };
+    datos.unshift(nueva);
+    activarEdicion(0);
+}
+
+function borrarTodo() { if(confirm("¿Borrar todos los datos de la vista actual?")) { datos = []; render([]); } }
+
+function exportarCSV() {
+    let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO,CIERRE\n";
+    datos.forEach(d => csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}","${d.CIERRE}"\n`);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    link.download = "preventivos_export.csv";
+    link.click();
+}
+
+function importarCSV(e) {
+    const reader = new FileReader();
+    reader.onload = () => { 
+        const lineas = reader.result.split(/\r?\n/);
+        datos = [];
+        for(let i = 1; i < lineas.length; i++) {
+            if(!lineas[i].trim()) continue;
+            const c = lineas[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+            datos.push({
+                ID: c[0]||'', FECHA: c[1]||'', ZONA: c[2]||'', DETALLE: c[3]||'',
+                LAT: c[4]||'', LON: c[5]||'', ESC: c[6]||'NO', CAT: c[7]||'',
+                ESTADO: c[8] || "Pendiente", CIERRE: c[9] || ""
+            });
+        }
+        actualizarSelects();
+        buscar();
+        actualizarAviso('ok', '📤 CSV Importado localmente'); 
+    };
+    reader.readAsText(e.target.files[0]);
+}
+
+window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
+
 
 
