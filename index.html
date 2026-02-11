@@ -6,8 +6,25 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
-        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
+        
+        /* Modificación para el Header con Logo */
+        .header-app { 
+            display: flex; 
+            align-items: center; 
+            background: #fff; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            margin-bottom: 10px; 
+            gap: 15px; 
+        }
+        .header-logo {
+            height: 45px; /* Tamaño optimizado para el panel */
+            width: auto;
+            object-fit: contain;
+        }
         .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
+        
         .status-bar { display: flex; justify-content: space-between; padding: 8px 20px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 12px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid #ccc; }
         .status-ok { border-left-color: #28a745; color: #28a745; }
         .status-error { border-left-color: #dc3545; color: #dc3545; }
@@ -69,7 +86,10 @@
 </head>
 <body>
 
-    <div class="header-app"><h2>PGP V1.6 - Gestión Preventiva</h2></div>
+    <div class="header-app">
+        <img src="img/log.png" alt="Logo" class="header-logo">
+        <h2>PGP V1.6 - Gestión Preventiva</h2>
+    </div>
 
     <div id="statusBar" class="status-bar">
         <span id="statusText">Sistema preparado</span>
@@ -159,7 +179,6 @@ let mapaSatelital = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/ser
     attribution: 'Tiles &copy; Esri'
 });
 
-// Inicializamos el mapa con el Satélite como capa principal
 let map = L.map('mapa-general', {
     center: [-27.46, -58.83],
     zoom: 13,
@@ -208,7 +227,6 @@ function formatearFecha(fechaRaw) {
     return stringFecha;
 }
 
-// LOGICA DE PRESERVACIÓN DE COORDENADAS REALES
 function limpiarCoordenada(v) {
     if (!v) return NaN;
     let s = v.toString().replace(/\s/g, '').trim();
@@ -330,7 +348,7 @@ function buscar() {
 
 function centrarMapa(lat, lon) {
     if (!isNaN(lat) && !isNaN(lon)) {
-        map.setView([lat, lon], 19); // Más zoom para el modo satelital
+        map.setView([lat, lon], 19); 
     } else {
         alert("Esta tarea no tiene coordenadas válidas.");
     }
