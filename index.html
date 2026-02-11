@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel PGP V1.6 - Satelital & Precisión</title>
+    <title>Panel PGP V1.6 - Satelital & Precisión (Firebase Ready)</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
@@ -19,7 +19,7 @@
             gap: 15px; 
         }
         .header-logo {
-            height: 45px; /* Tamaño optimizado para el panel */
+            height: 45px; 
             width: auto;
             object-fit: contain;
         }
@@ -164,20 +164,31 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script>
+<script type="module">
+// --- 1. INTEGRACIÓN DE FIREBASE ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAlcxnL1Vt1u0Q2CphicFBw8StogStpa4",
+    authDomain: "preventivos-6a912.firebaseapp.com",
+    projectId: "preventivos-6a912",
+    storageBucket: "preventivos-6a912.firebasestorage.app",
+    messagingSenderId: "1016985183617",
+    appId: "1:1016985183617:web:6bc9b007970ee09b4f3480"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// --- 2. LÓGICA ORIGINAL PGP ---
 const GAPP_URL = "https://script.google.com/macros/s/AKfycbyAK3vkD0-TYHtjLmPpN0_UzzhfF_uo5UlUoDAgv3Ebq8YmmaoyYFRPp0wwv4KVW3-g/exec"; 
 
 let datos = [];
 let filaActualIdx = null; 
 
-// --- CONFIGURACIÓN DE CAPAS DE MAPA ---
-let mapaCalle = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-});
-
-let mapaSatelital = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles &copy; Esri'
-});
+let mapaCalle = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+let mapaSatelital = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' });
 
 let map = L.map('mapa-general', {
     center: [-27.46, -58.83],
@@ -185,14 +196,9 @@ let map = L.map('mapa-general', {
     layers: [mapaSatelital] 
 });
 
-let capasBase = {
-    "Satelital": mapaSatelital,
-    "Calles": mapaCalle
-};
-
+let capasBase = { "Satelital": mapaSatelital, "Calles": mapaCalle };
 L.control.layers(capasBase).addTo(map);
 let markerLayer = L.layerGroup().addTo(map);
-// ---------------------------------------
 
 const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJE", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
@@ -233,7 +239,6 @@ function limpiarCoordenada(v) {
     let esNegativo = s.startsWith('-');
     let soloNumeros = s.replace(/-/g, '').replace(/\./g, '').replace(/,/g, '');
     if (soloNumeros === "" || soloNumeros.toLowerCase().includes("undefined")) return NaN;
-
     let formateado = soloNumeros.slice(0, 2) + "." + soloNumeros.slice(2);
     let num = parseFloat(formateado);
     return esNegativo ? num * -1 : num;
@@ -312,8 +317,8 @@ function render(lista) {
             <td>${d.ESC}</td><td>${d.CAT}</td>
             <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
             <td>
-                <button onclick="centrarMapa(${latLimpia}, ${lonLimpia})" style="background:#666; border:none; color:white; padding:5px; border-radius:4px; cursor:pointer;">📍</button>
-                <button class="action-btn btn-edit" onclick="activarEdicion(${idx})">✎</button>
+                <button onclick="window.centrarMapa(${latLimpia}, ${lonLimpia})" style="background:#666; border:none; color:white; padding:5px; border-radius:4px; cursor:pointer;">📍</button>
+                <button class="action-btn btn-edit" onclick="window.activarEdicion(${idx})">✎</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -326,7 +331,8 @@ function render(lista) {
     actualizarBox("stats-zona", pZ); actualizarBox("stats-categoria", pC);
 }
 
-function buscar() {
+// --- FUNCIONES EXPUESTAS AL WINDOW PARA BOTONES HTML ---
+window.buscar = function() {
     const fId = document.getElementById("fId").value.toLowerCase();
     const fFec = document.getElementById("fFec").value.toLowerCase();
     const fZon = document.getElementById("fZon").value;
@@ -344,17 +350,14 @@ function buscar() {
                    (fEst === "" || eD.includes(fEst.substring(0,4)));
         });
     render(filtrados);
-}
+};
 
-function centrarMapa(lat, lon) {
-    if (!isNaN(lat) && !isNaN(lon)) {
-        map.setView([lat, lon], 19); 
-    } else {
-        alert("Esta tarea no tiene coordenadas válidas.");
-    }
-}
+window.centrarMapa = function(lat, lon) {
+    if (!isNaN(lat) && !isNaN(lon)) map.setView([lat, lon], 19); 
+    else alert("Esta tarea no tiene coordenadas válidas.");
+};
 
-function activarEdicion(idx) {
+window.activarEdicion = function(idx) {
     filaActualIdx = idx;
     const d = datos[idx];
     document.getElementById("m_id").value = d.ID;
@@ -370,14 +373,15 @@ function activarEdicion(idx) {
     const mCat = document.getElementById("m_cat");
     mCat.innerHTML = '<option value="">Seleccionar...</option>' + CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
     document.getElementById("modalTarea").style.display = "flex";
-}
+};
 
-function cerrarModal() {
+window.cerrarModal = function() {
     document.getElementById("modalTarea").style.display = "none";
     filaActualIdx = null;
-}
+};
 
-async function guardarDesdeModal() {
+// --- MODIFICADO: GUARDAR EN DRIVE Y FIREBASE ---
+window.guardarDesdeModal = async function() {
     if (filaActualIdx === null) return;
     
     const r = {
@@ -393,25 +397,33 @@ async function guardarDesdeModal() {
         CIERRE: document.getElementById("m_cie").value
     };
 
-    actualizarAviso('loading', '⏳ Guardando en Drive...');
+    actualizarAviso('loading', '⏳ Guardando en Drive y Firebase...');
     
+    // Guardar en Google Sheets
     const params = new URLSearchParams();
     params.append('action', 'update');
     params.append('row', JSON.stringify(r));
 
     try {
+        // 1. Firebase (Backup en la nube)
+        await setDoc(doc(db, "preventivos", r.ID), r);
+        
+        // 2. Google Sheets
         await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+        
         datos[filaActualIdx] = r;
-        cerrarModal();
-        buscar();
-        actualizarAviso('ok', '✅ Cambios guardados');
+        window.cerrarModal();
+        window.buscar();
+        actualizarAviso('ok', '✅ Guardado en ambos sistemas');
     } catch(e) { 
         actualizarAviso('error', '❌ Error al guardar'); 
+        console.error(e);
     }
-}
+};
 
-async function borrarFilaActual() {
-    if (filaActualIdx === null || !confirm("¿Borrar de Drive definitivamente?")) return;
+// --- MODIFICADO: BORRAR EN DRIVE Y FIREBASE ---
+window.borrarFilaActual = async function() {
+    if (filaActualIdx === null || !confirm("¿Borrar definitivamente de todos los sistemas?")) return;
     
     const idABorrar = datos[filaActualIdx].ID;
     actualizarAviso('loading', '🗑️ Eliminando...');
@@ -421,15 +433,28 @@ async function borrarFilaActual() {
     params.append('id', idABorrar);
 
     try {
+        // 1. Borrar de Firebase
+        await deleteDoc(doc(db, "preventivos", idABorrar));
+        
+        // 2. Borrar de Google Sheets
         await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+        
         datos.splice(filaActualIdx, 1);
-        cerrarModal();
-        buscar();
-        actualizarAviso('ok', '🗑️ Fila eliminada');
+        window.cerrarModal();
+        window.buscar();
+        actualizarAviso('ok', '🗑️ Registro eliminado');
     } catch(e) { 
         actualizarAviso('error', '❌ Error al borrar'); 
     }
-}
+};
+
+window.agregarFila = function() {
+    const nueva = { ID:"N"+Date.now().toString().slice(-4), FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" };
+    datos.unshift(nueva);
+    window.activarEdicion(0);
+};
+
+window.cargarDesdeGoogleSheets = cargarDesdeGoogleSheets;
 
 function actualizarSelects() {
     const zs = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
@@ -444,24 +469,18 @@ function actualizarBox(id, obj) {
         '<table class="stats-table">' + items.map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("") + '</table>';
 }
 
-function agregarFila() {
-    const nueva = { ID:"N"+Date.now().toString().slice(-4), FECHA:new Date().toLocaleDateString(), ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", ESTADO:"Pendiente", CIERRE:"" };
-    datos.unshift(nueva);
-    activarEdicion(0);
-}
+window.borrarTodo = function() { if(confirm("¿Borrar vista local?")) { datos = []; render([]); } };
 
-function borrarTodo() { if(confirm("¿Borrar vista local?")) { datos = []; render([]); } }
-
-function exportarCSV() {
+window.exportarCSV = function() {
     let csv = "ID,FECHA,ZONA,DETALLE,LAT,LON,ESC,CAT,ESTADO,CIERRE\n";
     datos.forEach(d => csv += `"${d.ID}","${d.FECHA}","${d.ZONA}","${d.DETALLE}","${d.LAT}","${d.LON}","${d.ESC}","${d.CAT}","${d.ESTADO}","${d.CIERRE}"\n`);
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     link.download = "preventivos.csv";
     link.click();
-}
+};
 
-function importarCSV(e) {
+window.importarCSV = function(e) {
     const reader = new FileReader();
     reader.onload = () => { 
         const lineas = reader.result.split(/\r?\n/);
@@ -469,12 +488,14 @@ function importarCSV(e) {
             const c = linea.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
             return { ID:c[0], FECHA:formatearFecha(c[1]), ZONA:c[2], DETALLE:c[3], LAT:c[4], LON:c[5], ESC:c[6], CAT:c[7], ESTADO:c[8], CIERRE:c[9] };
         });
-        actualizarSelects(); buscar();
+        actualizarSelects(); window.buscar();
     };
     reader.readAsText(e.target.files[0]);
-}
+};
 
 window.onload = cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
+
+
