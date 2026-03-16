@@ -43,6 +43,8 @@
         .modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .modal-footer { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .btn-del { background: #dc3545; padding: 5px; border-radius: 4px; }
+        .btn-edit { background: #007bff; padding: 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -53,7 +55,7 @@
     </div>
 
     <div id="statusBar" class="status-bar">
-        <span id="statusText">Cargando sistema...</span>
+        <span id="statusText">Cargando...</span>
         <span id="statusTime">--:--:--</span>
     </div>
 
@@ -96,7 +98,7 @@
     <div class="contenedor-tabla">
         <table class="tabla-principal" id="tabla">
             <thead>
-                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>CIERRE</th><th>EDIT</th></tr>
+                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>CIERRE</th><th>ACCIONES</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -106,7 +108,7 @@
         <div class="modal-content">
             <h3 style="margin-top:0; color:#1a73e8;">Editar Registro</h3>
             <div class="modal-grid">
-                <div style="grid-column: span 2;"><label>ID</label><input type="text" id="m_id" readonly style="width:100%; background:#f0f0f0;"></div>
+                <div style="grid-column: span 2;"><label>ID</label><input type="text" id="m_id" style="width:100%;"></div>
                 <div><label>Fecha</label><input type="text" id="m_fec" style="width:100%"></div>
                 <div><label>Zona</label><input type="text" id="m_zon" style="width:100%"></div>
                 <div style="grid-column: span 2;"><label>Detalle</label><input type="text" id="m_det" style="width:100%"></div>
@@ -152,6 +154,17 @@ function actualizarAviso(tipo, mensaje) {
     bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
 }
 
+// Lógica de reparación de coordenadas restaurada
+function repararCoordenada(str) {
+    if (!str || str === "0" || str === "-") return NaN;
+    let s = String(str).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
+    let puro = s.replace('.', '').replace('-', '');
+    if (puro.length > 2) {
+        return parseFloat("-" + puro.substring(0, 2) + "." + puro.substring(2));
+    }
+    return parseFloat(s);
+}
+
 window.cargarDesdeGoogleSheets = async function() {
     actualizarAviso('loading', '⏳ Sincronizando datos...');
     try {
@@ -173,11 +186,6 @@ window.cargarDesdeGoogleSheets = async function() {
     } catch (e) { 
         actualizarAviso('error', '❌ Error de conexión');
     }
-}
-
-window.aplicarFiltroRapido = (est) => {
-    document.getElementById("filtroEstado").value = est;
-    window.buscar();
 }
 
 window.buscar = function() {
@@ -213,32 +221,13 @@ window.render = function(lista) {
         const d = entry.item;
         const estL = d.ESTADO.toLowerCase();
 
-        // --- SOLUCIÓN PARA COORDENADAS CORRUPTAS (Reparación de punto decimal) ---
-        let latStr = String(d.LAT).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
-        let lonStr = String(d.LON).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
+        let la = repararCoordenada(d.LAT);
+        let lo = repararCoordenada(d.LON);
 
-        function repararCoordenada(str) {
-            if (!str || str === "0" || str === "-") return NaN;
-            // Quitamos puntos existentes y el signo para trabajar el número puro
-            let puro = str.replace('.', '').replace('-', '');
-            // Si el número tiene más de 2 dígitos (ej: 27435), le ponemos el punto tras el 2do
-            if (puro.length > 2) {
-                return parseFloat("-" + puro.substring(0, 2) + "." + puro.substring(2));
-            }
-            return parseFloat(str);
-        }
-
-        let la = repararCoordenada(latStr);
-        let lo = repararCoordenada(lonStr);
-
-        // Auto-Inversión: en Argentina Latitud (~27) es menor que Longitud (~58) en valor absoluto
-        if (!isNaN(la) && !isNaN(lo)) {
-            if (Math.abs(la) > Math.abs(lo)) {
-                let temp = la; la = lo; lo = temp;
-            }
+        if (!isNaN(la) && !isNaN(lo) && Math.abs(la) > Math.abs(lo)) {
+            let temp = la; la = lo; lo = temp;
         }
         
-        // Validación de rango (Ajustado a zona Corrientes/Chaco y alrededores)
         const coordValida = (!isNaN(la) && !isNaN(lo) && la < -20 && la > -35 && lo < -50 && lo > -65);
 
         if(coordValida) {
@@ -250,13 +239,16 @@ window.render = function(lista) {
 
         const tr = document.createElement("tr");
         tr.className = `estado-${estL.replace(/\s/g, '')}`;
-        const colorError = !coordValida ? 'style="color:#dc3545; font-weight:bold;"' : '';
+        const colorErr = !coordValida ? 'style="color:#dc3545; font-weight:bold;"' : '';
 
         tr.innerHTML = `
             <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td>
-            <td ${colorError}>${la || d.LAT}</td><td ${colorError}>${lo || d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
+            <td ${colorErr}>${la || d.LAT}</td><td ${colorErr}>${lo || d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
             <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
-            <td><button style="background:#007bff; border:none; padding:5px; border-radius:4px;" onclick="window.activarEdicion(${entry.originalIndex})">✎</button></td>
+            <td style="display: flex; gap: 5px;">
+                <button class="btn-edit" onclick="window.activarEdicion(${entry.originalIndex})">✎</button>
+                <button class="btn-del" onclick="window.eliminarFila(${entry.originalIndex}, '${d.ID}')">🗑️</button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -269,6 +261,20 @@ window.render = function(lista) {
     document.getElementById("res-pend").innerText = cnt.pend;
     document.getElementById("res-proc").innerText = cnt.proc;
     document.getElementById("res-fin").innerText = cnt.fin;
+}
+
+window.eliminarFila = async function(idx, id) {
+    if (!confirm(`¿Eliminar tarea ID: ${id}?`)) return;
+    actualizarAviso('loading', '🗑️ Eliminando...');
+    try {
+        const params = new URLSearchParams();
+        params.append('action', 'delete');
+        params.append('id', id);
+        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+        datos.splice(idx, 1);
+        window.buscar();
+        actualizarAviso('ok', '✅ Eliminado');
+    } catch (e) { actualizarAviso('error', '❌ Error al eliminar'); }
 }
 
 window.limpiarFiltros = () => {
@@ -295,8 +301,12 @@ window.activarEdicion = (idx) => {
 };
 
 window.guardarDesdeModal = async function() {
+    let nuevoId = document.getElementById("m_id").value.trim();
+    // Si el ID está vacío, asignamos uno temporal basado en la hora para no perder el punto
+    if(!nuevoId) { nuevoId = "TEMP-" + Date.now().toString().slice(-4); }
+
     const r = {
-        ID: document.getElementById("m_id").value,
+        ID: nuevoId,
         FECHA: document.getElementById("m_fec").value,
         ZONA: document.getElementById("m_zon").value,
         DETALLE: document.getElementById("m_det").value,
@@ -314,16 +324,40 @@ window.guardarDesdeModal = async function() {
         params.append('action', 'update');
         params.append('row', JSON.stringify(r));
         await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
-        datos[filaActualIdx] = { ...datos[filaActualIdx], ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, ESC: r.ESCALERA, CIERRE: r.FINALIZACION };
-        window.cerrarModal(); window.buscar();
-        actualizarAviso('ok', '✅ Guardado');
+        
+        datos[filaActualIdx] = { 
+            ...datos[filaActualIdx], 
+            ...r, 
+            LAT: r.LATITUD, 
+            LON: r.LONGITUD, 
+            CAT: r.CATEGORIA, 
+            ESC: r.ESCALERA, 
+            CIERRE: r.FINALIZACION 
+        };
+        
+        window.cerrarModal(); 
+        window.buscar();
+        actualizarAviso('ok', '✅ Guardado correctamente');
     } catch(e) { actualizarAviso('error', '❌ Error al guardar'); }
 };
 
 window.cerrarModal = () => document.getElementById("modalTarea").style.display = "none";
+
 window.agregarFila = () => {
-    const n = { ID: "N"+Date.now().toString().slice(-4), FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente", ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", CIERRE:"" };
-    datos.unshift(n); window.activarEdicion(0);
+    const n = { 
+        ID: "", 
+        FECHA: new Date().toLocaleDateString(), 
+        ESTADO: "Pendiente", 
+        ZONA:"", 
+        DETALLE:"", 
+        LAT:"", 
+        LON:"", 
+        ESC:"NO", 
+        CAT:"", 
+        CIERRE:"" 
+    };
+    datos.unshift(n); 
+    window.activarEdicion(0);
 };
 
 window.onload = window.cargarDesdeGoogleSheets;
