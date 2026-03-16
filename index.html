@@ -6,19 +6,13 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
-        
-        /* Cabecera */
         .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
         .header-logo { height: 45px; width: auto; }
         .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
-        
-        /* Barra de Estado */
         .status-bar { display: flex; justify-content: space-between; padding: 8px 20px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 12px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid #ccc; }
         .status-ok { border-left-color: #28a745; color: #28a745; }
         .status-error { border-left-color: #dc3545; color: #dc3545; }
         .status-loading { border-left-color: #ffc107; color: #856404; }
-
-        /* Cuadros de Resumen / Filtros rápidos */
         .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .card-conteo { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border: 1px solid #ddd; font-size: 10px; cursor: pointer; transition: 0.2s; }
         .card-conteo:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -27,37 +21,24 @@
         .conteo-pendiente { border-top: 4px solid #dc3545; color: #dc3545; }
         .conteo-proceso { border-top: 4px solid #007bff; color: #007bff; }
         .conteo-finalizado { border-top: 4px solid #28a745; color: #28a745; }
-
-        /* Panel Central: Mapa */
-        .panel-central { margin-bottom: 15px; height: 450px; width: 100%; }
+        .panel-central { margin-bottom: 15px; height: 500px; width: 100%; }
         #mapa-general { height: 100%; width: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-
-        /* Controles y Filtros */
         .controles { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .filtros-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
-        
         .grupo-filtro { display: flex; flex-direction: column; gap: 5px; }
         .grupo-filtro label { font-size: 11px; font-weight: bold; color: #666; }
-
         button { padding: 10px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
         .btn-nueva { background: #28a745; } 
         .btn-drive { background: #1fa463; }
         .btn-reset { background: #6c757d; }
-
         select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; min-width: 150px; }
-
-        /* Tabla */
         .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 500px; }
         table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1200px; }
         .tabla-principal th { padding: 12px; background: #f8f9fa; color: #666; font-size: 11px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
         .tabla-principal td { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #eee; }
-        
-        /* Colores de Filas */
         .estado-pendiente { background-color: #fff5f5; }
         .estado-enproceso { background-color: #f0f7ff; }
         .estado-finalizado { background-color: #f2fff5; }
-
-        /* Modal */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
         .modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -91,29 +72,23 @@
         <div class="filtros-row">
             <button class="btn-nueva" onclick="agregarFila()">➕ Nueva Tarea</button>
             <button class="btn-drive" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar Drive</button>
-            
             <div class="grupo-filtro">
-                <label>Filtrar por Zona:</label>
-                <select id="filtroZona" onchange="buscar()">
-                    <option value="Todas">🌍 Todas las Zonas</option>
-                </select>
+                <label>Zona:</label>
+                <select id="filtroZona" onchange="buscar()"><option value="Todas">🌍 Todas</option></select>
             </div>
-
             <div class="grupo-filtro">
-                <label>Filtrar por Estado:</label>
+                <label>Estado:</label>
                 <select id="filtroEstado" onchange="buscar()">
-                    <option value="Todos">📊 Todos los Estados</option>
+                    <option value="Todos">📊 Todos</option>
                     <option value="Pendiente">🔴 Pendiente</option>
                     <option value="En proceso">🔵 En proceso</option>
                     <option value="Finalizado">🟢 Finalizado</option>
                 </select>
             </div>
-
             <div class="grupo-filtro">
                 <label>Buscador:</label>
                 <input type="text" id="fId" placeholder="ID o Detalle..." onkeyup="buscar()">
             </div>
-
             <button class="btn-reset" onclick="limpiarFiltros()">Limpiar</button>
         </div>
     </div>
@@ -121,11 +96,7 @@
     <div class="contenedor-tabla">
         <table class="tabla-principal" id="tabla">
             <thead>
-                <tr>
-                    <th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th>
-                    <th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th>
-                    <th>ESTADO</th><th>CIERRE</th><th>EDIT</th>
-                </tr>
+                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>CIERRE</th><th>EDIT</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -135,10 +106,7 @@
         <div class="modal-content">
             <h3 style="margin-top:0; color:#1a73e8;">Editar Registro</h3>
             <div class="modal-grid">
-                <div style="grid-column: span 2;">
-                    <label style="font-size:11px; font-weight:bold;">ID</label><br>
-                    <input type="text" id="m_id" readonly style="width:100%; background:#f0f0f0;">
-                </div>
+                <div style="grid-column: span 2;"><label>ID</label><input type="text" id="m_id" readonly style="width:100%; background:#f0f0f0;"></div>
                 <div><label>Fecha</label><input type="text" id="m_fec" style="width:100%"></div>
                 <div><label>Zona</label><input type="text" id="m_zon" style="width:100%"></div>
                 <div style="grid-column: span 2;"><label>Detalle</label><input type="text" id="m_det" style="width:100%"></div>
@@ -153,10 +121,7 @@
                     </select>
                 </div>
                 <div><label>Escalera</label>
-                    <select id="m_esc" style="width:100%">
-                        <option value="NO">NO</option>
-                        <option value="SI">SI</option>
-                    </select>
+                    <select id="m_esc" style="width:100%"><option value="NO">NO</option><option value="SI">SI</option></select>
                 </div>
                 <div><label>Finalización</label><input type="text" id="m_cie" style="width:100%"></div>
             </div>
@@ -176,10 +141,9 @@ let datos = [];
 let filaActualIdx = null; 
 const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJE", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
-// Configuración de Mapa
-let map = L.map('mapa-general').setView([-27.46, -58.83], 13);
+let map = L.map('mapa-general').setView([-27.46, -58.83], 12);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
-let markerLayer = L.layerGroup().addTo(map);
+let markerLayer = L.featureGroup().addTo(map);
 
 function actualizarAviso(tipo, mensaje) {
     const bar = document.getElementById("statusBar");
@@ -188,9 +152,8 @@ function actualizarAviso(tipo, mensaje) {
     bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
 }
 
-// CARGA DE DATOS
 window.cargarDesdeGoogleSheets = async function() {
-    actualizarAviso('loading', '⏳ Sincronizando con Google Sheets...');
+    actualizarAviso('loading', '⏳ Sincronizando datos...');
     try {
         const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
         const json = await resp.json();
@@ -200,21 +163,19 @@ window.cargarDesdeGoogleSheets = async function() {
             CAT: d.CATEGORIA || "", ESTADO: d.ESTADO || "Pendiente", CIERRE: d.FINALIZACION || ""
         }));
 
-        // Actualizar Select de Zonas dinámicamente
         const zonasUnicas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
         const selectZona = document.getElementById("filtroZona");
-        selectZona.innerHTML = '<option value="Todas">🌍 Todas las Zonas</option>';
+        selectZona.innerHTML = '<option value="Todas">🌍 Todas</option>';
         zonasUnicas.forEach(z => { selectZona.innerHTML += `<option value="${z}">${z}</option>`; });
 
         window.buscar();
-        actualizarAviso('ok', '✅ Datos actualizados correctamente');
+        actualizarAviso('ok', '✅ Datos cargados');
     } catch (e) { 
-        actualizarAviso('error', '❌ Error al conectar con Drive');
+        actualizarAviso('error', '❌ Error de conexión');
     }
 }
 
-// FILTRADO Y BÚSQUEDA
-window.aplicarFiltroRapido = function(est) {
+window.aplicarFiltroRapido = (est) => {
     document.getElementById("filtroEstado").value = est;
     window.buscar();
 }
@@ -235,12 +196,11 @@ window.buscar = function() {
     window.render(filtrados);
 };
 
-// RENDERIZADO
 window.render = function(lista) {
     const tbody = document.querySelector("#tabla tbody");
-    tbody.innerHTML = ""; markerLayer.clearLayers();
+    tbody.innerHTML = ""; 
+    markerLayer.clearLayers();
     
-    // Conteo para cuadros (siempre basado en DATOS TOTALES)
     let cnt = { pend: 0, proc: 0, fin: 0 };
     datos.forEach(d => {
         const est = d.ESTADO.toLowerCase();
@@ -253,26 +213,57 @@ window.render = function(lista) {
         const d = entry.item;
         const estL = d.ESTADO.toLowerCase();
 
-        // Mapa
-        let la = parseFloat(d.LAT.toString().replace(',', '.')); 
-        let lo = parseFloat(d.LON.toString().replace(',', '.'));
-        if(!isNaN(la) && !isNaN(lo)) {
-            const col = estL.includes("pend") ? "#dc3545" : estL.includes("proc") ? "#007bff" : "#28a745";
-            L.circleMarker([la, lo], { radius: 8, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 })
-             .bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`).addTo(markerLayer);
+        // --- SOLUCIÓN PARA COORDENADAS CORRUPTAS (Reparación de punto decimal) ---
+        let latStr = String(d.LAT).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
+        let lonStr = String(d.LON).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
+
+        function repararCoordenada(str) {
+            if (!str || str === "0" || str === "-") return NaN;
+            // Quitamos puntos existentes y el signo para trabajar el número puro
+            let puro = str.replace('.', '').replace('-', '');
+            // Si el número tiene más de 2 dígitos (ej: 27435), le ponemos el punto tras el 2do
+            if (puro.length > 2) {
+                return parseFloat("-" + puro.substring(0, 2) + "." + puro.substring(2));
+            }
+            return parseFloat(str);
         }
 
-        // Tabla
+        let la = repararCoordenada(latStr);
+        let lo = repararCoordenada(lonStr);
+
+        // Auto-Inversión: en Argentina Latitud (~27) es menor que Longitud (~58) en valor absoluto
+        if (!isNaN(la) && !isNaN(lo)) {
+            if (Math.abs(la) > Math.abs(lo)) {
+                let temp = la; la = lo; lo = temp;
+            }
+        }
+        
+        // Validación de rango (Ajustado a zona Corrientes/Chaco y alrededores)
+        const coordValida = (!isNaN(la) && !isNaN(lo) && la < -20 && la > -35 && lo < -50 && lo > -65);
+
+        if(coordValida) {
+            const col = estL.includes("pend") ? "#dc3545" : estL.includes("proc") ? "#007bff" : "#28a745";
+            L.circleMarker([la, lo], { 
+                radius: 10, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 
+            }).bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`).addTo(markerLayer);
+        }
+
         const tr = document.createElement("tr");
         tr.className = `estado-${estL.replace(/\s/g, '')}`;
+        const colorError = !coordValida ? 'style="color:#dc3545; font-weight:bold;"' : '';
+
         tr.innerHTML = `
             <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td>
-            <td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
+            <td ${colorError}>${la || d.LAT}</td><td ${colorError}>${lo || d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
             <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
             <td><button style="background:#007bff; border:none; padding:5px; border-radius:4px;" onclick="window.activarEdicion(${entry.originalIndex})">✎</button></td>
         `;
         tbody.appendChild(tr);
     });
+
+    if (markerLayer.getLayers().length > 0) {
+        map.fitBounds(markerLayer.getBounds(), { padding: [50, 50] });
+    }
 
     document.getElementById("res-total").innerText = datos.length;
     document.getElementById("res-pend").innerText = cnt.pend;
@@ -287,7 +278,6 @@ window.limpiarFiltros = () => {
     window.buscar();
 }
 
-// EDICIÓN Y MODAL
 window.activarEdicion = (idx) => {
     filaActualIdx = idx;
     const d = datos[idx];
@@ -318,23 +308,19 @@ window.guardarDesdeModal = async function() {
         FINALIZACION: document.getElementById("m_cie").value
     };
 
-    actualizarAviso('loading', '💾 Guardando en Google Sheets...');
+    actualizarAviso('loading', '💾 Guardando...');
     try {
         const params = new URLSearchParams();
         params.append('action', 'update');
         params.append('row', JSON.stringify(r));
         await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
-        
         datos[filaActualIdx] = { ...datos[filaActualIdx], ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, ESC: r.ESCALERA, CIERRE: r.FINALIZACION };
         window.cerrarModal(); window.buscar();
-        actualizarAviso('ok', '✅ Registro guardado');
-    } catch(e) { 
-        actualizarAviso('error', '❌ Error al guardar'); 
-    }
+        actualizarAviso('ok', '✅ Guardado');
+    } catch(e) { actualizarAviso('error', '❌ Error al guardar'); }
 };
 
 window.cerrarModal = () => document.getElementById("modalTarea").style.display = "none";
-
 window.agregarFila = () => {
     const n = { ID: "N"+Date.now().toString().slice(-4), FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente", ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", CIERRE:"" };
     datos.unshift(n); window.activarEdicion(0);
