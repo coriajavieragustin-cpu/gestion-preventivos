@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel PGP V1.6 - Gestión de Fibra</title>
+    <title>Panel PGP V1.8 - Gestión de Fibra</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
@@ -15,7 +15,6 @@
         .status-loading { border-left-color: #ffc107; color: #856404; }
         .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
         .card-conteo { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border: 1px solid #ddd; font-size: 10px; cursor: pointer; transition: 0.2s; }
-        .card-conteo:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .card-conteo span { display: block; font-size: 22px; margin-top: 4px; }
         .conteo-total { border-top: 4px solid #6c757d; }
         .conteo-pendiente { border-top: 4px solid #dc3545; color: #dc3545; }
@@ -98,7 +97,7 @@
     <div class="contenedor-tabla">
         <table class="tabla-principal" id="tabla">
             <thead>
-                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>CIERRE</th><th>ACCIONES</th></tr>
+                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LATITUD</th><th>LONGITUD</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>FINALIZACION</th><th>ACCIONES</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -137,7 +136,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="module">
-const GAPP_URL = "https://script.google.com/macros/s/AKfycbyAK3vkD0-TYHtjLmPpN0_UzzhfF_uo5UlUoDAgv3Ebq8YmmaoyYFRPp0wwv4KVW3-g/exec"; 
+const GAPP_URL = "https://script.google.com/macros/s/AKfycbw_pbtEwiF-JwWs2qvLfGgu-3DyUenPYXWDnKb9mKDvkkz43Us2lAmgjDEamrCwGg0s/exec"; 
 
 let datos = [];
 let filaActualIdx = null; 
@@ -154,7 +153,6 @@ function actualizarAviso(tipo, mensaje) {
     bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
 }
 
-// Lógica de reparación de coordenadas restaurada
 function repararCoordenada(str) {
     if (!str || str === "0" || str === "-") return NaN;
     let s = String(str).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
@@ -170,10 +168,18 @@ window.cargarDesdeGoogleSheets = async function() {
     try {
         const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
         const json = await resp.json();
+        
         datos = json.map(d => ({
-            ID: d.ID || "", FECHA: d.FECHA || "", ZONA: d.ZONA || "", DETALLE: d.DETALLE || "",
-            LAT: d.LATITUD || "", LON: d.LONGITUD || "", ESC: d.ESCALERA || "NO",
-            CAT: d.CATEGORIA || "", ESTADO: d.ESTADO || "Pendiente", CIERRE: d.FINALIZACION || ""
+            ID: d.ID || "", 
+            FECHA: d.FECHA || "", 
+            ZONA: d.ZONA || "", 
+            DETALLE: d.DETALLE || "",
+            LAT: d.LATITUD || "", 
+            LON: d.LONGITUD || "", 
+            ESC: d.ESCALERA || "NO",
+            CAT: d.CATEGORIA || "", 
+            ESTADO: d.ESTADO || "Pendiente", 
+            CIERRE: d.FINALIZACION || ""
         }));
 
         const zonasUnicas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
@@ -224,10 +230,6 @@ window.render = function(lista) {
         let la = repararCoordenada(d.LAT);
         let lo = repararCoordenada(d.LON);
 
-        if (!isNaN(la) && !isNaN(lo) && Math.abs(la) > Math.abs(lo)) {
-            let temp = la; la = lo; lo = temp;
-        }
-        
         const coordValida = (!isNaN(la) && !isNaN(lo) && la < -20 && la > -35 && lo < -50 && lo > -65);
 
         if(coordValida) {
@@ -277,13 +279,6 @@ window.eliminarFila = async function(idx, id) {
     } catch (e) { actualizarAviso('error', '❌ Error al eliminar'); }
 }
 
-window.limpiarFiltros = () => {
-    document.getElementById("fId").value = "";
-    document.getElementById("filtroZona").value = "Todas";
-    document.getElementById("filtroEstado").value = "Todos";
-    window.buscar();
-}
-
 window.activarEdicion = (idx) => {
     filaActualIdx = idx;
     const d = datos[idx];
@@ -302,7 +297,6 @@ window.activarEdicion = (idx) => {
 
 window.guardarDesdeModal = async function() {
     let nuevoId = document.getElementById("m_id").value.trim();
-    // Si el ID está vacío, asignamos uno temporal basado en la hora para no perder el punto
     if(!nuevoId) { nuevoId = "TEMP-" + Date.now().toString().slice(-4); }
 
     const r = {
@@ -323,16 +317,14 @@ window.guardarDesdeModal = async function() {
         const params = new URLSearchParams();
         params.append('action', 'update');
         params.append('row', JSON.stringify(r));
+        
         await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
         
         datos[filaActualIdx] = { 
             ...datos[filaActualIdx], 
-            ...r, 
-            LAT: r.LATITUD, 
-            LON: r.LONGITUD, 
-            CAT: r.CATEGORIA, 
-            ESC: r.ESCALERA, 
-            CIERRE: r.FINALIZACION 
+            ID: r.ID, FECHA: r.FECHA, ZONA: r.ZONA, DETALLE: r.DETALLE,
+            LAT: r.LATITUD, LON: r.LONGITUD, ESC: r.ESCALERA, 
+            CAT: r.CATEGORIA, ESTADO: r.ESTADO, CIERRE: r.FINALIZACION 
         };
         
         window.cerrarModal(); 
@@ -344,18 +336,7 @@ window.guardarDesdeModal = async function() {
 window.cerrarModal = () => document.getElementById("modalTarea").style.display = "none";
 
 window.agregarFila = () => {
-    const n = { 
-        ID: "", 
-        FECHA: new Date().toLocaleDateString(), 
-        ESTADO: "Pendiente", 
-        ZONA:"", 
-        DETALLE:"", 
-        LAT:"", 
-        LON:"", 
-        ESC:"NO", 
-        CAT:"", 
-        CIERRE:"" 
-    };
+    const n = { ID: "", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente", ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", CIERRE:"" };
     datos.unshift(n); 
     window.activarEdicion(0);
 };
