@@ -2,139 +2,252 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel PGP V1.8 - Gestión de Fibra</title>
+    <title>Panel PGP V1.8 - Consola Técnica</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:15px; background-color: #f0f2f5; color: #333; }
-        .header-app { display: flex; align-items: center; background: #fff; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 10px; gap: 15px; }
-        .header-logo { height: 45px; width: auto; }
-        .header-app h2 { margin: 0; font-size: 18px; color: #1a73e8; }
-        .status-bar { display: flex; justify-content: space-between; padding: 8px 20px; background: #fff; border-radius: 8px; margin-bottom: 10px; font-size: 12px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid #ccc; }
-        .status-ok { border-left-color: #28a745; color: #28a745; }
-        .status-error { border-left-color: #dc3545; color: #dc3545; }
-        .status-loading { border-left-color: #ffc107; color: #856404; }
-        .resumen-estados { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
-        .card-conteo { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; background: #fff; border: 1px solid #ddd; font-size: 10px; cursor: pointer; transition: 0.2s; }
-        .card-conteo span { display: block; font-size: 22px; margin-top: 4px; }
-        .conteo-total { border-top: 4px solid #6c757d; }
-        .conteo-pendiente { border-top: 4px solid #dc3545; color: #dc3545; }
-        .conteo-proceso { border-top: 4px solid #007bff; color: #007bff; }
-        .conteo-finalizado { border-top: 4px solid #28a745; color: #28a745; }
-        .panel-central { margin-bottom: 15px; height: 500px; width: 100%; }
-        #mapa-general { height: 100%; width: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .controles { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .filtros-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
-        .grupo-filtro { display: flex; flex-direction: column; gap: 5px; }
-        .grupo-filtro label { font-size: 11px; font-weight: bold; color: #666; }
-        button { padding: 10px 16px; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
-        .btn-nueva { background: #28a745; } 
-        .btn-drive { background: #1fa463; }
-        .btn-reset { background: #6c757d; }
-        select, input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; min-width: 150px; }
-        .contenedor-tabla { background: #fff; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 500px; }
-        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1200px; }
-        .tabla-principal th { padding: 12px; background: #f8f9fa; color: #666; font-size: 11px; text-align: left; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
-        .tabla-principal td { padding: 8px 12px; font-size: 11px; border-bottom: 1px solid #eee; }
-        .estado-pendiente { background-color: #fff5f5; }
-        .estado-enproceso { background-color: #f0f7ff; }
-        .estado-finalizado { background-color: #f2fff5; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
-        .modal-content { background: #fff; padding: 25px; border-radius: 16px; width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .modal-footer { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .btn-del { background: #dc3545; padding: 5px; border-radius: 4px; }
-        .btn-edit { background: #007bff; padding: 5px; border-radius: 4px; }
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #1557b0;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #f39c12;
+            --bg-side: #ffffff;
+            --bg-main: #f8f9fa;
+            --header-height: 60px;
+        }
+
+        body, html { 
+            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-main); overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- ENCABEZADO NUEVO --- */
+        .app-header {
+            height: var(--header-height);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            background: var(--primary);
+            color: white;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(26, 115, 232, 0.4);
+        }
+
+        .header-titles h1 {
+            margin: 0;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        .header-titles span {
+            font-size: 11px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            background: rgba(255,255,255,0.1);
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .dot {
+            height: 8px;
+            width: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+
+        /* --- ESTRUCTURA PRINCIPAL AJUSTADA --- */
+        .main-wrapper { 
+            display: flex; 
+            height: calc(100vh - var(--header-height)); 
+            width: 100vw; 
+        }
+
+        /* IZQUIERDA */
+        .content-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid #ddd; }
+        #mapa-general { height: 45%; width: 100%; border-bottom: 2px solid #ddd; z-index: 1; }
+        
+        .status-bar { display: flex; justify-content: space-between; padding: 6px 15px; background: #fff; font-size: 11px; font-weight: bold; border-bottom: 1px solid #eee; }
+        .status-ok { color: var(--success); border-left: 4px solid var(--success); }
+        .status-error { color: var(--danger); border-left: 4px solid var(--danger); }
+        .status-loading { color: var(--warning); border-left: 4px solid var(--warning); }
+
+        .contenedor-tabla { flex: 1; overflow: auto; background: #fff; }
+        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1000px; font-size: 11px; }
+        .tabla-principal th { position: sticky; top: 0; background: #f1f3f4; padding: 10px; border-bottom: 2px solid #dee2e6; text-align: left; z-index: 5; }
+        .tabla-principal td { padding: 7px 10px; border-bottom: 1px solid #eee; }
+        tr:hover { background-color: #f1f3f4; cursor: pointer; }
+        
+        /* DERECHA */
+        .content-right { width: 380px; background: var(--bg-side); display: flex; flex-direction: column; overflow-y: auto; padding: 15px; box-sizing: border-box; box-shadow: -2px 0 10px rgba(0,0,0,0.05); }
+        h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; border-bottom: 2px solid #eee; padding-bottom: 5px; text-transform: uppercase; }
+        .section-box { margin-bottom: 20px; padding: 12px; border: 1px solid #eee; border-radius: 8px; background: #fff; }
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .full { grid-column: span 2; }
+
+        label { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 2px; display: block; }
+        input, select, textarea { width: 100%; padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; box-sizing: border-box; }
+
+        .btn-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+        button { padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        
+        .btn-save { background: var(--primary); color: white; grid-column: span 2; padding: 12px; font-size: 13px; margin-bottom: 5px; }
+        .btn-maps { background: #4285F4; color: white; }
+        .btn-cancel { background: #6c757d; color: white; }
+        .btn-new { background: var(--success); color: white; }
+        .btn-sync { background: #1fa463; color: white; }
+        .btn-del { background: #fff; color: var(--danger); border: 1px solid var(--danger); }
+
+        .resumen-mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; }
+        .card-mini { padding: 5px; border-radius: 4px; background: #f8f9fa; text-align: center; font-size: 9px; cursor: pointer; border: 1px solid #eee; }
+        .card-mini span { display: block; font-size: 14px; font-weight: bold; }
+
+        /* Estilo del Globo (Popup) */
+        .custom-popup .leaflet-popup-content-wrapper { border-radius: 8px; padding: 5px; }
+        .popup-title { color: var(--primary); font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 5px; display: block; }
     </style>
 </head>
 <body>
 
-    <div class="header-app">
-        <img src="img/logo.png" alt="Logo" class="header-logo">
-        <h2>SISTEMA DE MANTENIMIENTO PGP</h2>
+<!-- ENCABEZADO AGREGADO -->
+<header class="app-header">
+    <div class="header-logo">
+        <div class="logo-icon">P</div>
+        <div class="header-titles">
+            <h1>PANEL PGP Panel de Gestion de Preventivos <small>V1.8</small></h1>
+            <span>JAVIERCITO</span>
+        </div>
     </div>
-
-    <div id="statusBar" class="status-bar">
-        <span id="statusText">Cargando...</span>
-        <span id="statusTime">--:--:--</span>
+    <div class="header-actions">
+        <div class="live-indicator">
+            <span class="dot"></span> SISTEMA EN VIVO
+        </div>
     </div>
+</header>
 
-    <div class="resumen-estados">
-        <div class="card-conteo conteo-total" onclick="aplicarFiltroRapido('Todos')">TOTAL <span id="res-total">0</span></div>
-        <div class="card-conteo conteo-pendiente" onclick="aplicarFiltroRapido('Pendiente')">PENDIENTES <span id="res-pend">0</span></div>
-        <div class="card-conteo conteo-proceso" onclick="aplicarFiltroRapido('En proceso')">EN PROCESO <span id="res-proc">0</span></div>
-        <div class="card-conteo conteo-finalizado" onclick="aplicarFiltroRapido('Finalizado')">FINALIZADOS <span id="res-fin">0</span></div>
-    </div>
-
-    <div class="panel-central">
+<div class="main-wrapper">
+    <div class="content-left">
         <div id="mapa-general"></div>
-    </div>
-
-    <div class="controles">
-        <div class="filtros-row">
-            <button class="btn-nueva" onclick="agregarFila()">➕ Nueva Tarea</button>
-            <button class="btn-drive" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar Drive</button>
-            <div class="grupo-filtro">
-                <label>Zona:</label>
-                <select id="filtroZona" onchange="buscar()"><option value="Todas">🌍 Todas</option></select>
-            </div>
-            <div class="grupo-filtro">
-                <label>Estado:</label>
-                <select id="filtroEstado" onchange="buscar()">
-                    <option value="Todos">📊 Todos</option>
-                    <option value="Pendiente">🔴 Pendiente</option>
-                    <option value="En proceso">🔵 En proceso</option>
-                    <option value="Finalizado">🟢 Finalizado</option>
-                </select>
-            </div>
-            <div class="grupo-filtro">
-                <label>Buscador:</label>
-                <input type="text" id="fId" placeholder="ID o Detalle..." onkeyup="buscar()">
-            </div>
-            <button class="btn-reset" onclick="limpiarFiltros()">Limpiar</button>
+        <div id="statusBar" class="status-bar">
+            <span id="statusText">Listo</span>
+            <span id="statusTime">--:--:--</span>
+        </div>
+        <div class="contenedor-tabla">
+            <table class="tabla-principal" id="tabla">
+                <thead>
+                    <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CAT</th><th>ESTADO</th><th>FIN</th><th>ACC</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
-    <div class="contenedor-tabla">
-        <table class="tabla-principal" id="tabla">
-            <thead>
-                <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LATITUD</th><th>LONGITUD</th><th>ESC</th><th>CATEG</th><th>ESTADO</th><th>FINALIZACION</th><th>ACCIONES</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+    <div class="content-right">
+        <!-- FILTROS -->
+        <div class="section-box">
+            <h3>Filtros y Control</h3>
+            <div class="control-grid">
+                <div class="full"><input type="text" id="fId" placeholder="Buscar ID o Detalle..." onkeyup="buscar()"></div>
+                <select id="filtroZona" onchange="buscar()"><option value="Todas">Todas las Zonas</option></select>
+                <select id="filtroEstado" onchange="buscar()">
+                    <option value="Todos">Todos los Estados</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Finalizado">Finalizado</option>
+                </select>
+            </div>
+            <div class="btn-stack">
+                <button class="btn-new" onclick="agregarFila()">➕ Nueva Tarea</button>
+                <button class="btn-sync" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar</button>
+            </div>
+            <div class="resumen-mini">
+                <div class="card-mini" onclick="aplicarFiltroRapido('Todos')">TOT<span id="res-total">0</span></div>
+                <div class="card-mini" onclick="aplicarFiltroRapido('Pendiente')">PEN<span id="res-pend" style="color:var(--danger)">0</span></div>
+                <div class="card-mini" onclick="aplicarFiltroRapido('En proceso')">PRO<span id="res-proc" style="color:#007bff">0</span></div>
+                <div class="card-mini" onclick="aplicarFiltroRapido('Finalizado')">FIN<span id="res-fin" style="color:var(--success)">0</span></div>
+            </div>
+        </div>
 
-    <div id="modalTarea" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="margin-top:0; color:#1a73e8;">Editar Registro</h3>
-            <div class="modal-grid">
-                <div style="grid-column: span 2;"><label>ID</label><input type="text" id="m_id" style="width:100%;"></div>
-                <div><label>Fecha</label><input type="text" id="m_fec" style="width:100%"></div>
-                <div><label>Zona</label><input type="text" id="m_zon" style="width:100%"></div>
-                <div style="grid-column: span 2;"><label>Detalle</label><input type="text" id="m_det" style="width:100%"></div>
-                <div><label>Latitud</label><input type="text" id="m_lat" style="width:100%"></div>
-                <div><label>Longitud</label><input type="text" id="m_lon" style="width:100%"></div>
-                <div><label>Categoría</label><select id="m_cat" style="width:100%"></select></div>
+        <!-- EDICIÓN -->
+        <div class="section-box" id="panelEdicion">
+            <h3>Editor de Tarea</h3>
+            <div class="control-grid">
+                <div class="full">
+                    <label>ID Registro (Editable)</label>
+                    <input type="text" id="m_id" placeholder="ID de tarea...">
+                </div>
+                <div><label>Fecha</label><input type="text" id="m_fec"></div>
+                <div><label>Zona</label><input type="text" id="m_zon"></div>
+                <div class="full"><label>Detalle de la Tarea</label><textarea id="m_det" rows="3"></textarea></div>
+                <div><label>Latitud</label><input type="text" id="m_lat"></div>
+                <div><label>Longitud</label><input type="text" id="m_lon"></div>
+                <div><label>Categoría</label><select id="m_cat"></select></div>
                 <div><label>Estado</label>
-                    <select id="m_est" style="width:100%">
+                    <select id="m_est">
                         <option value="Pendiente">Pendiente</option>
                         <option value="En proceso">En proceso</option>
                         <option value="Finalizado">Finalizado</option>
                     </select>
                 </div>
-                <div><label>Escalera</label>
-                    <select id="m_esc" style="width:100%"><option value="NO">NO</option><option value="SI">SI</option></select>
-                </div>
-                <div><label>Finalización</label><input type="text" id="m_cie" style="width:100%"></div>
+                <div><label>Escalera</label><select id="m_esc"><option value="NO">NO</option><option value="SI">SI</option></select></div>
+                <div><label>Finalización</label><input type="text" id="m_cie"></div>
             </div>
-            <div class="modal-footer">
-                <button style="background:#4f46e5; padding:12px;" onclick="guardarDesdeModal()">💾 Guardar Cambios</button>
-                <button style="background:#6c757d; padding:10px;" onclick="cerrarModal()">Cerrar</button>
+            <div class="btn-stack">
+                <button class="btn-save" onclick="guardarDesdeModal()">💾 GUARDAR CAMBIOS</button>
+                <button class="btn-maps" onclick="abrirGoogleMaps()">📍 Google Maps</button>
+                <button class="btn-cancel" onclick="limpiarPanel()">✖ Limpiar</button>
+                <button class="btn-del" onclick="borrarDesdePanel()">🗑️ Eliminar</button>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
 const GAPP_URL = "https://script.google.com/macros/s/AKfycbw_pbtEwiF-JwWs2qvLfGgu-3DyUenPYXWDnKb9mKDvkkz43Us2lAmgjDEamrCwGg0s/exec"; 
 
@@ -145,6 +258,18 @@ const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJE", "PODA", "INTE
 let map = L.map('mapa-general').setView([-27.46, -58.83], 12);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
 let markerLayer = L.featureGroup().addTo(map);
+
+window.abrirGoogleMaps = function() {
+    const lat = document.getElementById("m_lat").value;
+    const lon = document.getElementById("m_lon").value;
+    if(lat && lon) window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank');
+}
+
+window.limpiarPanel = function() {
+    filaActualIdx = null;
+    document.querySelectorAll('#panelEdicion input, #panelEdicion textarea').forEach(el => el.value = "");
+    document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}">${c}</option>`).join("");
+}
 
 function actualizarAviso(tipo, mensaje) {
     const bar = document.getElementById("statusBar");
@@ -157,56 +282,39 @@ function repararCoordenada(str) {
     if (!str || str === "0" || str === "-") return NaN;
     let s = String(str).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
     let puro = s.replace('.', '').replace('-', '');
-    if (puro.length > 2) {
-        return parseFloat("-" + puro.substring(0, 2) + "." + puro.substring(2));
-    }
+    if (puro.length > 2) return parseFloat("-" + puro.substring(0, 2) + "." + puro.substring(2));
     return parseFloat(s);
 }
 
 window.cargarDesdeGoogleSheets = async function() {
-    actualizarAviso('loading', '⏳ Sincronizando datos...');
+    actualizarAviso('loading', '⏳ Conectando con Drive...');
     try {
         const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
         const json = await resp.json();
-        
         datos = json.map(d => ({
-            ID: d.ID || "", 
-            FECHA: d.FECHA || "", 
-            ZONA: d.ZONA || "", 
-            DETALLE: d.DETALLE || "",
-            LAT: d.LATITUD || "", 
-            LON: d.LONGITUD || "", 
-            ESC: d.ESCALERA || "NO",
-            CAT: d.CATEGORIA || "", 
-            ESTADO: d.ESTADO || "Pendiente", 
-            CIERRE: d.FINALIZACION || ""
+            ID: d.ID || "", FECHA: d.FECHA || "", ZONA: d.ZONA || "", DETALLE: d.DETALLE || "",
+            LAT: d.LATITUD || "", LON: d.LONGITUD || "", ESC: d.ESCALERA || "NO",
+            CAT: d.CATEGORIA || "", ESTADO: d.ESTADO || "Pendiente", CIERRE: d.FINALIZACION || ""
         }));
-
         const zonasUnicas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
         const selectZona = document.getElementById("filtroZona");
-        selectZona.innerHTML = '<option value="Todas">🌍 Todas</option>';
+        selectZona.innerHTML = '<option value="Todas">Todas las Zonas</option>';
         zonasUnicas.forEach(z => { selectZona.innerHTML += `<option value="${z}">${z}</option>`; });
-
         window.buscar();
-        actualizarAviso('ok', '✅ Datos cargados');
-    } catch (e) { 
-        actualizarAviso('error', '❌ Error de conexión');
-    }
+        actualizarAviso('ok', '✅ Sincronizado');
+    } catch (e) { actualizarAviso('error', '❌ Error Drive'); }
 }
 
 window.buscar = function() {
     const txt = document.getElementById("fId").value.toLowerCase();
     const zon = document.getElementById("filtroZona").value;
     const est = document.getElementById("filtroEstado").value;
-
     const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
         .filter(({ item: d }) => {
             const matchEst = (est === "Todos" || d.ESTADO === est);
             const matchZon = (zon === "Todas" || d.ZONA === zon);
-            const matchTxt = (d.ID.toString().toLowerCase().includes(txt) || d.DETALLE.toLowerCase().includes(txt));
-            return matchEst && matchZon && matchTxt;
+            return matchEst && matchZon && (d.ID.toString().toLowerCase().includes(txt) || d.DETALLE.toLowerCase().includes(txt));
         });
-
     window.render(filtrados);
 };
 
@@ -214,69 +322,44 @@ window.render = function(lista) {
     const tbody = document.querySelector("#tabla tbody");
     tbody.innerHTML = ""; 
     markerLayer.clearLayers();
-    
     let cnt = { pend: 0, proc: 0, fin: 0 };
+    
     datos.forEach(d => {
         const est = d.ESTADO.toLowerCase();
-        if(est.includes("pend")) cnt.pend++; 
-        else if(est.includes("proc")) cnt.proc++; 
-        else if(est.includes("fin")) cnt.fin++;
+        if(est.includes("pend")) cnt.pend++; else if(est.includes("proc")) cnt.proc++; else if(est.includes("fin")) cnt.fin++;
     });
 
     lista.forEach((entry) => {
         const d = entry.item;
         const estL = d.ESTADO.toLowerCase();
-
         let la = repararCoordenada(d.LAT);
         let lo = repararCoordenada(d.LON);
 
-        const coordValida = (!isNaN(la) && !isNaN(lo) && la < -20 && la > -35 && lo < -50 && lo > -65);
-
-        if(coordValida) {
+        if(!isNaN(la) && !isNaN(lo)) {
             const col = estL.includes("pend") ? "#dc3545" : estL.includes("proc") ? "#007bff" : "#28a745";
-            L.circleMarker([la, lo], { 
-                radius: 10, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 
-            }).bindPopup(`<b>ID: ${d.ID}</b><br>${d.DETALLE}`).addTo(markerLayer);
+            const m = L.circleMarker([la, lo], { radius: 8, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
+            
+            // GLOBO CON ID, ZONA Y DETALLE
+            m.bindPopup(`
+                <div class="custom-popup">
+                    <span class="popup-title">ID: ${d.ID}</span>
+                    <b>Zona:</b> ${d.ZONA}<br>
+                    <b>Detalle:</b> ${d.DETALLE}
+                </div>
+            `);
+            m.addTo(markerLayer);
         }
 
         const tr = document.createElement("tr");
-        tr.className = `estado-${estL.replace(/\s/g, '')}`;
-        const colorErr = !coordValida ? 'style="color:#dc3545; font-weight:bold;"' : '';
-
-        tr.innerHTML = `
-            <td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td>
-            <td ${colorErr}>${la || d.LAT}</td><td ${colorErr}>${lo || d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td>
-            <td>${d.ESTADO}</td><td>${d.CIERRE}</td>
-            <td style="display: flex; gap: 5px;">
-                <button class="btn-edit" onclick="window.activarEdicion(${entry.originalIndex})">✎</button>
-                <button class="btn-del" onclick="window.eliminarFila(${entry.originalIndex}, '${d.ID}')">🗑️</button>
-            </td>
-        `;
+        tr.onclick = () => window.activarEdicion(entry.originalIndex);
+        tr.innerHTML = `<td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td><td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td><td>${d.ESTADO}</td><td>${d.CIERRE}</td><td>✎</td>`;
         tbody.appendChild(tr);
     });
-
-    if (markerLayer.getLayers().length > 0) {
-        map.fitBounds(markerLayer.getBounds(), { padding: [50, 50] });
-    }
 
     document.getElementById("res-total").innerText = datos.length;
     document.getElementById("res-pend").innerText = cnt.pend;
     document.getElementById("res-proc").innerText = cnt.proc;
     document.getElementById("res-fin").innerText = cnt.fin;
-}
-
-window.eliminarFila = async function(idx, id) {
-    if (!confirm(`¿Eliminar tarea ID: ${id}?`)) return;
-    actualizarAviso('loading', '🗑️ Eliminando...');
-    try {
-        const params = new URLSearchParams();
-        params.append('action', 'delete');
-        params.append('id', id);
-        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
-        datos.splice(idx, 1);
-        window.buscar();
-        actualizarAviso('ok', '✅ Eliminado');
-    } catch (e) { actualizarAviso('error', '❌ Error al eliminar'); }
 }
 
 window.activarEdicion = (idx) => {
@@ -292,53 +375,65 @@ window.activarEdicion = (idx) => {
     document.getElementById("m_est").value = d.ESTADO;
     document.getElementById("m_esc").value = d.ESC;
     document.getElementById("m_cie").value = d.CIERRE;
-    document.getElementById("modalTarea").style.display = "flex";
 };
 
 window.guardarDesdeModal = async function() {
     let nuevoId = document.getElementById("m_id").value.trim();
-    if(!nuevoId) { nuevoId = "TEMP-" + Date.now().toString().slice(-4); }
+    if(!nuevoId) return alert("El ID es obligatorio");
 
     const r = {
-        ID: nuevoId,
-        FECHA: document.getElementById("m_fec").value,
-        ZONA: document.getElementById("m_zon").value,
-        DETALLE: document.getElementById("m_det").value,
-        LATITUD: document.getElementById("m_lat").value,
-        LONGITUD: document.getElementById("m_lon").value,
-        ESCALERA: document.getElementById("m_esc").value,
-        CATEGORIA: document.getElementById("m_cat").value,
-        ESTADO: document.getElementById("m_est").value,
+        ID: nuevoId, FECHA: document.getElementById("m_fec").value, ZONA: document.getElementById("m_zon").value,
+        DETALLE: document.getElementById("m_det").value, LATITUD: document.getElementById("m_lat").value,
+        LONGITUD: document.getElementById("m_lon").value, ESCALERA: document.getElementById("m_esc").value,
+        CATEGORIA: document.getElementById("m_cat").value, ESTADO: document.getElementById("m_est").value,
         FINALIZACION: document.getElementById("m_cie").value
     };
 
-    actualizarAviso('loading', '💾 Guardando...');
+    actualizarAviso('loading', '💾 Guardando en la nube...');
     try {
         const params = new URLSearchParams();
         params.append('action', 'update');
         params.append('row', JSON.stringify(r));
-        
         await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
         
-        datos[filaActualIdx] = { 
-            ...datos[filaActualIdx], 
-            ID: r.ID, FECHA: r.FECHA, ZONA: r.ZONA, DETALLE: r.DETALLE,
-            LAT: r.LATITUD, LON: r.LONGITUD, ESC: r.ESCALERA, 
-            CAT: r.CATEGORIA, ESTADO: r.ESTADO, CIERRE: r.FINALIZACION 
-        };
-        
-        window.cerrarModal(); 
+        if(filaActualIdx !== null) {
+            datos[filaActualIdx] = { ...datos[filaActualIdx], ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, CIERRE: r.FINALIZACION, ESC: r.ESCALERA };
+        } else {
+            datos.unshift({ ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, CIERRE: r.FINALIZACION, ESC: r.ESCALERA });
+        }
         window.buscar();
-        actualizarAviso('ok', '✅ Guardado correctamente');
+        actualizarAviso('ok', '✅ Guardado');
     } catch(e) { actualizarAviso('error', '❌ Error al guardar'); }
 };
 
-window.cerrarModal = () => document.getElementById("modalTarea").style.display = "none";
+window.borrarDesdePanel = () => {
+    const id = document.getElementById("m_id").value;
+    if(id && confirm("¿Seguro que desea eliminar el registro " + id + "?")) window.eliminarFila(filaActualIdx, id);
+}
+
+window.eliminarFila = async function(idx, id) {
+    actualizarAviso('loading', '🗑️ Eliminando...');
+    try {
+        const params = new URLSearchParams();
+        params.append('action', 'delete');
+        params.append('id', id);
+        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+        datos.splice(idx, 1);
+        window.buscar();
+        limpiarPanel();
+        actualizarAviso('ok', '✅ Registro eliminado');
+    } catch (e) { actualizarAviso('error', '❌ Error al eliminar'); }
+}
+
+window.aplicarFiltroRapido = (est) => {
+    document.getElementById("filtroEstado").value = est;
+    window.buscar();
+}
 
 window.agregarFila = () => {
-    const n = { ID: "", FECHA: new Date().toLocaleDateString(), ESTADO: "Pendiente", ZONA:"", DETALLE:"", LAT:"", LON:"", ESC:"NO", CAT:"", CIERRE:"" };
-    datos.unshift(n); 
-    window.activarEdicion(0);
+    limpiarPanel();
+    document.getElementById("m_fec").value = new Date().toLocaleDateString();
+    document.getElementById("m_id").focus();
 };
 
 window.onload = window.cargarDesdeGoogleSheets;
