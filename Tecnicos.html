@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANEL PGP V1.8 - Gestión y Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .navbar-dark.bg-dark-custom { background-color: #1a252f; }
+        .card { border-radius: 10px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .btn-sync { background-color: #28a745; color: white; font-weight: bold; border: none; padding: 8px 20px; border-radius: 5px; transition: 0.3s; }
+        .btn-sync:hover { background-color: #218838; transform: translateY(-1px); }
+        .sync-status-bar { background: white; padding: 5px 15px; border-top: 2px solid #28a745; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 15px; border-radius: 0 0 5px 5px; }
+        .sync-text { color: #28a745; font-weight: bold; }
+        .sync-time { color: #28a745; font-weight: 500; }
+        .table-responsive-custom { max-height: 65vh; overflow-y: auto; background: white; }
+        .table-custom thead { background-color: #f8f9fa; position: sticky; top: 0; z-index: 10; }
+        .status-ausencia { background-color: #fff3cd !important; }
+        .status-no-laboral { background-color: #f8d7da !important; }
+        .btn-del { border: none; background: none; cursor: pointer; font-size: 1.1rem; filter: grayscale(1); }
+        .btn-del:hover { filter: grayscale(0); transform: scale(1.2); }
+        #loaderGlobal { display: none; position: fixed; top: 15px; right: 20px; z-index: 2000; }
+    </style>
+</head>
+<body>
+
+<div id="loaderGlobal" class="badge bg-warning text-dark p-2 shadow">⌛ Procesando...</div>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark-custom shadow-sm mb-0">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="#">📊 PANEL PGP <span class="fw-light small">v1.8</span></a>
+        <div class="d-flex align-items-center">
+            <select id="selectorMes" class="form-select form-select-sm w-auto me-2" onchange="cargarDatosNube()">
+                <option value="Enero">Enero</option><option value="Febrero">Febrero</option>
+                <option value="Marzo">Marzo</option><option value="Abril">Abril</option>
+                <option value="Mayo">Mayo</option><option value="Junio">Junio</option>
+                <option value="Julio">Julio</option><option value="Agosto">Agosto</option>
+                <option value="Septiembre">Septiembre</option><option value="Octubre">Octubre</option>
+                <option value="Noviembre">Noviembre</option><option value="Diciembre">Diciembre</option>
+            </select>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-3">
+    <div class="sync-status-bar shadow-sm">
+        <div class="sync-text"><span id="syncIcon">✅</span> Sincronizado</div>
+        <div class="sync-time" id="ultimaActualizacion">--:--:--</div>
+    </div>
+</div>
+
+<div class="container-fluid px-3">
+    <div class="row">
+        <div class="col-lg-3">
+            <div class="card p-3 border-top border-primary border-4">
+                <h6 class="fw-bold mb-3 border-bottom pb-2">📝 EDITOR <span id="txtId" class="badge bg-light text-muted float-end">-</span></h6>
+                <form id="registroForm">
+                    <div class="mb-2">
+                        <label class="small fw-bold">FECHA</label>
+                        <input type="date" id="formFecha" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="small fw-bold">CATEGORÍA</label>
+                        <select id="formCat" class="form-select form-select-sm">
+                            <option value="ARMADO / REPARACION DE CAJAS">ARMADO / REPARACION DE CAJAS</option>
+                            <option value="ARMADO Y SANGRADO DE CAJAS">ARMADO Y SANGRADO DE CAJAS</option>
+                            <option value="AUSENCIA">AUSENCIA</option>
+                            <option value="AUSENCIA PARCIAL">AUSENCIA PARCIAL</option>
+                            <option value="BOTELLES/ARMADO">BOTELLES/ARMADO</option>
+                            <option value="CABLEADO TRONCAL / SUBTRONCAL">CABLEADO TRONCAL / SUBTRONCAL</option>
+                            <option value="CABLEADOS DISTRIBUCION">CABLEADOS DISTRIBUCION</option>
+                            <option value="CONEXIONES CLIENTES">CONEXIONES CLIENTES</option>
+                            <option value="DESMONTES DE FIBRA">DESMONTES DE FIBRA</option>
+                            <option value="HORAS EXTRAS">HORAS EXTRAS</option>
+                            <option value="PLANTADO DE POSTES CON RETIRO">PLANTADO DE POSTES CON RETIRO</option>
+                            <option value="PLANTADO DE POSTES">PLANTADO DE POSTES</option>
+                            <option value="PREVENTIVOS">PREVENTIVOS</option>
+                            <option value="RELEVAMIENTOS DE CAJAS">RELEVAMIENTOS DE CAJAS</option>
+                            <option value="REPLANTADO DE POSTES/TUTOR">REPLANTADO DE POSTES/TUTOR</option>
+                            <option value="TRASLADO PAQUETERIA / TALLER">TRASLADO PAQUETERIA / TALLER</option>
+                            <option value="SPLITER DAÑADO">SPLITER DAÑADO</option>
+                            <option value="CAJA MALA SEÑAL">CAJA MALA SEÑAL</option>
+                            <option value="INSTALACIONES CLIENTES">INSTALACIONES CLIENTES</option>
+                            <option value="MANTENIMIENTO CLIENTES">MANTENIMIENTO CLIENTES</option>
+                            <option value="TRABAJOS NOC">TRABAJOS NOC</option>
+                            <option value="DIA NO LABORAL">DIA NO LABORAL</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="small fw-bold">TÉCNICO</label>
+                        <select id="formTec" class="form-select form-select-sm">
+                            <option>Vicens Cristian</option><option>Alegre Maximiliano</option>
+                            <option>Gonzalez Fernando</option><option>Rodriguez Gabriel</option>
+                            <option>Emma Calvo</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="small fw-bold">ACTIVIDAD</label>
+                        <textarea id="formAct" class="form-control form-control-sm" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-bold">PUNTAJE</label>
+                        <input type="number" id="formPts" class="form-control form-control-sm" value="0">
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" id="btnGuardar" class="btn btn-primary btn-sm fw-bold shadow-sm">💾 GUARDAR</button>
+                        <button type="button" class="btn btn-light btn-sm border" onclick="limpiarForm()">✖ Limpiar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold m-0">☁️ REGISTROS EN LA NUBE</h6>
+                    <button class="btn-sync shadow-sm" onclick="cargarDatosNube()">🔄 Sincronizar</button>
+                </div>
+                <div class="table-responsive-custom border rounded shadow-sm">
+                    <table class="table table-sm table-custom table-hover mb-0" id="tablaDatos">
+                        <thead>
+                            <tr class="small text-muted text-center">
+                                <th>FECHA</th><th>DÍA</th><th>CATEGORÍA</th><th>ACTIVIDAD</th><th>TÉCNICO</th><th>PTS</th><th>ACC</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small text-center"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec"; // REEMPLAZA ESTO
+
+    window.onload = () => {
+        const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        document.getElementById('selectorMes').value = meses[new Date().getMonth()];
+        document.getElementById('formFecha').valueAsDate = new Date();
+        cargarDatosNube();
+    };
+
+    function actualizarHoraSincro() {
+        const ahora = new Date();
+        document.getElementById('ultimaActualizacion').innerText = ahora.toLocaleTimeString();
+        document.getElementById('syncIcon').innerText = "✅";
+    }
+
+    async function cargarDatosNube() {
+        mostrarLoading(true);
+        document.getElementById('syncIcon').innerText = "⏳";
+        const mes = document.getElementById('selectorMes').value;
+        const tbody = document.querySelector('#tablaDatos tbody');
+        
+        try {
+            const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${new Date().getTime()}`);
+            const filas = await res.json();
+            tbody.innerHTML = "";
+            
+            if (filas.length <= 1) {
+                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-muted">No hay datos</td></tr>';
+            } else {
+                filas.slice(1).forEach((fila, index) => {
+                    let fRaw = fila[0].toString();
+                    let fDisplay = fRaw;
+                    
+                    // LIMPIEZA DEFINITIVA DE FECHA
+                    if (fRaw.includes('T')) {
+                        let [anio, mes, dia] = fRaw.split('T')[0].split('-');
+                        fDisplay = `${dia}/${mes}/${anio}`;
+                    } else if (fRaw.includes('-')) {
+                        let partes = fRaw.split('-');
+                        fDisplay = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                    }
+
+                    let clase = (fila[2] === "AUSENCIA" || fila[2] === "AUSENCIA PARCIAL") ? "status-ausencia" : (fila[2] === "DIA NO LABORAL" ? "status-no-laboral" : "");
+                    const tr = document.createElement('tr');
+                    tr.className = clase;
+                    tr.onclick = (e) => { if(e.target.tagName !== 'BUTTON') cargarEnEditor(fila, fRaw, index + 2); };
+                    tr.innerHTML = `<td>${fDisplay}</td><td>${fila[1]}</td><td>${fila[2]}</td><td class="text-start text-truncate" style="max-width:250px">${fila[3]}</td><td>${fila[4]}</td><td>${fila[5]}</td>
+                        <td><button class="btn-del" onclick="borrarFila('${index + 2}')">🗑️</button></td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+            actualizarHoraSincro();
+        } catch (e) { 
+            document.getElementById('syncIcon').innerText = "❌";
+        } finally { mostrarLoading(false); }
+    }
+
+    async function borrarFila(nro) {
+        if(!confirm("¿Eliminar la fila " + nro + "?")) return;
+        mostrarLoading(true);
+        try {
+            const mes = document.getElementById('selectorMes').value;
+            await fetch(`${WEB_APP_URL}?action=eliminar&mes=${mes}&fila=${nro}`, { method: 'GET' });
+            setTimeout(cargarDatosNube, 1000);
+        } catch (e) { alert("Error al eliminar"); }
+        finally { mostrarLoading(false); }
+    }
+
+    document.getElementById('registroForm').onsubmit = async (e) => {
+        e.preventDefault();
+        mostrarLoading(true);
+        const fInput = document.getElementById('formFecha').value;
+        const payload = {
+            action: 'insertar',
+            mes: document.getElementById('selectorMes').value,
+            datos: [fInput.split('-').reverse().join('/'), "", document.getElementById('formCat').value, document.getElementById('formAct').value, document.getElementById('formTec').value, document.getElementById('formPts').value, ""]
+        };
+        try {
+            await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            limpiarForm();
+            setTimeout(cargarDatosNube, 1000);
+        } catch (e) { alert("Error al guardar"); }
+        finally { mostrarLoading(false); }
+    };
+
+    function cargarEnEditor(fila, fRaw, nro) {
+        document.getElementById('txtId').innerText = "Fila: " + nro;
+        let fEditor = fRaw.includes('T') ? fRaw.split('T')[0] : (fRaw.includes('/') ? fRaw.split('/').reverse().join('-') : fRaw);
+        document.getElementById('formFecha').value = fEditor;
+        document.getElementById('formCat').value = fila[2];
+        document.getElementById('formTec').value = fila[4];
+        document.getElementById('formAct').value = fila[3];
+        document.getElementById('formPts').value = fila[5];
+    }
+
+    function limpiarForm() { document.getElementById('registroForm').reset(); document.getElementById('txtId').innerText = "-"; }
+    function mostrarLoading(s) { document.getElementById('loaderGlobal').style.display = s ? "block" : "none"; }
+</script>
+</body>
+</html>
