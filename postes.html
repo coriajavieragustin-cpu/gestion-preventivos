@@ -5,23 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CONNECTTO - Panel Técnico</title>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --primary: #3b82f6; --text: #f1f5f9; --border: #334155; --accent: #fbbf24; }
+        :root { --bg: #0f172a; --card: #1e293b; --primary: #3b82f6; --text: #f1f5f9; --border: #334155; --accent: #fbbf24; --success: #22c55e; }
         body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        
         .header { display: flex; justify-content: space-between; background: #020617; padding: 15px; border-bottom: 3px solid var(--primary); border-radius: 8px; margin-bottom: 20px; }
+        
+        /* Dashboard de Totales (Imagen 2 corregida) */
+        .dashboard-stats { display: flex; gap: 15px; margin-bottom: 15px; }
+        .stat-card { background: #020617; border: 1px solid var(--border); padding: 12px 20px; border-radius: 8px; flex: 1; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid transparent; }
+        .stat-card.compra { border-bottom-color: var(--primary); }
+        .stat-card.retirados { border-bottom-color: var(--success); }
+        .stat-card.pendiente { border-bottom-color: var(--accent); }
+        
+        .stat-label { font-size: 11px; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
+        .stat-value { font-size: 20px; font-weight: bold; font-family: monospace; color: white; }
+
         .tabs { display: flex; gap: 5px; margin-bottom: 10px; }
         .tab { padding: 10px 25px; background: var(--card); border: 1px solid var(--border); color: #94a3b8; cursor: pointer; border-radius: 6px 6px 0 0; font-weight: bold; }
-        .tab.active { background: var(--primary); color: white; }
+        .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+        
         .container { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 0 8px 8px 8px; }
         .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; align-items: flex-end; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; }
         .control-group { display: flex; flex-direction: column; gap: 5px; }
         label { font-size: 11px; color: var(--primary); font-weight: bold; text-transform: uppercase; }
         select, input { background: #0f172a; color: white; border: 1px solid var(--border); padding: 8px; border-radius: 5px; outline: none; min-width: 150px; }
-        .table-wrapper { overflow-x: auto; max-height: 600px; border: 1px solid var(--border); border-radius: 4px; }
+        
+        .table-wrapper { overflow-x: auto; max-height: 500px; border: 1px solid var(--border); border-radius: 4px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { background: #020617; color: var(--primary); text-align: left; padding: 12px; position: sticky; top: 0; border-bottom: 2px solid var(--border); }
         td { padding: 10px; border-bottom: 1px solid var(--border); }
+        tr:hover { background: rgba(255,255,255,0.05); }
+        
         .fila-deposito { background-color: rgba(251, 191, 36, 0.1) !important; color: var(--accent); }
-        .btn-sync { background: #22c55e; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-sync { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         #loading { color: var(--accent); font-weight: bold; display: none; margin-right: 10px; }
     </style>
 </head>
@@ -33,6 +49,21 @@
         <small style="color: #64748b;">Panel Operativo Central</small>
     </div>
     <div id="reloj" style="font-size: 18px; font-weight: bold; font-family: monospace;">00:00:00</div>
+</div>
+
+<div class="dashboard-stats">
+    <div class="stat-card compra">
+        <span class="stat-label">Compra</span>
+        <span id="sumCompra" class="stat-value">0</span>
+    </div>
+    <div class="stat-card retirados">
+        <span class="stat-label">Retirados</span>
+        <span id="sumRetirados" class="stat-value">0</span>
+    </div>
+    <div class="stat-card pendiente">
+        <span class="stat-label">A retirar</span>
+        <span id="sumPendiente" class="stat-value">0</span>
+    </div>
 </div>
 
 <div class="tabs">
@@ -65,7 +96,6 @@
 </div>
 
 <script>
-    // URL de tu API
     const API_URL = "https://script.google.com/macros/s/AKfycbyI1jdmbVJqiTkRY8v8OSr0qaJmasok13F0NcZHJANDwHoa0S_ACIT3mpgXRemU4t8qtg/exec";
     
     let hojaActual = "Postes";
@@ -90,11 +120,20 @@
         try {
             const response = await fetch(`${API_URL}?action=read&sheet=${hojaActual}&v=${new Date().getTime()}`);
             const res = await response.json();
+            
             datosOriginales = res.data || [];
             columnasOriginales = res.columns || [];
+            
+            // ASIGNACIÓN DE VALORES DESDE EL EXCEL (J1, L1, N1)
+            if (res.resumenExcel) {
+                document.getElementById('sumCompra').innerText = res.resumenExcel.compra || 0;
+                document.getElementById('sumRetirados').innerText = res.resumenExcel.retirados || 0;
+                document.getElementById('sumPendiente').innerText = res.resumenExcel.aRetirar || 0;
+            }
+
             generarAnios();
             aplicarFiltros();
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Error al cargar:", e); }
         finally { document.getElementById('loading').style.display = 'none'; }
     }
 
@@ -136,19 +175,16 @@
         tbody.innerHTML = filtrados.map(f => {
             const esDepo = Object.values(f).some(v => String(v).includes("Depósito"));
             
-            // Lógica de limpieza de celda por celda
             const celdas = columnasOriginales.map(c => {
                 let valor = f[c] || '';
-                
-                // Limpieza de formato de fecha ISO a DD/MM/YYYY en el HTML
-                if (String(valor).includes('T03:00')) {
+                // Limpieza de formato fecha ISO a DD/MM/YYYY
+                if (String(valor).includes('T0')) {
                     try {
-                        let soloFecha = String(valor).split('T')[0]; // Toma 2024-03-23
+                        let soloFecha = String(valor).split('T')[0];
                         let p = soloFecha.split('-');
-                        valor = p[2] + '/' + p[1] + '/' + p[0];
+                        valor = p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : valor;
                     } catch(e) {}
                 }
-                
                 return `<td>${valor}</td>`;
             }).join('');
 
