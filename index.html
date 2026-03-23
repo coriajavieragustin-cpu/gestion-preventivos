@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONNECTTO - Control Total</title>
+    <title>CONNECTTO - Dashboard Central</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -16,22 +16,16 @@
             --text-muted: #8b949e;
         }
         body { background-color: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
-        
-        /* Layout Principal */
         .wrapper { display: flex; height: 100vh; }
-        
-        /* Sidebar Compacta */
-        .sidebar { width: 200px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid #2b2b40; flex-shrink: 0; }
-        .sidebar h5 { font-size: 1rem; color: var(--tec-color); margin-bottom: 25px; text-align: center; }
-        .btn-nav { width: 100%; text-align: left; background: transparent; color: #a1a5b7; border: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-decoration: none; display: block; transition: 0.2s; }
+        .sidebar { width: 180px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid #2b2b40; flex-shrink: 0; }
+        .sidebar h5 { font-size: 1rem; color: var(--tec-color); margin-bottom: 25px; text-align: center; font-weight: 800; }
+        .btn-nav { width: 100%; text-align: left; background: transparent; color: #a1a5b7; border: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-decoration: none; display: block; transition: 0.2s; margin-bottom: 5px; }
         .btn-nav:hover { background: #2b2b40; color: white; }
-
-        /* Contenedor de Paneles */
+        
         .main-content { display: flex; flex-grow: 1; overflow: hidden; }
         .panel { flex: 1; padding: 20px; overflow-y: auto; border-right: 1px solid #30363d; }
         .panel-prev { background-color: #0d1117; border-right: none; }
-
-        /* Elementos UI chicos */
+        
         .header-mini { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .header-mini h6 { margin: 0; font-weight: 700; letter-spacing: 1px; }
         
@@ -39,14 +33,25 @@
         .mini-card { background: var(--card-bg); border: 1px solid #30363d; border-radius: 8px; padding: 12px; }
         .mini-card .label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
         .mini-card .value { font-size: 1.2rem; font-weight: 800; display: block; }
-
-        .chart-container { background: var(--card-bg); border-radius: 8px; padding: 15px; border: 1px solid #30363d; }
-        select.form-select-sm { font-size: 0.75rem; background: #21262d; color: white; border-color: #30363d; width: auto; }
         
-        .btn-direct { font-size: 0.7rem; padding: 4px 10px; margin-top: 10px; display: inline-block; }
+        .chart-container { background: var(--card-bg); border-radius: 8px; padding: 15px; border: 1px solid #30363d; height: 180px; margin-bottom: 15px; }
+        select.form-select-sm { font-size: 0.75rem; background: #21262d; color: white; border-color: #30363d; width: auto; }
+
+        /* LISTA BLANCA DE PROMEDIOS */
+        .resumen-container { background: #ffffff; border-radius: 12px; padding: 12px; color: #333; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .resumen-header { font-weight: 800; font-size: 0.8rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 6px; margin-bottom: 10px; color: #1e1e2d; }
+        .tec-list { max-height: 380px; overflow-y: auto; padding-right: 5px; }
+        .tec-card { border-left: 4px solid var(--tec-color); background: #f8f9fa; margin-bottom: 8px; padding: 8px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .tec-info .nombre { font-weight: 700; font-size: 0.85rem; display: block; color: #1e1e2d; }
+        .tec-info .detalle { font-size: 0.68rem; color: #6c757d; font-family: monospace; }
+        .badge-promedio { background: var(--tec-color); color: white; font-weight: 800; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; }
+
+        #loaderGlobal { display: none; position: fixed; top: 10px; right: 10px; z-index: 2000; font-size: 0.7rem; }
     </style>
 </head>
 <body>
+
+<div id="loaderGlobal" class="badge bg-warning text-dark p-2 shadow">⌛ Sincronizando...</div>
 
 <div class="wrapper">
     <div class="sidebar">
@@ -64,34 +69,42 @@
         <div class="panel">
             <div class="header-mini">
                 <h6 style="color: var(--tec-color)">MODULO TÉCNICOS</h6>
-                <select class="form-select form-select-sm">
-                    <option>Marzo 2026</option>
+                <select id="selectorMes" class="form-select form-select-sm" onchange="cargarDatos()">
+                    <option value="Enero">Enero</option><option value="Febrero">Febrero</option>
+                    <option value="Marzo" selected>Marzo</option><option value="Abril">Abril</option>
+                    <option value="Mayo">Mayo</option><option value="Junio">Junio</option>
+                    <option value="Julio">Julio</option><option value="Agosto">Agosto</option>
+                    <option value="Septiembre">Septiembre</option><option value="Octubre">Octubre</option>
+                    <option value="Noviembre">Noviembre</option><option value="Diciembre">Diciembre</option>
                 </select>
             </div>
 
             <div class="stat-grid">
                 <div class="mini-card" style="border-left: 3px solid var(--tec-color)">
                     <span class="label">Prom. Mes</span>
-                    <span class="value">5.42</span>
+                    <span class="value" id="valPromMesTec">0.00</span>
                 </div>
                 <div class="mini-card">
-                    <span class="label">Anual</span>
-                    <span class="value">4.89</span>
+                    <span class="label" id="labelInfoMes">Info Mes</span>
+                    <span class="value" id="valInfoDias" style="font-size: 0.8rem; margin-top: 5px;">--</span>
                 </div>
             </div>
 
             <div class="chart-container">
-                <canvas id="chartTec" height="180"></canvas>
+                <canvas id="graficoTec"></canvas>
             </div>
-            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Tecnicos.html" target="_blank" class="btn btn-outline-primary btn-direct">Abrir Gestión</a>
+
+            <div class="resumen-container">
+                <div class="resumen-header">📋 RESUMEN DE PROMEDIOS</div>
+                <div class="tec-list" id="listaTecnicos">
+                    </div>
+            </div>
         </div>
 
         <div class="panel panel-prev">
             <div class="header-mini">
                 <h6 style="color: var(--prev-color)">MODULO PREVENTIVOS</h6>
-                <select class="form-select form-select-sm">
-                    <option>Marzo 2026</option>
-                </select>
+                <span class="badge bg-dark text-muted">Marzo 2026</span>
             </div>
 
             <div class="stat-grid">
@@ -106,46 +119,122 @@
             </div>
 
             <div class="chart-container">
-                <canvas id="chartPrev" height="180"></canvas>
+                <canvas id="chartPrev"></canvas>
             </div>
-            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Preventivos.html" target="_blank" class="btn btn-outline-success btn-direct">Abrir Gestión</a>
+            
+            <div class="text-center text-muted mt-5">
+                <small>Área reservada para configuración de preventivos...</small>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    const options = {
-        plugins: { legend: { position: 'bottom', labels: { color: '#8b949e', boxWidth: 10, font: { size: 9 } } } },
-        cutout: '70%',
-        responsive: true,
-        maintainAspectRatio: false
-    };
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec";
+    let miGrafico = null;
 
     window.onload = () => {
-        new Chart(document.getElementById('chartTec'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Instalaciones', 'Mantenimiento', 'Bajas'],
-                datasets: [{
-                    data: [45, 30, 25],
-                    backgroundColor: ['#009ef7', '#2e5bff', '#50cd89'],
-                    borderWidth: 0
-                }]
-            },
-            options: options
+        const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        document.getElementById('selectorMes').value = meses[new Date().getMonth()];
+        cargarDatos();
+        initChartPrev();
+    };
+
+    async function cargarDatos() {
+        document.getElementById('loaderGlobal').style.display = "block";
+        const mes = document.getElementById('selectorMes').value;
+        try {
+            const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${Date.now()}`);
+            const filas = await res.json();
+            if (filas.length > 1) {
+                procesarLogica(filas.slice(1), mes);
+            }
+        } catch (e) { console.error(e); }
+        finally { document.getElementById('loaderGlobal').style.display = "none"; }
+    }
+
+    function procesarLogica(datos, nombreMes) {
+        const mesesRef = { "Enero":0, "Febrero":1, "Marzo":2, "Abril":3, "Mayo":4, "Junio":5, "Julio":6, "Agosto":7, "Septiembre":8, "Octubre":9, "Noviembre":10, "Diciembre":11 };
+        const diasDelMes = new Date(2026, mesesRef[nombreMes] + 1, 0).getDate();
+        let domingos = 0;
+        for(let i=1; i<=diasDelMes; i++) { if(new Date(2026, mesesRef[nombreMes], i).getDay() === 0) domingos++; }
+        
+        document.getElementById('valInfoDias').innerText = `${diasDelMes}d / ${domingos} dom`;
+
+        let tecnicos = {};
+        datos.forEach(f => {
+            if(!f[4]) return;
+            const t = f[4].toString().trim();
+            if(!tecnicos[t]) tecnicos[t] = { pts: 0, aus: 0, sab: 0 };
+            tecnicos[t].pts += parseFloat(f[5]) || 0;
+            if(f[2].toString().toUpperCase().includes("AUSENCIA")) tecnicos[t].aus += 1;
+            if(f[1].toString().toLowerCase().includes("sab")) tecnicos[t].sab += 1;
         });
 
-        new Chart(document.getElementById('chartPrev'), {
+        const ranking = [];
+        const listaDiv = document.getElementById('listaTecnicos');
+        listaDiv.innerHTML = "";
+
+        let sumaPromedios = 0;
+        let cantTec = 0;
+
+        for (let t in tecnicos) {
+            const resta = tecnicos[t].aus + domingos + (tecnicos[t].sab * 0.5);
+            const div = diasDelMes - resta;
+            const prom = div > 0 ? (tecnicos[t].pts / div).toFixed(2) : 0;
+            
+            ranking.push({ nombre: t, promedio: parseFloat(prom) });
+            sumaPromedios += parseFloat(prom);
+            cantTec++;
+
+            listaDiv.innerHTML += `
+                <div class="tec-card">
+                    <div class="tec-info">
+                        <span class="nombre">${t}</span>
+                        <span class="detalle">${tecnicos[t].pts.toFixed(1)} / (${diasDelMes}m - ${domingos}d - ${tecnicos[t].aus}a - ${tecnicos[t].sab * 0.5}s)</span>
+                    </div>
+                    <div class="badge-promedio">${prom}</div>
+                </div>`;
+        }
+
+        document.getElementById('valPromMesTec').innerText = cantTec > 0 ? (sumaPromedios / cantTec).toFixed(2) : "0.00";
+        
+        ranking.sort((a, b) => b.promedio - a.promedio);
+        renderizarGrafico(ranking.map(r => r.nombre), ranking.map(r => r.promedio));
+    }
+
+    function renderizarGrafico(labels, valores) {
+        const ctx = document.getElementById('graficoTec').getContext('2d');
+        if (miGrafico) miGrafico.destroy();
+        miGrafico = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{ data: valores, backgroundColor: '#009ef7', borderRadius: 4, barThickness: 12 }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                scales: { 
+                    x: { grid: { color: '#2b2b40' }, ticks: { color: '#8b949e', font: { size: 9 } } },
+                    y: { grid: { display: false }, ticks: { color: '#fff', font: { size: 10 } } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    function initChartPrev() {
+        const ctx = document.getElementById('chartPrev').getContext('2d');
+        new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Limpieza', 'Picos', 'Nodos'],
-                datasets: [{
-                    data: [60, 20, 20],
-                    backgroundColor: ['#50cd89', '#47be7d', '#2a724b'],
-                    borderWidth: 0
-                }]
+                datasets: [{ data: [60, 25, 15], backgroundColor: ['#50cd89', '#47be7d', '#2a724b'], borderWidth: 0 }]
             },
-            options: options
+            options: {
+                plugins: { legend: { position: 'bottom', labels: { color: '#8b949e', font: { size: 9 } } } },
+                cutout: '70%', responsive: true, maintainAspectRatio: false
+            }
         });
     }
 </script>
