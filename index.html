@@ -19,9 +19,27 @@
         body { background-color: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
         .wrapper { display: flex; height: 100vh; }
         .sidebar { width: 180px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid #2b2b40; flex-shrink: 0; display: flex; flex-direction: column; }
-        .sidebar h5 { font-size: 1rem; color: var(--tec-color); margin-bottom: 5px; text-align: center; font-weight: 800; }
         
-        .clock { font-family: monospace; font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 20px; border-bottom: 1px solid #2b2b40; padding-bottom: 10px; }
+        /* Ajuste de título para el nuevo nombre largo */
+        .sidebar h5 { 
+            font-size: 0.85rem; 
+            color: var(--tec-color); 
+            margin-bottom: 10px; 
+            text-align: center; 
+            font-weight: 800; 
+            line-height: 1.2;
+        }
+        
+        /* Contenedor de reloj y fecha */
+        .clock { 
+            font-family: monospace; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-bottom: 1px solid #2b2b40; 
+            padding-bottom: 10px; 
+        }
+        #digitalDate { font-size: 0.7rem; color: var(--tec-color); margin-bottom: 2px; }
+        #digitalClock { font-size: 0.85rem; color: var(--text-muted); }
 
         .btn-nav { width: 100%; text-align: left; background: transparent; color: #a1a5b7; border: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-decoration: none; display: block; transition: 0.2s; margin-bottom: 5px; }
         .btn-nav:hover { background: #2b2b40; color: white; }
@@ -48,7 +66,6 @@
         .chart-container { background: var(--card-bg); border-radius: 8px; padding: 15px; border: 1px solid var(--border-color); height: 180px; margin-bottom: 15px; }
         select.form-select-sm { font-size: 0.75rem; background: #21262d; color: white; border-color: var(--border-color); width: auto; }
 
-        /* Estilo Resumen de Promedios Renovado */
         .resumen-container { background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color); margin-top: 10px; }
         .resumen-header { font-weight: 800; font-size: 0.75rem; color: var(--tec-color); letter-spacing: 1px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
         .calculo-info { font-size: 0.6rem; color: var(--text-muted); font-weight: normal; font-family: monospace; text-transform: none; }
@@ -69,8 +86,11 @@
 
 <div class="wrapper">
     <div class="sidebar">
-        <h5>CONNECTTO</h5>
-        <div class="clock" id="digitalClock">00:00:00</div>
+        <h5>PANEL INFRAESTRUCTURA CONNECTTO</h5>
+        <div class="clock">
+            <div id="digitalDate">--/--/----</div>
+            <div id="digitalClock">00:00:00</div>
+        </div>
         <nav>
             <a href="#" class="btn-nav">🏠 Inicio</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Tecnicos.html" target="_blank" class="btn-nav">👷 Técnicos</a>
@@ -172,6 +192,14 @@
 
     function updateClock() {
         const now = new Date();
+        
+        // Actualizar Fecha
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+        document.getElementById('digitalDate').innerText = `${day}/${month}/${year}`;
+        
+        // Actualizar Hora
         document.getElementById('digitalClock').innerText = now.toLocaleTimeString();
     }
     setInterval(updateClock, 1000);
