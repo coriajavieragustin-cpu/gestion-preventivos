@@ -14,6 +14,7 @@
             --tec-color: #009ef7;
             --prev-color: #50cd89;
             --text-muted: #8b949e;
+            --border-color: #30363d;
         }
         body { background-color: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
         .wrapper { display: flex; height: 100vh; }
@@ -26,34 +27,38 @@
         .btn-nav:hover { background: #2b2b40; color: white; }
         
         .sync-section { margin-top: auto; padding-top: 15px; border-top: 1px solid #2b2b40; }
-        .btn-sync { width: 100%; font-size: 0.7rem; padding: 8px; margin-bottom: 4px; border-radius: 6px; border: 1px solid #30363d; background: #21262d; color: white; transition: 0.3s; cursor: pointer; }
+        .btn-sync { width: 100%; font-size: 0.7rem; padding: 8px; margin-top: 10px; margin-bottom: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: #21262d; color: white; transition: 0.3s; cursor: pointer; }
         .btn-sync:hover { background: #30363d; }
         .btn-sync.tec:hover { border-color: var(--tec-color); }
         .btn-sync.prev:hover { border-color: var(--prev-color); }
-        .sync-time { font-size: 0.6rem; color: var(--text-muted); display: block; text-align: center; margin-bottom: 10px; font-family: monospace; }
+        .sync-time { font-size: 0.6rem; color: var(--text-muted); display: block; text-align: center; margin-bottom: 15px; font-family: monospace; }
 
         .main-content { display: flex; flex-grow: 1; overflow: hidden; }
-        .panel { flex: 1; padding: 20px; overflow-y: auto; border-right: 1px solid #30363d; }
+        .panel { flex: 1; padding: 20px; overflow-y: auto; border-right: 1px solid var(--border-color); }
         .panel-prev { background-color: #0d1117; border-right: none; }
         
         .header-mini { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .header-mini h6 { margin: 0; font-weight: 700; letter-spacing: 1px; }
         
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .mini-card { background: var(--card-bg); border: 1px solid #30363d; border-radius: 8px; padding: 12px; }
+        .mini-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; }
         .mini-card .label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
         .mini-card .value { font-size: 1.2rem; font-weight: 800; display: block; }
         
-        .chart-container { background: var(--card-bg); border-radius: 8px; padding: 15px; border: 1px solid #30363d; height: 180px; margin-bottom: 15px; }
-        select.form-select-sm { font-size: 0.75rem; background: #21262d; color: white; border-color: #30363d; width: auto; }
+        .chart-container { background: var(--card-bg); border-radius: 8px; padding: 15px; border: 1px solid var(--border-color); height: 180px; margin-bottom: 15px; }
+        select.form-select-sm { font-size: 0.75rem; background: #21262d; color: white; border-color: var(--border-color); width: auto; }
 
-        .resumen-container { background: #ffffff; border-radius: 12px; padding: 12px; color: #333; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .resumen-header { font-weight: 800; font-size: 0.8rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 6px; margin-bottom: 10px; color: #1e1e2d; }
-        .tec-list { max-height: 380px; overflow-y: auto; padding-right: 5px; }
-        .tec-card { border-left: 4px solid var(--tec-color); background: #f8f9fa; margin-bottom: 8px; padding: 8px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .tec-info .nombre { font-weight: 700; font-size: 0.85rem; display: block; color: #1e1e2d; }
-        .tec-info .detalle { font-size: 0.68rem; color: #6c757d; font-family: monospace; }
-        .badge-promedio { background: var(--tec-color); color: white; font-weight: 800; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; }
+        /* Estilo Resumen de Promedios Renovado */
+        .resumen-container { background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color); margin-top: 10px; }
+        .resumen-header { font-weight: 800; font-size: 0.75rem; color: var(--tec-color); letter-spacing: 1px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .calculo-info { font-size: 0.6rem; color: var(--text-muted); font-weight: normal; font-family: monospace; text-transform: none; }
+        
+        .tec-list { max-height: 350px; overflow-y: auto; padding-right: 5px; }
+        .tec-card { border-left: 3px solid var(--tec-color); background: #1c2128; margin-bottom: 10px; padding: 10px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border: 1px solid transparent; }
+        .tec-card:hover { border-color: #30363d; background: #22272e; }
+        .tec-info .nombre { font-weight: 700; font-size: 0.85rem; display: block; color: #f0f6fc; }
+        .tec-info .detalle { font-size: 0.65rem; color: var(--text-muted); font-family: monospace; }
+        .badge-promedio { background: var(--tec-color); color: white; font-weight: 800; padding: 5px 10px; border-radius: 6px; font-size: 0.9rem; min-width: 50px; text-align: center; }
 
         #loaderGlobal { display: none; position: fixed; top: 10px; right: 10px; z-index: 2000; font-size: 0.7rem; }
     </style>
@@ -75,7 +80,7 @@
         </nav>
 
         <div class="sync-section">
-            <span style="font-size: 0.55rem; color: var(--text-muted); display: block; margin-bottom: 8px; text-align: center; font-weight: bold;">SINCRONIZACIÓN</span>
+            <span style="font-size: 0.55rem; color: var(--text-muted); display: block; margin-bottom: 5px; text-align: center; font-weight: bold;">ACCIONES</span>
             <button onclick="syncManual('tec')" class="btn-sync tec">🔄 Sync Técnicos</button>
             <span class="sync-time" id="timeTec">Nunca</span>
             <button onclick="syncManual('prev')" class="btn-sync prev">🔄 Sync Preventivos</button>
@@ -99,11 +104,11 @@
 
             <div class="stat-grid">
                 <div class="mini-card" style="border-left: 3px solid var(--tec-color)">
-                    <span class="label">Prom. Mes</span>
+                    <span class="label">Promedio General</span>
                     <span class="value" id="valPromMesTec">0.00</span>
                 </div>
                 <div class="mini-card">
-                    <span class="label" id="labelInfoMes">Info Mes</span>
+                    <span class="label" id="labelInfoMes">Info Período</span>
                     <span class="value" id="valInfoDias" style="font-size: 0.8rem; margin-top: 5px;">--</span>
                 </div>
             </div>
@@ -113,7 +118,10 @@
             </div>
 
             <div class="resumen-container">
-                <div class="resumen-header">📋 RESUMEN DE PROMEDIOS</div>
+                <div class="resumen-header">
+                    <span>RANKING DE PROMEDIOS</span>
+                    <span class="calculo-info">Ptos / (Días - Dom - Aus - Sáb*0.5)</span>
+                </div>
                 <div class="tec-list" id="listaTecnicos"></div>
             </div>
         </div>
@@ -185,7 +193,7 @@
         const mes = document.getElementById('selectorMes').value;
         try {
             if (tipo === 'tec') await cargarTecnicos(mes);
-            if (tipo === 'prev') await cargarPreventivos(); // Sin mes para preventivos
+            if (tipo === 'prev') await cargarPreventivos();
             document.getElementById(tipo === 'tec' ? 'timeTec' : 'timePrev').innerText = `Hoy ${getNowTime()}`;
         } catch (e) { console.error(e); }
         finally { document.getElementById('loaderGlobal').style.display = "none"; }
@@ -215,9 +223,6 @@
             const res = await fetch(`${PREV_APP_URL}?nocache=${Date.now()}`);
             const data = await res.json();
             
-            // ELIMINADA LA LÓGICA DE FILTRADO POR MES
-            // Ahora 'data' contiene todos los preventivos independientemente de la fecha
-            
             let stats = { tot: data.length, fin: 0, pen: 0, proc: 0 };
             let zonas = {}, cats = {};
 
@@ -237,10 +242,9 @@
             document.getElementById('prevFinalizadas').innerText = stats.fin;
             document.getElementById('prevPendientes').innerText = stats.pen;
             document.getElementById('prevProceso').innerText = stats.proc;
-            document.getElementById('txtMesActual').innerText = "Historial Acumulado";
 
-            renderDoughnut('chartPrevZona', zonas, chartZona, (c) => chartZona = c, "ZONAS");
-            renderDoughnut('chartPrevCat', cats, chartCat, (c) => chartCat = c, "CATEGORÍAS");
+            renderBarChart('chartPrevZona', zonas, chartZona, (c) => chartZona = c, "CANTIDAD POR ZONA");
+            renderBarChart('chartPrevCat', cats, chartCat, (c) => chartCat = c, "CANTIDAD POR CATEGORÍA");
         } catch (e) { console.error(e); }
     }
 
@@ -270,33 +274,66 @@
             const resta = tecnicos[t].aus + domingos + (tecnicos[t].sab * 0.5);
             const div = diasDelMes - resta;
             const prom = div > 0 ? (tecnicos[t].pts / div).toFixed(2) : 0;
-            ranking.push({ nombre: t, promedio: parseFloat(prom) });
+            ranking.push({ nombre: t, promedio: parseFloat(prom), puntos: tecnicos[t].pts, aus: tecnicos[t].aus });
             sumaPromedios += parseFloat(prom);
             cantTec++;
-            listaDiv.innerHTML += `<div class="tec-card"><div class="tec-info"><span class="nombre">${t}</span><span class="detalle">${tecnicos[t].pts.toFixed(1)} pts | Aus: ${tecnicos[t].aus}</span></div><div class="badge-promedio">${prom}</div></div>`;
         }
-        document.getElementById('valPromMesTec').innerText = cantTec > 0 ? (sumaPromedios / cantTec).toFixed(2) : "0.00";
+
         ranking.sort((a, b) => b.promedio - a.promedio);
-        renderizarGrafico(ranking.map(r => r.nombre), ranking.map(r => r.promedio));
+        
+        ranking.forEach(r => {
+            listaDiv.innerHTML += `
+                <div class="tec-card">
+                    <div class="tec-info">
+                        <span class="nombre">${r.nombre}</span>
+                        <span class="detalle">${r.puntos.toFixed(1)} Puntos Totales | ${r.aus} Ausencias</span>
+                    </div>
+                    <div class="badge-promedio">${r.promedio.toFixed(2)}</div>
+                </div>`;
+        });
+
+        document.getElementById('valPromMesTec').innerText = cantTec > 0 ? (sumaPromedios / cantTec).toFixed(2) : "0.00";
+        renderizarGraficoRanking(ranking.map(r => r.nombre), ranking.map(r => r.promedio));
     }
 
-    function renderizarGrafico(labels, valores) {
+    function renderizarGraficoRanking(labels, valores) {
         const ctx = document.getElementById('graficoTec').getContext('2d');
         if (miGrafico) miGrafico.destroy();
         miGrafico = new Chart(ctx, {
             type: 'bar',
-            data: { labels: labels, datasets: [{ data: valores, backgroundColor: '#009ef7', borderRadius: 4, barThickness: 12 }] },
+            data: { labels: labels, datasets: [{ data: valores, backgroundColor: '#009ef7', borderRadius: 4, barThickness: 10 }] },
             options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: '#2b2b40' }, ticks: { color: '#8b949e', font: { size: 9 } } }, y: { grid: { display: false }, ticks: { color: '#fff', font: { size: 10 } } } }, plugins: { legend: { display: false } } }
         });
     }
 
-    function renderDoughnut(id, data, inst, cb, title) {
+    function renderBarChart(id, data, inst, cb, title) {
         const ctx = document.getElementById(id).getContext('2d');
         if(inst) inst.destroy();
+        const colores = ['#50cd89', '#009ef7', '#f1416c', '#ffc700', '#7239ea', '#00ffa3', '#ff6b6b', '#4834d4', '#f9ca24', '#be2edd'];
+
         cb(new Chart(ctx, {
-            type: 'doughnut',
-            data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#50cd89','#009ef7','#f39c12','#f8285a','#7239ea'], borderWidth: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { color: '#8b949e', font: { size: 9 } } }, title: { display: true, text: title, color: '#8b949e', font: { size: 10 } } } }
+            type: 'bar',
+            data: { 
+                labels: Object.keys(data), 
+                datasets: [{ 
+                    data: Object.values(data), 
+                    backgroundColor: colores.slice(0, Object.keys(data).length),
+                    borderRadius: 4,
+                    barThickness: 12 
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { display: false },
+                    title: { display: true, text: title, color: '#8b949e', font: { size: 11, weight: 'bold' } }
+                },
+                scales: { 
+                    x: { grid: { color: '#2b2b40' }, ticks: { color: '#fff', font: { size: 9 } } }, 
+                    y: { grid: { display: false }, ticks: { color: '#8b949e', font: { size: 9 } } } 
+                }
+            }
         }));
     }
 </script>
