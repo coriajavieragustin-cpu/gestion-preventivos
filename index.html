@@ -3,109 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISTEMA TÉCNICO - CONNECTTO</title>
+    <title>CONNECTTO - Control Total</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background: #1a252f; color: white; min-height: 100vh; display: flex; align-items: center; margin: 0; padding: 20px 0; font-family: 'Segoe UI', sans-serif; }
-        .card-menu { 
-            background: #2c3e50; border: 2px solid #28a745; transition: 0.3s; cursor: pointer;
-            text-decoration: none; color: white; height: 180px; display: flex; 
-            flex-direction: column; justify-content: center; align-items: center;
+        :root {
+            --bg-dark: #0f111a;
+            --sidebar-bg: #1e1e2d;
+            --card-bg: #161b22;
+            --tec-color: #009ef7;
+            --prev-color: #50cd89;
+            --text-muted: #8b949e;
         }
-        .card-menu:hover { background: #34495e; transform: translateY(-5px); border-color: #2ecc71; color: white; }
-        .icon { font-size: 2.2rem; margin-bottom: 10px; }
+        body { background-color: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
         
-        .summary-section { background: rgba(44, 62, 80, 0.8); border-radius: 20px; padding: 25px; margin-top: 30px; border: 1px solid #34495e; }
-        .stat-card { background: rgba(26, 37, 47, 0.6); border-radius: 12px; padding: 15px; border-bottom: 4px solid #28a745; }
-        .stat-number { font-size: 1.8rem; font-weight: bold; color: #2ecc71; display: block; }
-        .stat-label { font-size: 0.7rem; text-transform: uppercase; opacity: 0.7; font-weight: 600; }
-        .section-title { color: #f1c40f; font-size: 0.8rem; margin-bottom: 15px; text-align: left; text-transform: uppercase; letter-spacing: 2px; }
+        /* Layout Principal */
+        .wrapper { display: flex; height: 100vh; }
+        
+        /* Sidebar Compacta */
+        .sidebar { width: 200px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid #2b2b40; flex-shrink: 0; }
+        .sidebar h5 { font-size: 1rem; color: var(--tec-color); margin-bottom: 25px; text-align: center; }
+        .btn-nav { width: 100%; text-align: left; background: transparent; color: #a1a5b7; border: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-decoration: none; display: block; transition: 0.2s; }
+        .btn-nav:hover { background: #2b2b40; color: white; }
+
+        /* Contenedor de Paneles */
+        .main-content { display: flex; flex-grow: 1; overflow: hidden; }
+        .panel { flex: 1; padding: 20px; overflow-y: auto; border-right: 1px solid #30363d; }
+        .panel-prev { background-color: #0d1117; border-right: none; }
+
+        /* Elementos UI chicos */
+        .header-mini { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header-mini h6 { margin: 0; font-weight: 700; letter-spacing: 1px; }
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .mini-card { background: var(--card-bg); border: 1px solid #30363d; border-radius: 8px; padding: 12px; }
+        .mini-card .label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+        .mini-card .value { font-size: 1.2rem; font-weight: 800; display: block; }
+
+        .chart-container { background: var(--card-bg); border-radius: 8px; padding: 15px; border: 1px solid #30363d; }
+        select.form-select-sm { font-size: 0.75rem; background: #21262d; color: white; border-color: #30363d; width: auto; }
+        
+        .btn-direct { font-size: 0.7rem; padding: 4px 10px; margin-top: 10px; display: inline-block; }
     </style>
 </head>
 <body>
 
-<div class="container text-center">
-    <h1 class="mb-1 fw-bold text-uppercase">CONNECTTO</h1>
-    <p class="mb-5 text-opacity-50">Panel Operativo Central</p>
-    
-    <div class="row g-4 justify-content-center mb-4">
-        <div class="col-6 col-md-5">
-            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Preventivos.html" class="card card-menu rounded-4 shadow">
-                <div class="icon">📍</div>
-                <h5>Preventivos</h5>
-            </a>
-        </div>
-        <div class="col-6 col-md-5">
-            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Tecnicos.html" class="card card-menu rounded-4 shadow">
-                <div class="icon">📊</div>
-                <h5>Técnicos</h5>
-            </a>
-        </div>
+<div class="wrapper">
+    <div class="sidebar">
+        <h5>CONNECTTO</h5>
+        <nav>
+            <a href="#" class="btn-nav">🏠 Inicio</a>
+            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Tecnicos.html" target="_blank" class="btn-nav">👷 Técnicos</a>
+            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Preventivos.html" target="_blank" class="btn-nav">🛠️ Preventivos</a>
+            <hr style="border-color: #333">
+            <a href="#" class="btn-nav">📊 Reportes</a>
+        </nav>
     </div>
 
-    <div class="summary-section shadow">
-        <div class="row g-3">
-            <div class="col-12"><h6 class="section-title">👥 Resumen Personal <span id="nombre-mes" class="text-white opacity-50 small"></span></h6></div>
-            <div class="col-6">
-                <div class="stat-card">
-                    <span class="stat-number" id="tareas-mes">...</span>
-                    <span class="stat-label">Tareas (Mes)</span>
-                </div>
+    <div class="main-content">
+        <div class="panel">
+            <div class="header-mini">
+                <h6 style="color: var(--tec-color)">MODULO TÉCNICOS</h6>
+                <select class="form-select form-select-sm">
+                    <option>Marzo 2026</option>
+                </select>
             </div>
-            <div class="col-6">
-                <div class="stat-card">
-                    <span class="stat-number" id="promedio-tecnicos">...</span>
-                    <span class="stat-label">Promedio Gral.</span>
+
+            <div class="stat-grid">
+                <div class="mini-card" style="border-left: 3px solid var(--tec-color)">
+                    <span class="label">Prom. Mes</span>
+                    <span class="value">5.42</span>
+                </div>
+                <div class="mini-card">
+                    <span class="label">Anual</span>
+                    <span class="value">4.89</span>
                 </div>
             </div>
 
-            <div class="col-12 mt-4"><h6 class="section-title">📊 Resumen Preventivos</h6></div>
-            <div class="col-4">
-                <div class="stat-card" style="border-color: #9b59b6;"><span class="stat-number" id="prev-totales" style="color: #9b59b6;">0</span><span class="stat-label">Totales</span></div>
+            <div class="chart-container">
+                <canvas id="chartTec" height="180"></canvas>
             </div>
-            <div class="col-4">
-                <div class="stat-card" style="border-color: #3498db;"><span class="stat-number" id="prev-finalizados" style="color: #3498db;">0</span><span class="stat-label">OK</span></div>
+            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Tecnicos.html" target="_blank" class="btn btn-outline-primary btn-direct">Abrir Gestión</a>
+        </div>
+
+        <div class="panel panel-prev">
+            <div class="header-mini">
+                <h6 style="color: var(--prev-color)">MODULO PREVENTIVOS</h6>
+                <select class="form-select form-select-sm">
+                    <option>Marzo 2026</option>
+                </select>
             </div>
-            <div class="col-4">
-                <div class="stat-card" style="border-color: #e74c3c;"><span class="stat-number" id="prev-pendientes" style="color: #e74c3c;">0</span><span class="stat-label">Pend.</span></div>
+
+            <div class="stat-grid">
+                <div class="mini-card" style="border-left: 3px solid var(--prev-color)">
+                    <span class="label">Efectividad</span>
+                    <span class="value">92%</span>
+                </div>
+                <div class="mini-card">
+                    <span class="label">Cajas</span>
+                    <span class="value">124</span>
+                </div>
             </div>
+
+            <div class="chart-container">
+                <canvas id="chartPrev" height="180"></canvas>
+            </div>
+            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Preventivos.html" target="_blank" class="btn btn-outline-success btn-direct">Abrir Gestión</a>
         </div>
     </div>
 </div>
 
 <script>
-    // IMPORTANTE: Verifica que esta URL sea la de tu última implementación
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwucQla1oB7mDMiTm0xTjRM_YYbthYU0_-eEnEnyMGpvat-PqBjlRqt-MjMe-j4Rre5Mw/exec";
+    const options = {
+        plugins: { legend: { position: 'bottom', labels: { color: '#8b949e', boxWidth: 10, font: { size: 9 } } } },
+        cutout: '70%',
+        responsive: true,
+        maintainAspectRatio: false
+    };
 
-    async function cargarDashboard() {
-        const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-        const fecha = new Date();
-        const nombreMesSimple = meses[fecha.getMonth()]; 
-        document.getElementById('nombre-mes').innerText = `(${nombreMesSimple})`;
+    window.onload = () => {
+        new Chart(document.getElementById('chartTec'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Instalaciones', 'Mantenimiento', 'Bajas'],
+                datasets: [{
+                    data: [45, 30, 25],
+                    backgroundColor: ['#009ef7', '#2e5bff', '#50cd89'],
+                    borderWidth: 0
+                }]
+            },
+            options: options
+        });
 
-        try {
-            // 1. Resumen de Técnicos (Pestaña del mes actual)
-            const respTec = await fetch(`${WEB_APP_URL}?action=resumen&mes=${nombreMesSimple}`);
-            const dataTec = await respTec.json();
-            document.getElementById('tareas-mes').innerText = dataTec.tareas || 0;
-            document.getElementById('promedio-tecnicos').innerText = dataTec.promedio || 0;
-
-            // 2. Resumen de Preventivos (Pestaña "Datos")
-            const respPrev = await fetch(`${WEB_APP_URL}?action=resumen_preventivos`);
-            const dataPrev = await respPrev.json();
-            document.getElementById('prev-totales').innerText = dataPrev.totales || 0;
-            document.getElementById('prev-finalizados').innerText = dataPrev.ok || 0;
-            document.getElementById('prev-pendientes').innerText = dataPrev.pendientes || 0;
-            
-        } catch (error) {
-            console.error("Error cargando datos:", error);
-            document.getElementById('tareas-mes').innerText = "0";
-            document.getElementById('promedio-tecnicos').innerText = "0";
-        }
+        new Chart(document.getElementById('chartPrev'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Limpieza', 'Picos', 'Nodos'],
+                datasets: [{
+                    data: [60, 20, 20],
+                    backgroundColor: ['#50cd89', '#47be7d', '#2a724b'],
+                    borderWidth: 0
+                }]
+            },
+            options: options
+        });
     }
-
-    window.onload = cargarDashboard;
 </script>
-
 </body>
 </html>
