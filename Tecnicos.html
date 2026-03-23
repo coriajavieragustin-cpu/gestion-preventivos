@@ -14,7 +14,7 @@
         .sync-status-bar { background: white; padding: 5px 15px; border-top: 2px solid #28a745; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 15px; border-radius: 0 0 5px 5px; }
         .sync-text { color: #28a745; font-weight: bold; }
         .sync-time { color: #28a745; font-weight: 500; }
-        .table-responsive-custom { max-height: 65vh; overflow-y: auto; background: white; }
+        .table-responsive-custom { max-height: 50vh; overflow-y: auto; background: white; }
         .table-custom thead { background-color: #f8f9fa; position: sticky; top: 0; z-index: 10; }
         .status-ausencia { background-color: #fff3cd !important; }
         .status-no-laboral { background-color: #f8d7da !important; }
@@ -24,6 +24,7 @@
         .btn-dup:hover { transform: scale(1.2); }
         #loaderGlobal { display: none; position: fixed; top: 15px; right: 20px; z-index: 2000; }
         .highlight-tecnico { border: 2px solid #0d6efd !important; box-shadow: 0 0 8px rgba(13, 110, 253, 0.5); }
+        .card-stats { background: #e9ecef; border-left: 4px solid #0d6efd; }
     </style>
 </head>
 <body>
@@ -121,7 +122,7 @@
                     <h6 class="fw-bold m-0">☁️ REGISTROS EN LA NUBE</h6>
                     <button class="btn-sync shadow-sm" onclick="cargarDatosNube()">🔄 Sincronizar</button>
                 </div>
-                <div class="table-responsive-custom border rounded shadow-sm">
+                <div class="table-responsive-custom border rounded shadow-sm mb-3">
                     <table class="table table-sm table-custom table-hover mb-0" id="tablaDatos">
                         <thead>
                             <tr class="small text-muted text-center">
@@ -130,6 +131,13 @@
                         </thead>
                         <tbody class="small text-center"></tbody>
                     </table>
+                </div>
+
+                <div class="card card-stats p-3 mt-2">
+                    <h6 class="fw-bold mb-2">📈 PROMEDIOS MENSUALES</h6>
+                    <div id="contenedorPromedios" class="row g-2">
+                        <div class="col-12 text-muted small">Cargando estadísticas...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -156,28 +164,27 @@
     async function cargarDatosNube() {
         mostrarLoading(true);
         document.getElementById('syncIcon').innerText = "⏳";
-        const mes = document.getElementById('selectorMes').value;
+        const mesNombre = document.getElementById('selectorMes').value;
         const tbody = document.querySelector('#tablaDatos tbody');
         
         try {
-            const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${new Date().getTime()}`);
+            const res = await fetch(`${WEB_APP_URL}?mes=${mesNombre}&nocache=${new Date().getTime()}`);
             let filas = await res.json();
             tbody.innerHTML = "";
             
             if (filas.length <= 1) {
                 tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-muted">No hay datos</td></tr>';
+                document.getElementById('contenedorPromedios').innerHTML = '<div class="col-12 small text-muted">Sin datos para calcular</div>';
             } else {
-                // Separamos la cabecera del contenido
-                let cabecera = filas[0];
                 let datos = filas.slice(1);
-
-                // Agregamos el número de fila original a cada registro antes de invertir
                 datos = datos.map((fila, index) => {
                     fila.numOriginal = index + 2; 
                     return fila;
                 });
 
-                // --- AQUÍ SE INVIERTE EL ORDEN ---
+                // Calcular Promedios antes de invertir para la visualización
+                calcularEstadisticas(datos, mesNombre);
+
                 datos.reverse();
 
                 datos.forEach((fila) => {
@@ -220,6 +227,62 @@
         } catch (e) { 
             document.getElementById('syncIcon').innerText = "❌";
         } finally { mostrarLoading(false); }
+    }
+
+    function calcularEstadisticas(datos, nombreMes) {
+        const mesesRef = { "Enero":0, "Febrero":1, "Marzo":2, "Abril":3, "Mayo":4, "Junio":5, "Julio":6, "Agosto":7, "Septiembre":8, "Octubre":9, "Noviembre":10, "Diciembre":11 };
+        const anioActual = new Date().getFullYear();
+        const numMes = mesesRef[nombreMes];
+        
+        // Días totales del mes
+        const diasDelMes = new Date(anioActual, numMes + 1, 0).getDate();
+        
+        let tecnicos = {};
+
+        datos.forEach(f => {
+            const tec = f[4];
+            const cat = f[2];
+            const diaNom = f[1] ? f[1].toString().toLowerCase() : "";
+            const pts = parseFloat(f[5]) || 0;
+
+            if(!tecnicos[tec]) {
+                tecnicos[tec] = { puntos: 0, ausencias: 0, domingos: 0, medioSábados: 0 };
+            }
+
+            // Suma de puntos
+            tecnicos[tec].puntos += pts;
+
+            // Lógica de conteo de días a restar
+            if(cat === "AUSENCIA" || cat === "AUSENCIA PARCIAL") {
+                tecnicos[tec].ausencias += 1;
+            }
+            if(diaNom.includes("domingo")) {
+                tecnicos[tec].domingos += 1;
+            }
+            if(diaNom.includes("sábado") || diaNom.includes("sabado")) {
+                tecnicos[tec].medioSábados += 0.5; // "Medio Sábado"
+            }
+        });
+
+        const contenedor = document.getElementById('contenedorPromedios');
+        contenedor.innerHTML = "";
+
+        for (let t in tecnicos) {
+            const divisor = diasDelMes - (tecnicos[t].ausencias + tecnicos[t].domingos + tecnicos[t].medioSábados);
+            const promedio = divisor > 0 ? (tecnicos[t].puntos / divisor).toFixed(2) : 0;
+
+            contenedor.innerHTML += `
+                <div class="col-md-4">
+                    <div class="bg-white p-2 rounded border shadow-sm">
+                        <div class="fw-bold small text-primary">${t}</div>
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-muted">Promedio:</span>
+                            <span class="fw-bold">${promedio}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     function duplicarFila(fRaw, cat, act, pts) {
