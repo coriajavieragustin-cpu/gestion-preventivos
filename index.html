@@ -37,7 +37,6 @@
         .chart-container { background: var(--card-bg); border-radius: 8px; padding: 15px; border: 1px solid #30363d; height: 180px; margin-bottom: 15px; }
         select.form-select-sm { font-size: 0.75rem; background: #21262d; color: white; border-color: #30363d; width: auto; }
 
-        /* LISTA BLANCA DE PROMEDIOS */
         .resumen-container { background: #ffffff; border-radius: 12px; padding: 12px; color: #333; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .resumen-header { font-weight: 800; font-size: 0.8rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 6px; margin-bottom: 10px; color: #1e1e2d; }
         .tec-list { max-height: 380px; overflow-y: auto; padding-right: 5px; }
@@ -96,34 +95,41 @@
 
             <div class="resumen-container">
                 <div class="resumen-header">📋 RESUMEN DE PROMEDIOS</div>
-                <div class="tec-list" id="listaTecnicos">
-                    </div>
+                <div class="tec-list" id="listaTecnicos"></div>
             </div>
         </div>
 
         <div class="panel panel-prev">
             <div class="header-mini">
                 <h6 style="color: var(--prev-color)">MODULO PREVENTIVOS</h6>
-                <span class="badge bg-dark text-muted">Marzo 2026</span>
+                <span id="txtMesActual" class="badge bg-dark text-muted">Cargando...</span>
             </div>
 
             <div class="stat-grid">
                 <div class="mini-card" style="border-left: 3px solid var(--prev-color)">
-                    <span class="label">Efectividad</span>
-                    <span class="value">92%</span>
+                    <span class="label">Pendientes</span>
+                    <span class="value text-danger" id="prevPendientes">0</span>
                 </div>
                 <div class="mini-card">
-                    <span class="label">Cajas</span>
-                    <span class="value">124</span>
+                    <span class="label">Finalizadas</span>
+                    <span class="value text-success" id="prevFinalizadas">0</span>
+                </div>
+                <div class="mini-card">
+                    <span class="label">En Proceso</span>
+                    <span class="value text-warning" id="prevProceso">0</span>
+                </div>
+                <div class="mini-card">
+                    <span class="label">Total Tareas</span>
+                    <span class="value" id="prevTotal">0</span>
                 </div>
             </div>
 
-            <div class="chart-container">
-                <canvas id="chartPrev"></canvas>
+            <div class="chart-container" style="height: 200px;">
+                <canvas id="chartPrevZona"></canvas>
             </div>
             
-            <div class="text-center text-muted mt-5">
-                <small>Área reservada para configuración de preventivos...</small>
+            <div class="chart-container" style="height: 200px;">
+                <canvas id="chartPrevCat"></canvas>
             </div>
         </div>
     </div>
@@ -131,29 +137,76 @@
 
 <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec";
+    const PREV_APP_URL = "https://script.google.com/macros/s/AKfycbw_pbtEwiF-JwWs2qvLfGgu-3DyUenPYXWDnKb9mKDvkkz43Us2lAmgjDEamrCwGg0s/exec";
+    
     let miGrafico = null;
+    let chartZona = null;
+    let chartCat = null;
 
     window.onload = () => {
         const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-        document.getElementById('selectorMes').value = meses[new Date().getMonth()];
+        const mesActual = meses[new Date().getMonth()];
+        document.getElementById('selectorMes').value = mesActual;
+        document.getElementById('txtMesActual').innerText = `${mesActual} 2026`;
         cargarDatos();
-        initChartPrev();
     };
 
     async function cargarDatos() {
         document.getElementById('loaderGlobal').style.display = "block";
         const mes = document.getElementById('selectorMes').value;
+        document.getElementById('txtMesActual').innerText = `${mes} 2026`;
+        
         try {
-            const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${Date.now()}`);
-            const filas = await res.json();
-            if (filas.length > 1) {
-                procesarLogica(filas.slice(1), mes);
-            }
+            await Promise.all([
+                cargarTecnicos(mes),
+                cargarPreventivos(mes)
+            ]);
         } catch (e) { console.error(e); }
         finally { document.getElementById('loaderGlobal').style.display = "none"; }
     }
 
-    function procesarLogica(datos, nombreMes) {
+    async function cargarTecnicos(mes) {
+        const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${Date.now()}`);
+        const filas = await res.json();
+        if (filas.length > 1) {
+            procesarLogicaTecnicos(filas.slice(1), mes);
+        }
+    }
+
+    async function cargarPreventivos(mes) {
+        const res = await fetch(`${PREV_APP_URL}?nocache=${Date.now()}`);
+        const data = await res.json();
+        
+        const mesesFiltro = { "Enero":"/01/", "Febrero":"/02/", "Marzo":"/03/", "Abril":"/04/", "Mayo":"/05/", "Junio":"/06/", "Julio":"/07/", "Agosto":"/08/", "Septiembre":"/09/", "Octubre":"/10/", "Noviembre":"/11/", "Diciembre":"/12/" };
+        const filtro = mesesFiltro[mes];
+
+        const filtrados = data.filter(d => (d.FECHA || "").toString().includes(filtro));
+        
+        let stats = { tot: filtrados.length, fin: 0, pen: 0, proc: 0 };
+        let zonas = {}, cats = {};
+
+        filtrados.forEach(d => {
+            const est = (d.ESTADO || "").toString().toLowerCase();
+            if(est.includes("finalizado") || est.includes("fin")) stats.fin++;
+            else if(est.includes("proceso") || est.includes("proc")) stats.proc++;
+            else stats.pen++;
+
+            const z = d.ZONA || "S/Z";
+            const c = d.CATEGORIA || "S/C";
+            zonas[z] = (zonas[z] || 0) + 1;
+            cats[c] = (cats[c] || 0) + 1;
+        });
+
+        document.getElementById('prevTotal').innerText = stats.tot;
+        document.getElementById('prevFinalizadas').innerText = stats.fin;
+        document.getElementById('prevPendientes').innerText = stats.pen;
+        document.getElementById('prevProceso').innerText = stats.proc;
+
+        renderDoughnut('chartPrevZona', zonas, chartZona, (c) => chartZona = c, "ZONAS");
+        renderDoughnut('chartPrevCat', cats, chartCat, (c) => chartCat = c, "CATEGORÍAS");
+    }
+
+    function procesarLogicaTecnicos(datos, nombreMes) {
         const mesesRef = { "Enero":0, "Febrero":1, "Marzo":2, "Abril":3, "Mayo":4, "Junio":5, "Julio":6, "Agosto":7, "Septiembre":8, "Octubre":9, "Noviembre":10, "Diciembre":11 };
         const diasDelMes = new Date(2026, mesesRef[nombreMes] + 1, 0).getDate();
         let domingos = 0;
@@ -174,31 +227,25 @@
         const ranking = [];
         const listaDiv = document.getElementById('listaTecnicos');
         listaDiv.innerHTML = "";
-
-        let sumaPromedios = 0;
-        let cantTec = 0;
+        let sumaPromedios = 0, cantTec = 0;
 
         for (let t in tecnicos) {
             const resta = tecnicos[t].aus + domingos + (tecnicos[t].sab * 0.5);
             const div = diasDelMes - resta;
             const prom = div > 0 ? (tecnicos[t].pts / div).toFixed(2) : 0;
-            
             ranking.push({ nombre: t, promedio: parseFloat(prom) });
             sumaPromedios += parseFloat(prom);
             cantTec++;
-
             listaDiv.innerHTML += `
                 <div class="tec-card">
                     <div class="tec-info">
                         <span class="nombre">${t}</span>
-                        <span class="detalle">${tecnicos[t].pts.toFixed(1)} / (${diasDelMes}m - ${domingos}d - ${tecnicos[t].aus}a - ${tecnicos[t].sab * 0.5}s)</span>
+                        <span class="detalle">${tecnicos[t].pts.toFixed(1)} pts | Aus: ${tecnicos[t].aus}</span>
                     </div>
                     <div class="badge-promedio">${prom}</div>
                 </div>`;
         }
-
         document.getElementById('valPromMesTec').innerText = cantTec > 0 ? (sumaPromedios / cantTec).toFixed(2) : "0.00";
-        
         ranking.sort((a, b) => b.promedio - a.promedio);
         renderizarGrafico(ranking.map(r => r.nombre), ranking.map(r => r.promedio));
     }
@@ -223,19 +270,28 @@
         });
     }
 
-    function initChartPrev() {
-        const ctx = document.getElementById('chartPrev').getContext('2d');
-        new Chart(ctx, {
+    function renderDoughnut(id, data, inst, cb, title) {
+        const ctx = document.getElementById(id).getContext('2d');
+        if(inst) inst.destroy();
+        cb(new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Limpieza', 'Picos', 'Nodos'],
-                datasets: [{ data: [60, 25, 15], backgroundColor: ['#50cd89', '#47be7d', '#2a724b'], borderWidth: 0 }]
+                labels: Object.keys(data),
+                datasets: [{ 
+                    data: Object.values(data), 
+                    backgroundColor: ['#50cd89','#009ef7','#f39c12','#f8285a','#7239ea'],
+                    borderWidth: 0 
+                }]
             },
             options: {
-                plugins: { legend: { position: 'bottom', labels: { color: '#8b949e', font: { size: 9 } } } },
-                cutout: '70%', responsive: true, maintainAspectRatio: false
+                responsive: true, maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: { 
+                    legend: { position: 'right', labels: { color: '#8b949e', font: { size: 9 } } },
+                    title: { display: true, text: title, color: '#8b949e', font: { size: 10 } }
+                }
             }
-        });
+        }));
     }
 </script>
 </body>
