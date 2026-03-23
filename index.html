@@ -18,16 +18,19 @@
         body { background-color: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
         .wrapper { display: flex; height: 100vh; }
         .sidebar { width: 180px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid #2b2b40; flex-shrink: 0; display: flex; flex-direction: column; }
-        .sidebar h5 { font-size: 1rem; color: var(--tec-color); margin-bottom: 25px; text-align: center; font-weight: 800; }
+        .sidebar h5 { font-size: 1rem; color: var(--tec-color); margin-bottom: 5px; text-align: center; font-weight: 800; }
+        
+        .clock { font-family: monospace; font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 20px; border-bottom: 1px solid #2b2b40; padding-bottom: 10px; }
+
         .btn-nav { width: 100%; text-align: left; background: transparent; color: #a1a5b7; border: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-decoration: none; display: block; transition: 0.2s; margin-bottom: 5px; }
         .btn-nav:hover { background: #2b2b40; color: white; }
         
-        /* Botones de Sincronización */
         .sync-section { margin-top: auto; padding-top: 15px; border-top: 1px solid #2b2b40; }
-        .btn-sync { width: 100%; font-size: 0.7rem; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #30363d; background: #21262d; color: white; transition: 0.3s; cursor: pointer; }
+        .btn-sync { width: 100%; font-size: 0.7rem; padding: 8px; margin-bottom: 4px; border-radius: 6px; border: 1px solid #30363d; background: #21262d; color: white; transition: 0.3s; cursor: pointer; }
         .btn-sync:hover { background: #30363d; }
         .btn-sync.tec:hover { border-color: var(--tec-color); }
         .btn-sync.prev:hover { border-color: var(--prev-color); }
+        .sync-time { font-size: 0.6rem; color: var(--text-muted); display: block; text-align: center; margin-bottom: 10px; font-family: monospace; }
 
         .main-content { display: flex; flex-grow: 1; overflow: hidden; }
         .panel { flex: 1; padding: 20px; overflow-y: auto; border-right: 1px solid #30363d; }
@@ -62,6 +65,7 @@
 <div class="wrapper">
     <div class="sidebar">
         <h5>CONNECTTO</h5>
+        <div class="clock" id="digitalClock">00:00:00</div>
         <nav>
             <a href="#" class="btn-nav">🏠 Inicio</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Tecnicos.html" target="_blank" class="btn-nav">👷 Técnicos</a>
@@ -71,9 +75,11 @@
         </nav>
 
         <div class="sync-section">
-            <span style="font-size: 0.6rem; color: var(--text-muted); display: block; margin-bottom: 8px; text-align: center;">SINCRONIZACIÓN MANUAL</span>
+            <span style="font-size: 0.55rem; color: var(--text-muted); display: block; margin-bottom: 8px; text-align: center; font-weight: bold;">SINCRONIZACIÓN</span>
             <button onclick="syncManual('tec')" class="btn-sync tec">🔄 Sync Técnicos</button>
+            <span class="sync-time" id="timeTec">Nunca</span>
             <button onclick="syncManual('prev')" class="btn-sync prev">🔄 Sync Preventivos</button>
+            <span class="sync-time" id="timePrev">Nunca</span>
         </div>
     </div>
 
@@ -83,7 +89,7 @@
                 <h6 style="color: var(--tec-color)">MODULO TÉCNICOS</h6>
                 <select id="selectorMes" class="form-select form-select-sm" onchange="cargarDatos()">
                     <option value="Enero">Enero</option><option value="Febrero">Febrero</option>
-                    <option value="Marzo" selected>Marzo</option><option value="Abril">Abril</option>
+                    <option value="Marzo">Marzo</option><option value="Abril">Abril</option>
                     <option value="Mayo">Mayo</option><option value="Junio">Junio</option>
                     <option value="Julio">Julio</option><option value="Agosto">Agosto</option>
                     <option value="Septiembre">Septiembre</option><option value="Octubre">Octubre</option>
@@ -115,7 +121,7 @@
         <div class="panel panel-prev">
             <div class="header-mini">
                 <h6 style="color: var(--prev-color)">MODULO PREVENTIVOS</h6>
-                <span id="txtMesActual" class="badge bg-dark text-muted">Cargando...</span>
+                <span id="txtMesActual" class="badge bg-dark text-muted">Historial Total</span>
             </div>
 
             <div class="stat-grid">
@@ -156,11 +162,21 @@
     let chartZona = null;
     let chartCat = null;
 
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('digitalClock').innerText = now.toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function getNowTime() {
+        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
     window.onload = () => {
         const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         const mesActual = meses[new Date().getMonth()];
         document.getElementById('selectorMes').value = mesActual;
-        document.getElementById('txtMesActual').innerText = `${mesActual} 2026`;
         cargarDatos();
     };
 
@@ -169,21 +185,19 @@
         const mes = document.getElementById('selectorMes').value;
         try {
             if (tipo === 'tec') await cargarTecnicos(mes);
-            if (tipo === 'prev') await cargarPreventivos(mes);
-        } catch (e) { console.error("Error en sincronización manual:", e); }
+            if (tipo === 'prev') await cargarPreventivos(); // Sin mes para preventivos
+            document.getElementById(tipo === 'tec' ? 'timeTec' : 'timePrev').innerText = `Hoy ${getNowTime()}`;
+        } catch (e) { console.error(e); }
         finally { document.getElementById('loaderGlobal').style.display = "none"; }
     }
 
     async function cargarDatos() {
         document.getElementById('loaderGlobal').style.display = "block";
         const mes = document.getElementById('selectorMes').value;
-        document.getElementById('txtMesActual').innerText = `${mes} 2026`;
-        
         try {
-            await Promise.all([
-                cargarTecnicos(mes),
-                cargarPreventivos(mes)
-            ]);
+            await Promise.all([cargarTecnicos(mes), cargarPreventivos()]);
+            document.getElementById('timeTec').innerText = `Hoy ${getNowTime()}`;
+            document.getElementById('timePrev').innerText = `Hoy ${getNowTime()}`;
         } catch (e) { console.error(e); }
         finally { document.getElementById('loaderGlobal').style.display = "none"; }
     }
@@ -192,37 +206,22 @@
         try {
             const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${Date.now()}`);
             const filas = await res.json();
-            if (filas.length > 1) {
-                procesarLogicaTecnicos(filas.slice(1), mes);
-            }
-        } catch (e) { console.error("Error cargando técnicos:", e); }
+            if (filas.length > 1) { procesarLogicaTecnicos(filas.slice(1), mes); }
+        } catch (e) { console.error(e); }
     }
 
-    async function cargarPreventivos(mes) {
+    async function cargarPreventivos() {
         try {
             const res = await fetch(`${PREV_APP_URL}?nocache=${Date.now()}`);
             const data = await res.json();
             
-            // Mapeo reforzado para evitar errores de formato (03 vs 3)
-            const mesesIndices = { 
-                "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, 
-                "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12 
-            };
-            const mesBuscado = mesesIndices[mes];
-
-            // Filtrado por mes analizando la estructura de la fecha DD/MM/YYYY
-            const filtrados = data.filter(d => {
-                if (!d.FECHA) return false;
-                const partes = d.FECHA.toString().split('/');
-                if (partes.length < 2) return false;
-                const mesFila = parseInt(partes[1]); 
-                return mesFila === mesBuscado;
-            });
+            // ELIMINADA LA LÓGICA DE FILTRADO POR MES
+            // Ahora 'data' contiene todos los preventivos independientemente de la fecha
             
-            let stats = { tot: filtrados.length, fin: 0, pen: 0, proc: 0 };
+            let stats = { tot: data.length, fin: 0, pen: 0, proc: 0 };
             let zonas = {}, cats = {};
 
-            filtrados.forEach(d => {
+            data.forEach(d => {
                 const est = (d.ESTADO || "").toString().toLowerCase();
                 if(est.includes("finalizado") || est.includes("fin")) stats.fin++;
                 else if(est.includes("proceso") || est.includes("proc")) stats.proc++;
@@ -238,10 +237,11 @@
             document.getElementById('prevFinalizadas').innerText = stats.fin;
             document.getElementById('prevPendientes').innerText = stats.pen;
             document.getElementById('prevProceso').innerText = stats.proc;
+            document.getElementById('txtMesActual').innerText = "Historial Acumulado";
 
             renderDoughnut('chartPrevZona', zonas, chartZona, (c) => chartZona = c, "ZONAS");
             renderDoughnut('chartPrevCat', cats, chartCat, (c) => chartCat = c, "CATEGORÍAS");
-        } catch (e) { console.error("Error cargando preventivos:", e); }
+        } catch (e) { console.error(e); }
     }
 
     function procesarLogicaTecnicos(datos, nombreMes) {
@@ -249,9 +249,8 @@
         const diasDelMes = new Date(2026, mesesRef[nombreMes] + 1, 0).getDate();
         let domingos = 0;
         for(let i=1; i<=diasDelMes; i++) { if(new Date(2026, mesesRef[nombreMes], i).getDay() === 0) domingos++; }
-        
         document.getElementById('valInfoDias').innerText = `${diasDelMes}d / ${domingos} dom`;
-
+        
         let tecnicos = {};
         datos.forEach(f => {
             if(!f[4]) return;
@@ -274,14 +273,7 @@
             ranking.push({ nombre: t, promedio: parseFloat(prom) });
             sumaPromedios += parseFloat(prom);
             cantTec++;
-            listaDiv.innerHTML += `
-                <div class="tec-card">
-                    <div class="tec-info">
-                        <span class="nombre">${t}</span>
-                        <span class="detalle">${tecnicos[t].pts.toFixed(1)} pts | Aus: ${tecnicos[t].aus}</span>
-                    </div>
-                    <div class="badge-promedio">${prom}</div>
-                </div>`;
+            listaDiv.innerHTML += `<div class="tec-card"><div class="tec-info"><span class="nombre">${t}</span><span class="detalle">${tecnicos[t].pts.toFixed(1)} pts | Aus: ${tecnicos[t].aus}</span></div><div class="badge-promedio">${prom}</div></div>`;
         }
         document.getElementById('valPromMesTec').innerText = cantTec > 0 ? (sumaPromedios / cantTec).toFixed(2) : "0.00";
         ranking.sort((a, b) => b.promedio - a.promedio);
@@ -293,18 +285,8 @@
         if (miGrafico) miGrafico.destroy();
         miGrafico = new Chart(ctx, {
             type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{ data: valores, backgroundColor: '#009ef7', borderRadius: 4, barThickness: 12 }]
-            },
-            options: {
-                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    x: { grid: { color: '#2b2b40' }, ticks: { color: '#8b949e', font: { size: 9 } } },
-                    y: { grid: { display: false }, ticks: { color: '#fff', font: { size: 10 } } }
-                },
-                plugins: { legend: { display: false } }
-            }
+            data: { labels: labels, datasets: [{ data: valores, backgroundColor: '#009ef7', borderRadius: 4, barThickness: 12 }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: '#2b2b40' }, ticks: { color: '#8b949e', font: { size: 9 } } }, y: { grid: { display: false }, ticks: { color: '#fff', font: { size: 10 } } } }, plugins: { legend: { display: false } } }
         });
     }
 
@@ -313,25 +295,10 @@
         if(inst) inst.destroy();
         cb(new Chart(ctx, {
             type: 'doughnut',
-            data: {
-                labels: Object.keys(data),
-                datasets: [{ 
-                    data: Object.values(data), 
-                    backgroundColor: ['#50cd89','#009ef7','#f39c12','#f8285a','#7239ea'],
-                    borderWidth: 0 
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                cutout: '75%',
-                plugins: { 
-                    legend: { position: 'right', labels: { color: '#8b949e', font: { size: 9 } } },
-                    title: { display: true, text: title, color: '#8b949e', font: { size: 10 } }
-                }
-            }
+            data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#50cd89','#009ef7','#f39c12','#f8285a','#7239ea'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { color: '#8b949e', font: { size: 9 } } }, title: { display: true, text: title, color: '#8b949e', font: { size: 10 } } } }
         }));
     }
 </script>
 </body>
-</html>
 </html>
