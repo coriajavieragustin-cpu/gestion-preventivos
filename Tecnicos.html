@@ -18,9 +18,12 @@
         .table-custom thead { background-color: #f8f9fa; position: sticky; top: 0; z-index: 10; }
         .status-ausencia { background-color: #fff3cd !important; }
         .status-no-laboral { background-color: #f8d7da !important; }
-        .btn-del { border: none; background: none; cursor: pointer; font-size: 1.1rem; filter: grayscale(1); }
+        .btn-del, .btn-dup { border: none; background: none; cursor: pointer; font-size: 1.1rem; transition: 0.2s; }
+        .btn-del { filter: grayscale(1); }
         .btn-del:hover { filter: grayscale(0); transform: scale(1.2); }
+        .btn-dup:hover { transform: scale(1.2); }
         #loaderGlobal { display: none; position: fixed; top: 15px; right: 20px; z-index: 2000; }
+        .highlight-tecnico { border: 2px solid #0d6efd !important; box-shadow: 0 0 8px rgba(13, 110, 253, 0.5); }
     </style>
 </head>
 <body>
@@ -29,7 +32,7 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark-custom shadow-sm mb-0">
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="#">📊 Panel de tareas Tecnicos  <span class="fw-light small">v1.8</span></a>
+        <a class="navbar-brand fw-bold" href="#">📊 Panel de tareas Tecnicos <span class="fw-light small">v1.8</span></a>
         <div class="d-flex align-items-center">
             <select id="selectorMes" class="form-select form-select-sm w-auto me-2" onchange="cargarDatosNube()">
                 <option value="Enero">Enero</option><option value="Febrero">Febrero</option>
@@ -58,7 +61,8 @@
                 <form id="registroForm">
                     <div class="mb-2">
                         <label class="small fw-bold">FECHA</label>
-                        <input type="date" id="formFecha" class="form-control form-control-sm" required>
+                        <input type="date" id="formFecha" class="form-control form-control-sm" required onchange="actualizarDiaEnFormulario()">
+                        <div id="infoDia" class="badge bg-info text-dark mt-1 w-100" style="display:none"></div>
                     </div>
                     <div class="mb-2">
                         <label class="small fw-bold">CATEGORÍA</label>
@@ -133,12 +137,13 @@
 </div>
 
 <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec"; // REEMPLAZA ESTO
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec"; 
 
     window.onload = () => {
         const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         document.getElementById('selectorMes').value = meses[new Date().getMonth()];
         document.getElementById('formFecha').valueAsDate = new Date();
+        actualizarDiaEnFormulario();
         cargarDatosNube();
     };
 
@@ -156,17 +161,29 @@
         
         try {
             const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${new Date().getTime()}`);
-            const filas = await res.json();
+            let filas = await res.json();
             tbody.innerHTML = "";
             
             if (filas.length <= 1) {
                 tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-muted">No hay datos</td></tr>';
             } else {
-                filas.slice(1).forEach((fila, index) => {
+                // Separamos la cabecera del contenido
+                let cabecera = filas[0];
+                let datos = filas.slice(1);
+
+                // Agregamos el número de fila original a cada registro antes de invertir
+                datos = datos.map((fila, index) => {
+                    fila.numOriginal = index + 2; 
+                    return fila;
+                });
+
+                // --- AQUÍ SE INVIERTE EL ORDEN ---
+                datos.reverse();
+
+                datos.forEach((fila) => {
                     let fRaw = fila[0].toString();
                     let fDisplay = fRaw;
                     
-                    // LIMPIEZA DEFINITIVA DE FECHA
                     if (fRaw.includes('T')) {
                         let [anio, mes, dia] = fRaw.split('T')[0].split('-');
                         fDisplay = `${dia}/${mes}/${anio}`;
@@ -178,9 +195,24 @@
                     let clase = (fila[2] === "AUSENCIA" || fila[2] === "AUSENCIA PARCIAL") ? "status-ausencia" : (fila[2] === "DIA NO LABORAL" ? "status-no-laboral" : "");
                     const tr = document.createElement('tr');
                     tr.className = clase;
-                    tr.onclick = (e) => { if(e.target.tagName !== 'BUTTON') cargarEnEditor(fila, fRaw, index + 2); };
-                    tr.innerHTML = `<td>${fDisplay}</td><td>${fila[1]}</td><td>${fila[2]}</td><td class="text-start text-truncate" style="max-width:250px">${fila[3]}</td><td>${fila[4]}</td><td>${fila[5]}</td>
-                        <td><button class="btn-del" onclick="borrarFila('${index + 2}')">🗑️</button></td>`;
+                    
+                    tr.onclick = (e) => { 
+                        if(e.target.tagName !== 'BUTTON') cargarEnEditor(fila, fRaw, fila.numOriginal); 
+                    };
+
+                    const actividadEscapada = fila[3].toString().replace(/'/g, "\\'");
+
+                    tr.innerHTML = `
+                        <td>${fDisplay}</td>
+                        <td>${fila[1]}</td>
+                        <td>${fila[2]}</td>
+                        <td class="text-start text-truncate" style="max-width:250px">${fila[3]}</td>
+                        <td>${fila[4]}</td>
+                        <td>${fila[5]}</td>
+                        <td>
+                            <button class="btn-dup me-1" onclick="duplicarFila('${fRaw}', '${fila[2]}', '${actividadEscapada}', '${fila[5]}')" title="Duplicar">👯</button>
+                            <button class="btn-del" onclick="borrarFila('${fila.numOriginal}')" title="Eliminar">🗑️</button>
+                        </td>`;
                     tbody.appendChild(tr);
                 });
             }
@@ -188,6 +220,20 @@
         } catch (e) { 
             document.getElementById('syncIcon').innerText = "❌";
         } finally { mostrarLoading(false); }
+    }
+
+    function duplicarFila(fRaw, cat, act, pts) {
+        document.getElementById('txtId').innerText = "NUEVO (Copia)";
+        let fEditor = fRaw.includes('T') ? fRaw.split('T')[0] : (fRaw.includes('/') ? fRaw.split('/').reverse().join('-') : fRaw);
+        document.getElementById('formFecha').value = fEditor;
+        actualizarDiaEnFormulario();
+        document.getElementById('formCat').value = cat;
+        document.getElementById('formAct').value = act;
+        document.getElementById('formPts').value = pts;
+        const selTec = document.getElementById('formTec');
+        selTec.focus();
+        selTec.classList.add('highlight-tecnico');
+        setTimeout(() => selTec.classList.remove('highlight-tecnico'), 2500);
     }
 
     async function borrarFila(nro) {
@@ -201,14 +247,28 @@
         finally { mostrarLoading(false); }
     }
 
+    function actualizarDiaEnFormulario() {
+        const fInput = document.getElementById('formFecha').value;
+        const info = document.getElementById('infoDia');
+        if (!fInput) return;
+        const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        const partes = fInput.split('-');
+        const fecha = new Date(partes[0], partes[1] - 1, partes[2]);
+        const diaNombre = dias[fecha.getDay()];
+        info.innerText = "Día detectado: " + diaNombre;
+        info.style.display = "block";
+        return diaNombre;
+    }
+
     document.getElementById('registroForm').onsubmit = async (e) => {
         e.preventDefault();
         mostrarLoading(true);
         const fInput = document.getElementById('formFecha').value;
+        const nombreDia = actualizarDiaEnFormulario();
         const payload = {
             action: 'insertar',
             mes: document.getElementById('selectorMes').value,
-            datos: [fInput.split('-').reverse().join('/'), "", document.getElementById('formCat').value, document.getElementById('formAct').value, document.getElementById('formTec').value, document.getElementById('formPts').value, ""]
+            datos: [fInput.split('-').reverse().join('/'), nombreDia, document.getElementById('formCat').value, document.getElementById('formAct').value, document.getElementById('formTec').value, document.getElementById('formPts').value, ""]
         };
         try {
             await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
@@ -222,13 +282,20 @@
         document.getElementById('txtId').innerText = "Fila: " + nro;
         let fEditor = fRaw.includes('T') ? fRaw.split('T')[0] : (fRaw.includes('/') ? fRaw.split('/').reverse().join('-') : fRaw);
         document.getElementById('formFecha').value = fEditor;
+        actualizarDiaEnFormulario();
         document.getElementById('formCat').value = fila[2];
         document.getElementById('formTec').value = fila[4];
         document.getElementById('formAct').value = fila[3];
         document.getElementById('formPts').value = fila[5];
     }
 
-    function limpiarForm() { document.getElementById('registroForm').reset(); document.getElementById('txtId').innerText = "-"; }
+    function limpiarForm() { 
+        document.getElementById('registroForm').reset(); 
+        document.getElementById('txtId').innerText = "-"; 
+        document.getElementById('formFecha').valueAsDate = new Date();
+        actualizarDiaEnFormulario();
+    }
+    
     function mostrarLoading(s) { document.getElementById('loaderGlobal').style.display = s ? "block" : "none"; }
 </script>
 </body>
