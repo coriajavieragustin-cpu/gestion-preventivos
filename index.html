@@ -164,7 +164,6 @@
         cargarDatos();
     };
 
-    // Función para sincronización manual individual
     async function syncManual(tipo) {
         document.getElementById('loaderGlobal').style.display = "block";
         const mes = document.getElementById('selectorMes').value;
@@ -204,10 +203,21 @@
             const res = await fetch(`${PREV_APP_URL}?nocache=${Date.now()}`);
             const data = await res.json();
             
-            const mesesFiltro = { "Enero":"/01/", "Febrero":"/02/", "Marzo":"/03/", "Abril":"/04/", "Mayo":"/05/", "Junio":"/06/", "Julio":"/07/", "Agosto":"/08/", "Septiembre":"/09/", "Octubre":"/10/", "Noviembre":"/11/", "Diciembre":"/12/" };
-            const filtro = mesesFiltro[mes];
+            // Mapeo reforzado para evitar errores de formato (03 vs 3)
+            const mesesIndices = { 
+                "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, 
+                "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12 
+            };
+            const mesBuscado = mesesIndices[mes];
 
-            const filtrados = data.filter(d => (d.FECHA || "").toString().includes(filtro));
+            // Filtrado por mes analizando la estructura de la fecha DD/MM/YYYY
+            const filtrados = data.filter(d => {
+                if (!d.FECHA) return false;
+                const partes = d.FECHA.toString().split('/');
+                if (partes.length < 2) return false;
+                const mesFila = parseInt(partes[1]); 
+                return mesFila === mesBuscado;
+            });
             
             let stats = { tot: filtrados.length, fin: 0, pen: 0, proc: 0 };
             let zonas = {}, cats = {};
@@ -323,4 +333,5 @@
     }
 </script>
 </body>
+</html>
 </html>
