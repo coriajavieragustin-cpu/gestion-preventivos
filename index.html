@@ -17,11 +17,18 @@
         }
         body { background-color: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
         .wrapper { display: flex; height: 100vh; }
-        .sidebar { width: 180px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid #2b2b40; flex-shrink: 0; }
+        .sidebar { width: 180px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid #2b2b40; flex-shrink: 0; display: flex; flex-direction: column; }
         .sidebar h5 { font-size: 1rem; color: var(--tec-color); margin-bottom: 25px; text-align: center; font-weight: 800; }
         .btn-nav { width: 100%; text-align: left; background: transparent; color: #a1a5b7; border: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-decoration: none; display: block; transition: 0.2s; margin-bottom: 5px; }
         .btn-nav:hover { background: #2b2b40; color: white; }
         
+        /* Botones de Sincronización */
+        .sync-section { margin-top: auto; padding-top: 15px; border-top: 1px solid #2b2b40; }
+        .btn-sync { width: 100%; font-size: 0.7rem; padding: 8px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #30363d; background: #21262d; color: white; transition: 0.3s; cursor: pointer; }
+        .btn-sync:hover { background: #30363d; }
+        .btn-sync.tec:hover { border-color: var(--tec-color); }
+        .btn-sync.prev:hover { border-color: var(--prev-color); }
+
         .main-content { display: flex; flex-grow: 1; overflow: hidden; }
         .panel { flex: 1; padding: 20px; overflow-y: auto; border-right: 1px solid #30363d; }
         .panel-prev { background-color: #0d1117; border-right: none; }
@@ -62,6 +69,12 @@
             <hr style="border-color: #333">
             <a href="#" class="btn-nav">📊 Reportes</a>
         </nav>
+
+        <div class="sync-section">
+            <span style="font-size: 0.6rem; color: var(--text-muted); display: block; margin-bottom: 8px; text-align: center;">SINCRONIZACIÓN MANUAL</span>
+            <button onclick="syncManual('tec')" class="btn-sync tec">🔄 Sync Técnicos</button>
+            <button onclick="syncManual('prev')" class="btn-sync prev">🔄 Sync Preventivos</button>
+        </div>
     </div>
 
     <div class="main-content">
@@ -151,6 +164,17 @@
         cargarDatos();
     };
 
+    // Función para sincronización manual individual
+    async function syncManual(tipo) {
+        document.getElementById('loaderGlobal').style.display = "block";
+        const mes = document.getElementById('selectorMes').value;
+        try {
+            if (tipo === 'tec') await cargarTecnicos(mes);
+            if (tipo === 'prev') await cargarPreventivos(mes);
+        } catch (e) { console.error("Error en sincronización manual:", e); }
+        finally { document.getElementById('loaderGlobal').style.display = "none"; }
+    }
+
     async function cargarDatos() {
         document.getElementById('loaderGlobal').style.display = "block";
         const mes = document.getElementById('selectorMes').value;
@@ -166,44 +190,48 @@
     }
 
     async function cargarTecnicos(mes) {
-        const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${Date.now()}`);
-        const filas = await res.json();
-        if (filas.length > 1) {
-            procesarLogicaTecnicos(filas.slice(1), mes);
-        }
+        try {
+            const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${Date.now()}`);
+            const filas = await res.json();
+            if (filas.length > 1) {
+                procesarLogicaTecnicos(filas.slice(1), mes);
+            }
+        } catch (e) { console.error("Error cargando técnicos:", e); }
     }
 
     async function cargarPreventivos(mes) {
-        const res = await fetch(`${PREV_APP_URL}?nocache=${Date.now()}`);
-        const data = await res.json();
-        
-        const mesesFiltro = { "Enero":"/01/", "Febrero":"/02/", "Marzo":"/03/", "Abril":"/04/", "Mayo":"/05/", "Junio":"/06/", "Julio":"/07/", "Agosto":"/08/", "Septiembre":"/09/", "Octubre":"/10/", "Noviembre":"/11/", "Diciembre":"/12/" };
-        const filtro = mesesFiltro[mes];
+        try {
+            const res = await fetch(`${PREV_APP_URL}?nocache=${Date.now()}`);
+            const data = await res.json();
+            
+            const mesesFiltro = { "Enero":"/01/", "Febrero":"/02/", "Marzo":"/03/", "Abril":"/04/", "Mayo":"/05/", "Junio":"/06/", "Julio":"/07/", "Agosto":"/08/", "Septiembre":"/09/", "Octubre":"/10/", "Noviembre":"/11/", "Diciembre":"/12/" };
+            const filtro = mesesFiltro[mes];
 
-        const filtrados = data.filter(d => (d.FECHA || "").toString().includes(filtro));
-        
-        let stats = { tot: filtrados.length, fin: 0, pen: 0, proc: 0 };
-        let zonas = {}, cats = {};
+            const filtrados = data.filter(d => (d.FECHA || "").toString().includes(filtro));
+            
+            let stats = { tot: filtrados.length, fin: 0, pen: 0, proc: 0 };
+            let zonas = {}, cats = {};
 
-        filtrados.forEach(d => {
-            const est = (d.ESTADO || "").toString().toLowerCase();
-            if(est.includes("finalizado") || est.includes("fin")) stats.fin++;
-            else if(est.includes("proceso") || est.includes("proc")) stats.proc++;
-            else stats.pen++;
+            filtrados.forEach(d => {
+                const est = (d.ESTADO || "").toString().toLowerCase();
+                if(est.includes("finalizado") || est.includes("fin")) stats.fin++;
+                else if(est.includes("proceso") || est.includes("proc")) stats.proc++;
+                else stats.pen++;
 
-            const z = d.ZONA || "S/Z";
-            const c = d.CATEGORIA || "S/C";
-            zonas[z] = (zonas[z] || 0) + 1;
-            cats[c] = (cats[c] || 0) + 1;
-        });
+                const z = d.ZONA || "S/Z";
+                const c = d.CATEGORIA || "S/C";
+                zonas[z] = (zonas[z] || 0) + 1;
+                cats[c] = (cats[c] || 0) + 1;
+            });
 
-        document.getElementById('prevTotal').innerText = stats.tot;
-        document.getElementById('prevFinalizadas').innerText = stats.fin;
-        document.getElementById('prevPendientes').innerText = stats.pen;
-        document.getElementById('prevProceso').innerText = stats.proc;
+            document.getElementById('prevTotal').innerText = stats.tot;
+            document.getElementById('prevFinalizadas').innerText = stats.fin;
+            document.getElementById('prevPendientes').innerText = stats.pen;
+            document.getElementById('prevProceso').innerText = stats.proc;
 
-        renderDoughnut('chartPrevZona', zonas, chartZona, (c) => chartZona = c, "ZONAS");
-        renderDoughnut('chartPrevCat', cats, chartCat, (c) => chartCat = c, "CATEGORÍAS");
+            renderDoughnut('chartPrevZona', zonas, chartZona, (c) => chartZona = c, "ZONAS");
+            renderDoughnut('chartPrevCat', cats, chartCat, (c) => chartCat = c, "CATEGORÍAS");
+        } catch (e) { console.error("Error cargando preventivos:", e); }
     }
 
     function procesarLogicaTecnicos(datos, nombreMes) {
