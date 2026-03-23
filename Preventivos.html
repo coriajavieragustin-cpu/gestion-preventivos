@@ -6,161 +6,140 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
-            --primary: #1a73e8;
-            --primary-dark: #1557b0;
-            --success: #28a745;
-            --danger: #dc3545;
-            --warning: #f39c12;
-            --bg-side: #ffffff;
-            --bg-main: #f8f9fa;
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            /* Colores de Fondo Dark */
+            --bg-main: #0f172a;
+            --bg-side: #1e293b;
+            --bg-card: #334155;
+            --bg-input: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-color: #475569;
             --header-height: 60px;
         }
 
         body, html { 
             margin: 0; padding: 0; height: 100vh; width: 100vw;
             font-family: 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-main); overflow: hidden; 
+            background-color: var(--bg-main); color: var(--text-main); overflow: hidden; 
             display: flex;
             flex-direction: column;
         }
 
-        /* --- ENCABEZADO NUEVO --- */
+        /* --- ENCABEZADO --- */
         .app-header {
             height: var(--header-height);
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
             color: white;
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 100;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .header-logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .header-logo { display: flex; align-items: center; gap: 12px; }
         .logo-icon {
             background: var(--primary);
             color: white;
-            width: 35px;
-            height: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 18px;
-            box-shadow: 0 0 15px rgba(26, 115, 232, 0.4);
+            width: 35px; height: 35px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; font-weight: bold; font-size: 18px;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
         }
 
-        .header-titles h1 {
-            margin: 0;
-            font-size: 18px;
-            letter-spacing: 0.5px;
-        }
+        .header-titles h1 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
+        .header-titles span { font-size: 11px; opacity: 0.7; text-transform: uppercase; }
 
-        .header-titles span {
-            font-size: 11px;
-            opacity: 0.7;
-            text-transform: uppercase;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
+        .header-actions { display: flex; gap: 15px; align-items: center; }
         .live-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            background: rgba(255,255,255,0.1);
-            padding: 5px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; gap: 6px; font-size: 12px;
+            background: rgba(255,255,255,0.05);
+            padding: 5px 12px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .dot {
-            height: 8px;
-            width: 8px;
+            height: 8px; width: 8px;
             background-color: var(--success);
-            border-radius: 50%;
-            display: inline-block;
+            border-radius: 50%; display: inline-block;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
-        /* --- ESTRUCTURA PRINCIPAL AJUSTADA --- */
-        .main-wrapper { 
-            display: flex; 
-            height: calc(100vh - var(--header-height)); 
-            width: 100vw; 
-        }
+        /* --- ESTRUCTURA PRINCIPAL --- */
+        .main-wrapper { display: flex; height: calc(100vh - var(--header-height)); width: 100vw; }
 
         /* IZQUIERDA */
-        .content-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid #ddd; }
-        #mapa-general { height: 45%; width: 100%; border-bottom: 2px solid #ddd; z-index: 1; }
+        .content-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border-color); }
+        #mapa-general { height: 45%; width: 100%; border-bottom: 2px solid var(--border-color); z-index: 1; filter: brightness(0.9) contrast(1.1); }
         
-        .status-bar { display: flex; justify-content: space-between; padding: 6px 15px; background: #fff; font-size: 11px; font-weight: bold; border-bottom: 1px solid #eee; }
+        .status-bar { display: flex; justify-content: space-between; padding: 6px 15px; background: #020617; font-size: 11px; font-weight: bold; border-bottom: 1px solid var(--border-color); }
         .status-ok { color: var(--success); border-left: 4px solid var(--success); }
         .status-error { color: var(--danger); border-left: 4px solid var(--danger); }
         .status-loading { color: var(--warning); border-left: 4px solid var(--warning); }
 
-        .contenedor-tabla { flex: 1; overflow: auto; background: #fff; }
-        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1000px; font-size: 11px; }
-        .tabla-principal th { position: sticky; top: 0; background: #f1f3f4; padding: 10px; border-bottom: 2px solid #dee2e6; text-align: left; z-index: 5; }
-        .tabla-principal td { padding: 7px 10px; border-bottom: 1px solid #eee; }
-        tr:hover { background-color: #f1f3f4; cursor: pointer; }
+        .contenedor-tabla { flex: 1; overflow: auto; background: var(--bg-main); }
+        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1000px; font-size: 11px; color: var(--text-main); }
+        .tabla-principal th { position: sticky; top: 0; background: #1e293b; padding: 10px; border-bottom: 2px solid var(--border-color); text-align: left; z-index: 5; color: var(--text-muted); }
+        .tabla-principal td { padding: 7px 10px; border-bottom: 1px solid var(--border-color); }
+        tr:hover { background-color: #334155; cursor: pointer; }
         
         /* DERECHA */
-        .content-right { width: 380px; background: var(--bg-side); display: flex; flex-direction: column; overflow-y: auto; padding: 15px; box-sizing: border-box; box-shadow: -2px 0 10px rgba(0,0,0,0.05); }
-        h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; border-bottom: 2px solid #eee; padding-bottom: 5px; text-transform: uppercase; }
-        .section-box { margin-bottom: 20px; padding: 12px; border: 1px solid #eee; border-radius: 8px; background: #fff; }
+        .content-right { width: 380px; background: var(--bg-side); display: flex; flex-direction: column; overflow-y: auto; padding: 15px; box-sizing: border-box; box-shadow: -4px 0 15px rgba(0,0,0,0.3); }
+        h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px; text-transform: uppercase; }
+        .section-box { margin-bottom: 20px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: #1e293b; }
         .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .full { grid-column: span 2; }
 
-        label { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 2px; display: block; }
-        input, select, textarea { width: 100%; padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; box-sizing: border-box; }
+        label { font-size: 10px; font-weight: bold; color: var(--text-muted); margin-bottom: 2px; display: block; }
+        input, select, textarea { 
+            width: 100%; padding: 7px; border: 1px solid var(--border-color); border-radius: 4px; 
+            font-size: 12px; box-sizing: border-box; background: var(--bg-input); color: white;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
 
         .btn-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
-        button { padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        button { padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
         
         .btn-save { background: var(--primary); color: white; grid-column: span 2; padding: 12px; font-size: 13px; margin-bottom: 5px; }
         .btn-maps { background: #4285F4; color: white; }
-        .btn-cancel { background: #6c757d; color: white; }
+        .btn-cancel { background: #475569; color: white; }
         .btn-new { background: var(--success); color: white; }
-        .btn-sync { background: #1fa463; color: white; }
-        .btn-del { background: #fff; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-sync { background: #059669; color: white; }
+        .btn-del { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-del:hover { background: var(--danger); color: white; }
 
         .resumen-mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; }
-        .card-mini { padding: 5px; border-radius: 4px; background: #f8f9fa; text-align: center; font-size: 9px; cursor: pointer; border: 1px solid #eee; }
+        .card-mini { padding: 5px; border-radius: 4px; background: #0f172a; text-align: center; font-size: 9px; cursor: pointer; border: 1px solid var(--border-color); }
         .card-mini span { display: block; font-size: 14px; font-weight: bold; }
 
-        /* Estilo del Globo (Popup) */
-        .custom-popup .leaflet-popup-content-wrapper { border-radius: 8px; padding: 5px; }
-        .popup-title { color: var(--primary); font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 5px; display: block; }
+        /* Estilo del Globo (Popup) Dark */
+        .custom-popup .leaflet-popup-content-wrapper { background: #1e293b; color: white; border-radius: 8px; padding: 5px; }
+        .custom-popup .leaflet-popup-tip { background: #1e293b; }
+        .popup-title { color: var(--primary); font-weight: bold; border-bottom: 1px solid var(--border-color); margin-bottom: 5px; display: block; }
     </style>
 </head>
 <body>
 
-<!-- ENCABEZADO AGREGADO -->
 <header class="app-header">
     <div class="header-logo">
         <div class="logo-icon">P</div>
         <div class="header-titles">
-            <h1>PANEL PGP Panel de Gestion de Preventivos <small>V1.8</small></h1>
-            <span>JAVIERCITO</span>
+            <h1>PANEL PGP <small>V1.8</small></h1>
+            <span>CONSOLA TÉCNICA - JAVIERCITO</span>
         </div>
     </div>
     <div class="header-actions">
@@ -188,7 +167,6 @@
     </div>
 
     <div class="content-right">
-        <!-- FILTROS -->
         <div class="section-box">
             <h3>Filtros y Control</h3>
             <div class="control-grid">
@@ -208,12 +186,11 @@
             <div class="resumen-mini">
                 <div class="card-mini" onclick="aplicarFiltroRapido('Todos')">TOT<span id="res-total">0</span></div>
                 <div class="card-mini" onclick="aplicarFiltroRapido('Pendiente')">PEN<span id="res-pend" style="color:var(--danger)">0</span></div>
-                <div class="card-mini" onclick="aplicarFiltroRapido('En proceso')">PRO<span id="res-proc" style="color:#007bff">0</span></div>
+                <div class="card-mini" onclick="aplicarFiltroRapido('En proceso')">PRO<span id="res-proc" style="color:var(--primary)">0</span></div>
                 <div class="card-mini" onclick="aplicarFiltroRapido('Finalizado')">FIN<span id="res-fin" style="color:var(--success)">0</span></div>
             </div>
         </div>
 
-        <!-- EDICIÓN -->
         <div class="section-box" id="panelEdicion">
             <h3>Editor de Tarea</h3>
             <div class="control-grid">
@@ -249,194 +226,195 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
-const GAPP_URL = "https://script.google.com/macros/s/AKfycbw_pbtEwiF-JwWs2qvLfGgu-3DyUenPYXWDnKb9mKDvkkz43Us2lAmgjDEamrCwGg0s/exec"; 
+    // --- LA LÓGICA SE MANTIENE EXACTAMENTE IGUAL A TU CÓDIGO ORIGINAL ---
+    const GAPP_URL = "https://script.google.com/macros/s/AKfycbw_pbtEwiF-JwWs2qvLfGgu-3DyUenPYXWDnKb9mKDvkkz43Us2lAmgjDEamrCwGg0s/exec"; 
 
-let datos = [];
-let filaActualIdx = null; 
-const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJE", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
+    let datos = [];
+    let filaActualIdx = null; 
+    const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJE", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
-let map = L.map('mapa-general').setView([-27.46, -58.83], 12);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
-let markerLayer = L.featureGroup().addTo(map);
+    let map = L.map('mapa-general').setView([-27.46, -58.83], 12);
+    // Mantenemos el mismo layer de satélite que tenías
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+    let markerLayer = L.featureGroup().addTo(map);
 
-window.abrirGoogleMaps = function() {
-    const lat = document.getElementById("m_lat").value;
-    const lon = document.getElementById("m_lon").value;
-    if(lat && lon) window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank');
-}
+    window.abrirGoogleMaps = function() {
+        const lat = document.getElementById("m_lat").value;
+        const lon = document.getElementById("m_lon").value;
+        if(lat && lon) window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank');
+    }
 
-window.limpiarPanel = function() {
-    filaActualIdx = null;
-    document.querySelectorAll('#panelEdicion input, #panelEdicion textarea').forEach(el => el.value = "");
-    document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}">${c}</option>`).join("");
-}
+    window.limpiarPanel = function() {
+        filaActualIdx = null;
+        document.querySelectorAll('#panelEdicion input, #panelEdicion textarea').forEach(el => el.value = "");
+        document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}">${c}</option>`).join("");
+    }
 
-function actualizarAviso(tipo, mensaje) {
-    const bar = document.getElementById("statusBar");
-    document.getElementById("statusText").innerText = mensaje;
-    document.getElementById("statusTime").innerText = new Date().toLocaleTimeString();
-    bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
-}
+    function actualizarAviso(tipo, mensaje) {
+        const bar = document.getElementById("statusBar");
+        document.getElementById("statusText").innerText = mensaje;
+        document.getElementById("statusTime").innerText = new Date().toLocaleTimeString();
+        bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
+    }
 
-function repararCoordenada(str) {
-    if (!str || str === "0" || str === "-") return NaN;
-    let s = String(str).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
-    let puro = s.replace('.', '').replace('-', '');
-    if (puro.length > 2) return parseFloat("-" + puro.substring(0, 2) + "." + puro.substring(2));
-    return parseFloat(s);
-}
+    function repararCoordenada(str) {
+        if (!str || str === "0" || str === "-") return NaN;
+        let s = String(str).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
+        let puro = s.replace('.', '').replace('-', '');
+        if (puro.length > 2) return parseFloat("-" + puro.substring(0, 2) + "." + puro.substring(2));
+        return parseFloat(s);
+    }
 
-window.cargarDesdeGoogleSheets = async function() {
-    actualizarAviso('loading', '⏳ Conectando con Drive...');
-    try {
-        const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
-        const json = await resp.json();
-        datos = json.map(d => ({
-            ID: d.ID || "", FECHA: d.FECHA || "", ZONA: d.ZONA || "", DETALLE: d.DETALLE || "",
-            LAT: d.LATITUD || "", LON: d.LONGITUD || "", ESC: d.ESCALERA || "NO",
-            CAT: d.CATEGORIA || "", ESTADO: d.ESTADO || "Pendiente", CIERRE: d.FINALIZACION || ""
-        }));
-        const zonasUnicas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
-        const selectZona = document.getElementById("filtroZona");
-        selectZona.innerHTML = '<option value="Todas">Todas las Zonas</option>';
-        zonasUnicas.forEach(z => { selectZona.innerHTML += `<option value="${z}">${z}</option>`; });
-        window.buscar();
-        actualizarAviso('ok', '✅ Sincronizado');
-    } catch (e) { actualizarAviso('error', '❌ Error Drive'); }
-}
+    window.cargarDesdeGoogleSheets = async function() {
+        actualizarAviso('loading', '⏳ Conectando con Drive...');
+        try {
+            const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
+            const json = await resp.json();
+            datos = json.map(d => ({
+                ID: d.ID || "", FECHA: d.FECHA || "", ZONA: d.ZONA || "", DETALLE: d.DETALLE || "",
+                LAT: d.LATITUD || "", LON: d.LONGITUD || "", ESC: d.ESCALERA || "NO",
+                CAT: d.CATEGORIA || "", ESTADO: d.ESTADO || "Pendiente", CIERRE: d.FINALIZACION || ""
+            }));
+            const zonasUnicas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
+            const selectZona = document.getElementById("filtroZona");
+            selectZona.innerHTML = '<option value="Todas">Todas las Zonas</option>';
+            zonasUnicas.forEach(z => { selectZona.innerHTML += `<option value="${z}">${z}</option>`; });
+            window.buscar();
+            actualizarAviso('ok', '✅ Sincronizado');
+        } catch (e) { actualizarAviso('error', '❌ Error Drive'); }
+    }
 
-window.buscar = function() {
-    const txt = document.getElementById("fId").value.toLowerCase();
-    const zon = document.getElementById("filtroZona").value;
-    const est = document.getElementById("filtroEstado").value;
-    const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
-        .filter(({ item: d }) => {
-            const matchEst = (est === "Todos" || d.ESTADO === est);
-            const matchZon = (zon === "Todas" || d.ZONA === zon);
-            return matchEst && matchZon && (d.ID.toString().toLowerCase().includes(txt) || d.DETALLE.toLowerCase().includes(txt));
-        });
-    window.render(filtrados);
-};
-
-window.render = function(lista) {
-    const tbody = document.querySelector("#tabla tbody");
-    tbody.innerHTML = ""; 
-    markerLayer.clearLayers();
-    let cnt = { pend: 0, proc: 0, fin: 0 };
-    
-    datos.forEach(d => {
-        const est = d.ESTADO.toLowerCase();
-        if(est.includes("pend")) cnt.pend++; else if(est.includes("proc")) cnt.proc++; else if(est.includes("fin")) cnt.fin++;
-    });
-
-    lista.forEach((entry) => {
-        const d = entry.item;
-        const estL = d.ESTADO.toLowerCase();
-        let la = repararCoordenada(d.LAT);
-        let lo = repararCoordenada(d.LON);
-
-        if(!isNaN(la) && !isNaN(lo)) {
-            const col = estL.includes("pend") ? "#dc3545" : estL.includes("proc") ? "#007bff" : "#28a745";
-            const m = L.circleMarker([la, lo], { radius: 8, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
-            
-            // GLOBO CON ID, ZONA Y DETALLE
-            m.bindPopup(`
-                <div class="custom-popup">
-                    <span class="popup-title">ID: ${d.ID}</span>
-                    <b>Zona:</b> ${d.ZONA}<br>
-                    <b>Detalle:</b> ${d.DETALLE}
-                </div>
-            `);
-            m.addTo(markerLayer);
-        }
-
-        const tr = document.createElement("tr");
-        tr.onclick = () => window.activarEdicion(entry.originalIndex);
-        tr.innerHTML = `<td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td><td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td><td>${d.ESTADO}</td><td>${d.CIERRE}</td><td>✎</td>`;
-        tbody.appendChild(tr);
-    });
-
-    document.getElementById("res-total").innerText = datos.length;
-    document.getElementById("res-pend").innerText = cnt.pend;
-    document.getElementById("res-proc").innerText = cnt.proc;
-    document.getElementById("res-fin").innerText = cnt.fin;
-}
-
-window.activarEdicion = (idx) => {
-    filaActualIdx = idx;
-    const d = datos[idx];
-    document.getElementById("m_id").value = d.ID;
-    document.getElementById("m_fec").value = d.FECHA;
-    document.getElementById("m_zon").value = d.ZONA;
-    document.getElementById("m_det").value = d.DETALLE;
-    document.getElementById("m_lat").value = d.LAT;
-    document.getElementById("m_lon").value = d.LON;
-    document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
-    document.getElementById("m_est").value = d.ESTADO;
-    document.getElementById("m_esc").value = d.ESC;
-    document.getElementById("m_cie").value = d.CIERRE;
-};
-
-window.guardarDesdeModal = async function() {
-    let nuevoId = document.getElementById("m_id").value.trim();
-    if(!nuevoId) return alert("El ID es obligatorio");
-
-    const r = {
-        ID: nuevoId, FECHA: document.getElementById("m_fec").value, ZONA: document.getElementById("m_zon").value,
-        DETALLE: document.getElementById("m_det").value, LATITUD: document.getElementById("m_lat").value,
-        LONGITUD: document.getElementById("m_lon").value, ESCALERA: document.getElementById("m_esc").value,
-        CATEGORIA: document.getElementById("m_cat").value, ESTADO: document.getElementById("m_est").value,
-        FINALIZACION: document.getElementById("m_cie").value
+    window.buscar = function() {
+        const txt = document.getElementById("fId").value.toLowerCase();
+        const zon = document.getElementById("filtroZona").value;
+        const est = document.getElementById("filtroEstado").value;
+        const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
+            .filter(({ item: d }) => {
+                const matchEst = (est === "Todos" || d.ESTADO === est);
+                const matchZon = (zon === "Todas" || d.ZONA === zon);
+                return matchEst && matchZon && (d.ID.toString().toLowerCase().includes(txt) || d.DETALLE.toLowerCase().includes(txt));
+            });
+        window.render(filtrados);
     };
 
-    actualizarAviso('loading', '💾 Guardando en la nube...');
-    try {
-        const params = new URLSearchParams();
-        params.append('action', 'update');
-        params.append('row', JSON.stringify(r));
-        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+    window.render = function(lista) {
+        const tbody = document.querySelector("#tabla tbody");
+        tbody.innerHTML = ""; 
+        markerLayer.clearLayers();
+        let cnt = { pend: 0, proc: 0, fin: 0 };
         
-        if(filaActualIdx !== null) {
-            datos[filaActualIdx] = { ...datos[filaActualIdx], ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, CIERRE: r.FINALIZACION, ESC: r.ESCALERA };
-        } else {
-            datos.unshift({ ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, CIERRE: r.FINALIZACION, ESC: r.ESCALERA });
-        }
-        window.buscar();
-        actualizarAviso('ok', '✅ Guardado');
-    } catch(e) { actualizarAviso('error', '❌ Error al guardar'); }
-};
+        datos.forEach(d => {
+            const est = d.ESTADO.toLowerCase();
+            if(est.includes("pend")) cnt.pend++; else if(est.includes("proc")) cnt.proc++; else if(est.includes("fin")) cnt.fin++;
+        });
 
-window.borrarDesdePanel = () => {
-    const id = document.getElementById("m_id").value;
-    if(id && confirm("¿Seguro que desea eliminar el registro " + id + "?")) window.eliminarFila(filaActualIdx, id);
-}
+        lista.forEach((entry) => {
+            const d = entry.item;
+            const estL = d.ESTADO.toLowerCase();
+            let la = repararCoordenada(d.LAT);
+            let lo = repararCoordenada(d.LON);
 
-window.eliminarFila = async function(idx, id) {
-    actualizarAviso('loading', '🗑️ Eliminando...');
-    try {
-        const params = new URLSearchParams();
-        params.append('action', 'delete');
-        params.append('id', id);
-        await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
-        datos.splice(idx, 1);
+            if(!isNaN(la) && !isNaN(lo)) {
+                const col = estL.includes("pend") ? "#ef4444" : estL.includes("proc") ? "#3b82f6" : "#22c55e";
+                const m = L.circleMarker([la, lo], { radius: 8, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
+                
+                m.bindPopup(`
+                    <div class="custom-popup">
+                        <span class="popup-title">ID: ${d.ID}</span>
+                        <b>Zona:</b> ${d.ZONA}<br>
+                        <b>Detalle:</b> ${d.DETALLE}
+                    </div>
+                `);
+                m.addTo(markerLayer);
+            }
+
+            const tr = document.createElement("tr");
+            tr.onclick = () => window.activarEdicion(entry.originalIndex);
+            tr.innerHTML = `<td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td><td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td><td>${d.ESTADO}</td><td>${d.CIERRE}</td><td>✎</td>`;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById("res-total").innerText = datos.length;
+        document.getElementById("res-pend").innerText = cnt.pend;
+        document.getElementById("res-proc").innerText = cnt.proc;
+        document.getElementById("res-fin").innerText = cnt.fin;
+    }
+
+    window.activarEdicion = (idx) => {
+        filaActualIdx = idx;
+        const d = datos[idx];
+        document.getElementById("m_id").value = d.ID;
+        document.getElementById("m_fec").value = d.FECHA;
+        document.getElementById("m_zon").value = d.ZONA;
+        document.getElementById("m_det").value = d.DETALLE;
+        document.getElementById("m_lat").value = d.LAT;
+        document.getElementById("m_lon").value = d.LON;
+        document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
+        document.getElementById("m_est").value = d.ESTADO;
+        document.getElementById("m_esc").value = d.ESC;
+        document.getElementById("m_cie").value = d.CIERRE;
+    };
+
+    window.guardarDesdeModal = async function() {
+        let nuevoId = document.getElementById("m_id").value.trim();
+        if(!nuevoId) return alert("El ID es obligatorio");
+
+        const r = {
+            ID: nuevoId, FECHA: document.getElementById("m_fec").value, ZONA: document.getElementById("m_zon").value,
+            DETALLE: document.getElementById("m_det").value, LATITUD: document.getElementById("m_lat").value,
+            LONGITUD: document.getElementById("m_lon").value, ESCALERA: document.getElementById("m_esc").value,
+            CATEGORIA: document.getElementById("m_cat").value, ESTADO: document.getElementById("m_est").value,
+            FINALIZACION: document.getElementById("m_cie").value
+        };
+
+        actualizarAviso('loading', '💾 Guardando en la nube...');
+        try {
+            const params = new URLSearchParams();
+            params.append('action', 'update');
+            params.append('row', JSON.stringify(r));
+            await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+            
+            if(filaActualIdx !== null) {
+                datos[filaActualIdx] = { ...datos[filaActualIdx], ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, CIERRE: r.FINALIZACION, ESC: r.ESCALERA };
+            } else {
+                datos.unshift({ ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, CIERRE: r.FINALIZACION, ESC: r.ESCALERA });
+            }
+            window.buscar();
+            actualizarAviso('ok', '✅ Guardado');
+        } catch(e) { actualizarAviso('error', '❌ Error al guardar'); }
+    };
+
+    window.borrarDesdePanel = () => {
+        const id = document.getElementById("m_id").value;
+        if(id && confirm("¿Seguro que desea eliminar el registro " + id + "?")) window.eliminarFila(filaActualIdx, id);
+    }
+
+    window.eliminarFila = async function(idx, id) {
+        actualizarAviso('loading', '🗑️ Eliminando...');
+        try {
+            const params = new URLSearchParams();
+            params.append('action', 'delete');
+            params.append('id', id);
+            await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+            datos.splice(idx, 1);
+            window.buscar();
+            limpiarPanel();
+            actualizarAviso('ok', '✅ Registro eliminado');
+        } catch (e) { actualizarAviso('error', '❌ Error al eliminar'); }
+    }
+
+    window.aplicarFiltroRapido = (est) => {
+        document.getElementById("filtroEstado").value = est;
         window.buscar();
+    }
+
+    window.agregarFila = () => {
         limpiarPanel();
-        actualizarAviso('ok', '✅ Registro eliminado');
-    } catch (e) { actualizarAviso('error', '❌ Error al eliminar'); }
-}
+        document.getElementById("m_fec").value = new Date().toLocaleDateString();
+        document.getElementById("m_id").focus();
+    };
 
-window.aplicarFiltroRapido = (est) => {
-    document.getElementById("filtroEstado").value = est;
-    window.buscar();
-}
-
-window.agregarFila = () => {
-    limpiarPanel();
-    document.getElementById("m_fec").value = new Date().toLocaleDateString();
-    document.getElementById("m_id").focus();
-};
-
-window.onload = window.cargarDesdeGoogleSheets;
+    window.onload = window.cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
