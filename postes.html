@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONNECTTO - Panel Técnico</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --primary: #3b82f6; --text: #f1f5f9; --border: #334155; --accent: #fbbf24; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; background: #020617; padding: 15px; border-bottom: 3px solid var(--primary); border-radius: 8px; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+        .tab { padding: 10px 25px; background: var(--card); border: 1px solid var(--border); color: #94a3b8; cursor: pointer; border-radius: 6px 6px 0 0; font-weight: bold; }
+        .tab.active { background: var(--primary); color: white; }
+        .container { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 0 8px 8px 8px; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; align-items: flex-end; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; }
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 11px; color: var(--primary); font-weight: bold; text-transform: uppercase; }
+        select, input { background: #0f172a; color: white; border: 1px solid var(--border); padding: 8px; border-radius: 5px; outline: none; min-width: 150px; }
+        .table-wrapper { overflow-x: auto; max-height: 600px; border: 1px solid var(--border); border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #020617; color: var(--primary); text-align: left; padding: 12px; position: sticky; top: 0; border-bottom: 2px solid var(--border); }
+        td { padding: 10px; border-bottom: 1px solid var(--border); }
+        .fila-deposito { background-color: rgba(251, 191, 36, 0.1) !important; color: var(--accent); }
+        .btn-sync { background: #22c55e; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #loading { color: var(--accent); font-weight: bold; display: none; margin-right: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1 style="margin:0; font-size: 22px;">CONNECTTO <span id="anioActualBadge" style="background:var(--primary); padding:2px 8px; border-radius:10px; font-size:12px;"></span></h1>
+        <small style="color: #64748b;">Panel Operativo Central</small>
+    </div>
+    <div id="reloj" style="font-size: 18px; font-weight: bold; font-family: monospace;">00:00:00</div>
+</div>
+
+<div class="tabs">
+    <div id="t-Postes" class="tab active" onclick="cambiarHoja('Postes', this)">POSTES</div>
+    <div id="t-Tutores" class="tab" onclick="cambiarHoja('Tutores', this)">TUTORES</div>
+</div>
+
+<div class="container">
+    <div class="controls">
+        <div class="control-group">
+            <label>Historial por Año</label>
+            <select id="filtroAnio" onchange="aplicarFiltros()"></select>
+        </div>
+        <div class="control-group">
+            <label>Buscar Responsable / Dato</label>
+            <input type="text" id="busqueda" placeholder="Escribe para buscar..." onkeyup="aplicarFiltros()">
+        </div>
+        <div style="flex-grow: 1; text-align: right;">
+            <span id="loading">SINCRO...</span>
+            <button class="btn-sync" onclick="cargar()">🔄 ACTUALIZAR DRIVE</button>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="tablaMateriales">
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // URL de tu API
+    const API_URL = "https://script.google.com/macros/s/AKfycbyI1jdmbVJqiTkRY8v8OSr0qaJmasok13F0NcZHJANDwHoa0S_ACIT3mpgXRemU4t8qtg/exec";
+    
+    let hojaActual = "Postes";
+    let datosOriginales = [];
+    let columnasOriginales = [];
+    const ANIO_HOY = new Date().getFullYear().toString();
+
+    function reloj() { 
+        document.getElementById('anioActualBadge').innerText = ANIO_HOY;
+        setInterval(() => { document.getElementById('reloj').innerText = new Date().toLocaleTimeString(); }, 1000); 
+    }
+
+    function cambiarHoja(nombre, el) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        hojaActual = nombre;
+        cargar();
+    }
+
+    async function cargar() {
+        document.getElementById('loading').style.display = 'inline';
+        try {
+            const response = await fetch(`${API_URL}?action=read&sheet=${hojaActual}&v=${new Date().getTime()}`);
+            const res = await response.json();
+            datosOriginales = res.data || [];
+            columnasOriginales = res.columns || [];
+            generarAnios();
+            aplicarFiltros();
+        } catch (e) { console.error(e); }
+        finally { document.getElementById('loading').style.display = 'none'; }
+    }
+
+    function extraerAnio(valor) {
+        if (!valor) return null;
+        let str = valor.toString();
+        if (str.includes('/')) return str.split('/').pop();
+        if (str.includes('-')) return str.split('-')[0];
+        return null;
+    }
+
+    function generarAnios() {
+        const select = document.getElementById('filtroAnio');
+        const anios = [...new Set(datosOriginales.map(f => extraerAnio(f["Fecha"] || f["FECHA"])).filter(a => a))].sort((a,b) => b-a);
+        
+        let html = '<option value="todos">Ver Historial Completo</option>';
+        anios.forEach(a => {
+            html += `<option value="${a}" ${a === ANIO_HOY ? 'selected' : ''}>${a === ANIO_HOY ? a + ' (Actual)' : a}</option>`;
+        });
+        select.innerHTML = html;
+        if(anios.includes(ANIO_HOY)) select.value = ANIO_HOY;
+    }
+
+    function aplicarFiltros() {
+        const anioSel = document.getElementById('filtroAnio').value;
+        const bus = document.getElementById('busqueda').value.toLowerCase();
+        const tbody = document.getElementById('tbody');
+        
+        document.getElementById('thead').innerHTML = `<tr>${columnasOriginales.map(c => `<th>${c}</th>`).join('')}</tr>`;
+
+        const filtrados = datosOriginales.filter(f => {
+            const fechaVal = f["Fecha"] || f["FECHA"] || "";
+            const anioFila = extraerAnio(fechaVal);
+            const matchAnio = (anioSel === "todos" || anioFila === anioSel);
+            const matchBus = Object.values(f).some(v => String(v).toLowerCase().includes(bus));
+            return matchAnio && matchBus;
+        });
+
+        tbody.innerHTML = filtrados.map(f => {
+            const esDepo = Object.values(f).some(v => String(v).includes("Depósito"));
+            
+            // Lógica de limpieza de celda por celda
+            const celdas = columnasOriginales.map(c => {
+                let valor = f[c] || '';
+                
+                // Limpieza de formato de fecha ISO a DD/MM/YYYY en el HTML
+                if (String(valor).includes('T03:00')) {
+                    try {
+                        let soloFecha = String(valor).split('T')[0]; // Toma 2024-03-23
+                        let p = soloFecha.split('-');
+                        valor = p[2] + '/' + p[1] + '/' + p[0];
+                    } catch(e) {}
+                }
+                
+                return `<td>${valor}</td>`;
+            }).join('');
+
+            return `<tr class="${esDepo ? 'fila-deposito' : ''}">${celdas}</tr>`;
+        }).join('') || "<tr><td colspan='20'>Sin datos para este filtro</td></tr>";
+    }
+
+    window.onload = () => { reloj(); cargar(); };
+</script>
+</body>
+</html>
