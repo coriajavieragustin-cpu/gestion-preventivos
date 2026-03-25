@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Mapas Técnicos - Leaflet</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        /* El mapa ocupa toda la ventana */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        /* Estilo para el título flotante */
+        .titulo-mapa {
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="titulo-mapa">
+        <strong>Sistema de Gestión Geográfica</strong>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-omnivore/0.3.4/leaflet-omnivore.min.js"></script>
+
+    <script>
+        // --- CONFIGURACIÓN INICIAL ---
+        // Coordenadas iniciales (Corrientes, Argentina como ejemplo)
+        var lat = -27.469;
+        var lng = -58.830;
+        var zoom = 13;
+
+        var map = L.map('map').setView([lat, lng], zoom);
+
+        // --- MAPA BASE (Calles) ---
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // --- CARGA DE CAPAS SUPERPUESTAS ---
+
+        // Capa 1: Tu enlace de Google (KML)
+        // Nota: Si la URL directa da error de seguridad (CORS), 
+        // descarga el archivo .kml y cárgalo localmente como 'mi_mapa.kml'
+        var urlKml1 = "https://www.google.com/maps/d/edit?mid=1DWxz9GyWKYlLQ3TIxl1qmt2lU8ABQIQ&ll=-27.419450793781557%2C-58.9468589494751&z=15";
+        var capaKml1 = omnivore.kml(urlKml1).on('ready', function() {
+            // Esto hace que el mapa se encuadre automáticamente al cargar los datos
+            map.fitBounds(capaKml1.getBounds());
+        }).addTo(map);
+
+        // Capa 2: Ejemplo de otra capa (puedes añadir más así)
+        // var capaKml2 = omnivore.kml('OTRA_URL_AQUÍ');
+
+        // --- CONTROL DE CAPAS (Menú en la esquina) ---
+        var mapasBase = {
+            "Mapa de Calles": osm
+        };
+
+        var capasSuperpuestas = {
+            "Capa Preventivos (KML)": capaKml1
+            // "Otra Infraestructura": capaKml2
+        };
+
+        // Añade el cuadrito de control al mapa
+        L.control.layers(mapasBase, capasSuperpuestas, { collapsed: false }).addTo(map);
+
+        // --- OPCIONAL: MARCADOR DE PRUEBA ---
+        L.marker([lat, lng]).addTo(map)
+            .bindPopup('<b>Punto de Control</b><br>Técnico asignado.')
+            .openPopup();
+
+    </script>
+</body>
+</html>
