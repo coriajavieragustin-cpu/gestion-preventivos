@@ -6,14 +6,19 @@
   <title>Sistema de Inventario - CONNECTTO</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
-    body { background-color: #f0f2f5; padding: 30px 0; }
+    body { background-color: #f0f2f5; padding: 30px 0; font-family: 'Segoe UI', sans-serif; }
     .card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .btn-guardar { background-color: #28a745; color: white; font-weight: bold; border: none; }
-    .btn-guardar:hover { background-color: #218838; color: white; }
-    .btn-edit { background-color: #ffc107; color: #000; border: none; padding: 5px 12px; border-radius: 5px; font-size: 0.9rem; }
+    .btn-guardar:hover { background-color: #218838; }
+    .btn-edit { background-color: #ffc107; color: #000; border: none; padding: 5px 12px; border-radius: 5px; }
     .tabla-contenedor { background: white; border-radius: 10px; padding: 25px; margin-top: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     #loader { display: none; }
     .modo-edicion { border: 2px solid #ffc107 !important; background-color: #fffdf5; }
+    .nav-tabs { border-bottom: 2px solid #dee2e6; margin-bottom: 20px; }
+    .nav-link { cursor: pointer; font-weight: 600; color: #6c757d; }
+    .nav-link.active { color: #0d6efd !important; border-bottom: 3px solid #0d6efd !important; }
+    .filtro-anio { max-width: 140px; font-weight: bold; border: 2px solid #0d6efd; border-radius: 8px; }
+    .badge-anio { font-size: 0.8rem; vertical-align: middle; margin-left: 10px; }
   </style>
 </head>
 <body>
@@ -23,6 +28,7 @@
     <h3 class="text-center mb-4" id="tituloForm">📦 Registro de Movimientos</h3>
     <form id="formStock" class="row g-3">
       <input type="hidden" name="filaId" id="filaId">
+      <input type="hidden" name="hojaActual" id="hojaActual" value="Postes">
       
       <div class="col-md-4">
         <label class="form-label fw-bold">Fecha</label>
@@ -34,7 +40,7 @@
       </div>
       <div class="col-md-4">
         <label class="form-label fw-bold">Utilizado en</label>
-        <input type="text" name="utilizado" id="utilizado" class="form-control" placeholder="Ubicación">
+        <input type="text" name="utilizado" id="utilizado" class="form-control" placeholder="Obra o Depósito">
       </div>
       <div class="col-md-4">
         <label class="form-label fw-bold"># Compra</label>
@@ -42,7 +48,7 @@
       </div>
       <div class="col-md-4">
         <label class="form-label fw-bold">Monto ($)</label>
-        <input type="text" name="monto" id="monto" class="form-control" placeholder="Ej: 15000">
+        <input type="text" name="monto" id="monto" class="form-control">
       </div>
       <div class="col-md-4">
         <label class="form-label fw-bold"># Retirados</label>
@@ -58,10 +64,28 @@
   </div>
 
   <div class="tabla-contenedor">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h4>Visualización de Planilla</h4>
-      <button onclick="cargarTabla()" class="btn btn-sm btn-outline-primary">🔄 Refrescar Datos</button>
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+      <ul class="nav nav-tabs border-0 mb-0" id="tabHojas">
+        <li class="nav-item">
+          <a class="nav-link active" id="tabPostes" onclick="cambiarHoja('Postes')">📍 Postes</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="tabTutores" onclick="cambiarHoja('Tutores')">🌿 Tutores</a>
+        </li>
+      </ul>
+      
+      <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+        <label class="fw-bold mb-0">Filtrar Año:</label>
+        <select id="filtroAnio" class="form-select filtro-anio" onchange="cargarTabla()">
+          <option value="todos">Todos</option>
+          <option value="2026" selected>2026</option>
+          <option value="2025">2025</option>
+          <option value="2024">2024</option>
+        </select>
+        <button onclick="cargarTabla()" class="btn btn-sm btn-outline-primary" title="Refrescar">🔄</button>
+      </div>
     </div>
+
     <div class="table-responsive">
       <table class="table table-hover align-middle">
         <thead class="table-dark">
@@ -82,23 +106,45 @@
 </div>
 
 <script>
-  // URL de tu Apps Script (Asegúrate de que sea la última versión implementada)
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyQKvF0cyDlB42uCtDC1gMFCqw-9qzvpPQcdhcsNOB35yiyHM16txUhl6jggsSbBtjM5A/exec";
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxGbkE9TDB3D2eflGSHwY8LO-9Bvc9WKZUxFua4eyTqLwL8dVnkqTX-ymX6xwzROWQWxA/exec";
+  let hojaActiva = "Postes";
 
   window.onload = cargarTabla;
 
+  function cambiarHoja(nombre) {
+    hojaActiva = nombre;
+    document.getElementById('hojaActual').value = nombre;
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    if(nombre === 'Postes') document.getElementById('tabPostes').classList.add('active');
+    else document.getElementById('tabTutores').classList.add('active');
+    cancelarEdicion();
+    cargarTabla();
+  }
+
   function cargarTabla() {
     const cuerpo = document.getElementById('cuerpoTabla');
-    cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Cargando datos desde Google Sheets...</td></tr>';
+    const anioSeleccionado = document.getElementById('filtroAnio').value;
+    cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Cargando datos...</td></tr>';
     
-    fetch(WEB_APP_URL)
+    fetch(`${WEB_APP_URL}?hoja=${hojaActiva}`)
       .then(res => res.json())
       .then(filas => {
         cuerpo.innerHTML = "";
-        filas.reverse().forEach(fila => { 
+        
+        // Filtrar por año antes de mostrar
+        const filasFiltradas = filas.filter(fila => {
+          if (anioSeleccionado === "todos") return true;
+          let fechaFila = new Date(fila[0]);
+          return !isNaN(fechaFila) && fechaFila.getFullYear().toString() === anioSeleccionado;
+        });
+
+        if (filasFiltradas.length === 0) {
+          cuerpo.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No hay registros para el año ${anioSeleccionado} en ${hojaActiva}.</td></tr>`;
+          return;
+        }
+
+        filasFiltradas.reverse().forEach(fila => { 
           let tr = document.createElement('tr');
-          
-          // Formateo de fecha para el input y la tabla
           let f = new Date(fila[0]);
           let fechaISO = !isNaN(f) ? f.toISOString().split('T')[0] : "";
           let fechaMostrar = !isNaN(f) ? f.toLocaleDateString('es-AR') : fila[0];
@@ -106,7 +152,7 @@
           tr.innerHTML = `
             <td>${fechaMostrar}</td>
             <td class="fw-bold text-primary">${fila[1] || '0'}</td>
-            <td class="text-success">$${fila[2] || '0'}</td>
+            <td class="text-success">${fila[2] ? '$' + fila[2] : '-'}</td>
             <td class="text-danger">${fila[3] || '0'}</td>
             <td>${fila[4] || '-'}</td>
             <td><span class="badge bg-secondary">${fila[5] || '-'}</span></td>
@@ -118,22 +164,22 @@
         });
       })
       .catch(err => {
-        cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error de conexión. Revisa los permisos del Script.</td></tr>';
+        cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error de conexión con la base de datos.</td></tr>';
       });
   }
 
   function prepararEdicion(fecha, compra, monto, retirados, resp, util, id) {
     document.getElementById('filaId').value = id;
     document.getElementById('fecha').value = fecha;
-    document.getElementById('compra').value = compra;
-    document.getElementById('monto').value = monto;
-    document.getElementById('retirados').value = retirados;
-    document.getElementById('responsable').value = resp;
-    document.getElementById('utilizado').value = util;
+    document.getElementById('compra').value = (compra === 'undefined' || compra === 'null') ? '' : compra;
+    document.getElementById('monto').value = (monto === 'undefined' || monto === 'null') ? '' : monto;
+    document.getElementById('retirados').value = (retirados === 'undefined' || retirados === 'null') ? '' : retirados;
+    document.getElementById('responsable').value = (resp === 'undefined' || resp === 'null') ? '' : resp;
+    document.getElementById('utilizado').value = (util === 'undefined' || util === 'null') ? '' : util;
     
     document.getElementById('cardForm').classList.add('modo-edicion');
-    document.getElementById('tituloForm').innerText = "✏️ Editando Fila " + (id);
-    document.getElementById('btnAccion').innerText = "Actualizar Cambios";
+    document.getElementById('tituloForm').innerText = "✏️ Editando " + hojaActiva + " (Fila " + id + ")";
+    document.getElementById('btnAccion').innerText = "Actualizar Registro";
     document.getElementById('btnAccion').className = "btn btn-warning px-5 py-2";
     document.getElementById('btnCancelar').style.display = "inline-block";
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -155,32 +201,29 @@
     const btn = document.getElementById('btnAccion');
     const datos = Object.fromEntries(new FormData(form));
 
-    if(!datos.fecha) return alert("Por favor, selecciona una fecha.");
+    if(!datos.fecha) return alert("Seleccione una fecha.");
 
     loader.style.display = "inline-block";
     btn.disabled = true;
 
-    // Usamos modo 'no-cors' para evitar problemas de seguridad al enviar datos a Google
     fetch(WEB_APP_URL, {
       method: "POST",
       mode: 'no-cors', 
       body: JSON.stringify(datos)
     })
     .then(() => {
-      alert("¡Éxito! Los datos se enviaron correctamente.");
+      alert("Operación completada.");
       cancelarEdicion();
       loader.style.display = "none";
       btn.disabled = false;
-      // Recargar la tabla tras un pequeño delay para que Google actualice
-      setTimeout(cargarTabla, 2000);
+      setTimeout(cargarTabla, 1500);
     })
     .catch(err => {
-      alert("Error al conectar con el servidor.");
+      alert("Error al conectar.");
       loader.style.display = "none";
       btn.disabled = false;
     });
   }
 </script>
-
 </body>
 </html>
