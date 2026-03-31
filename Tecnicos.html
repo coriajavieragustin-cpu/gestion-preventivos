@@ -24,13 +24,11 @@
             font-family: 'Segoe UI', sans-serif; 
         }
 
-        /* Navbar Dark */
         .navbar-dark.bg-dark-custom { 
             background-color: #161b22; 
             border-bottom: 1px solid var(--border-color);
         }
 
-        /* Cards Estilo Dark */
         .card { 
             background-color: var(--card-bg); 
             color: var(--text-main);
@@ -47,14 +45,6 @@
             font-size: 0.85rem;
         }
 
-        .form-control:focus, .form-select:focus {
-            background-color: #0d1117;
-            color: white;
-            border-color: var(--tec-color);
-            box-shadow: none;
-        }
-
-        /* Botones */
         .btn-sync { 
             background-color: var(--accent); 
             color: white; 
@@ -66,7 +56,6 @@
         }
         .btn-sync:hover { background-color: #2ea043; transform: translateY(-1px); }
 
-        /* Barra de Sincronización */
         .sync-status-bar { 
             background: #161b22; 
             padding: 8px 15px; 
@@ -77,12 +66,8 @@
             font-size: 0.85rem; 
             margin-bottom: 15px; 
             border-radius: 0 0 8px 8px;
-            border-left: 1px solid var(--border-color);
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
         }
 
-        /* Tabla Estilo Dark */
         .table-responsive-custom { 
             max-height: 50vh; 
             overflow-y: auto; 
@@ -90,19 +75,15 @@
             border-radius: 8px; 
         }
         .table { color: var(--text-main); margin-bottom: 0; }
-        .table-light { background-color: #21262d !important; color: white !important; border-color: var(--border-color); }
+        .table-light { background-color: #21262d !important; color: white !important; }
         .table-hover tbody tr:hover { background-color: #1c2128; color: white; }
         
-        /* Ajuste para filas de ausencia */
         .status-ausencia { background-color: #3e3312 !important; color: #ffdf5d !important; }
         
-        .btn-del, .btn-dup { border: none; background: none; cursor: pointer; font-size: 1.1rem; padding: 0 5px; transition: 0.2s; }
-        .btn-del:hover { transform: scale(1.2); }
-        .btn-dup:hover { transform: scale(1.2); }
+        .btn-del, .btn-dup { border: none; background: none; cursor: pointer; font-size: 1.1rem; }
 
         #loaderGlobal { display: none; position: fixed; top: 15px; right: 20px; z-index: 2000; }
 
-        /* Mini Cards Técnicos */
         .mini-card-tec { 
             background: #21262d; 
             border-left: 4px solid var(--tec-color); 
@@ -124,11 +105,6 @@
         }
 
         .col-actividad { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .col-actividad:hover { white-space: normal; overflow: visible; }
-        
-        hr { border-color: var(--border-color); opacity: 1; }
-        label { color: var(--text-muted); margin-bottom: 3px; }
-        .text-muted { color: var(--text-muted) !important; }
     </style>
 </head>
 <body>
@@ -151,12 +127,10 @@
 
 <div class="container-fluid px-3">
     <div class="sync-status-bar shadow-sm">
-        <div class="small fw-bold text-muted" id="infoMesActual">Cargando info del mes...</div>
-        <div class="sync-time" id="ultimaActualizacion" style="color: var(--tec-color)">--:--:-- <span id="syncIcon">✅</span></div>
+        <div class="small fw-bold text-muted" id="infoMesActual">Cargando info...</div>
+        <div class="sync-time" id="ultimaActualizacion" style="color: var(--tec-color)">--:--:-- <span>✅</span></div>
     </div>
-</div>
 
-<div class="container-fluid px-3">
     <div class="row">
         <div class="col-lg-3">
             <div class="card p-3 border-top border-primary border-4">
@@ -185,7 +159,7 @@
                         <select id="formTec" class="form-select form-select-sm">
                             <option>Vicens Cristian</option><option>Alegre Maximiliano</option>
                             <option>Gonzalez Fernando</option><option>Rodriguez Gabriel</option>
-                            <option>Emma Calvo</option>
+                            <option>Emma Calvo</option><option>Altamirano Cesar</option>
                         </select>
                     </div>
                     <div class="mb-2">
@@ -203,7 +177,7 @@
             </div>
 
             <div class="card p-3 shadow-sm overflow-auto" style="max-height: 400px; border-top: 4px solid var(--tec-color);">
-                <h6 class="fw-bold mb-3 small text-uppercase">📈 Resumen de Promedios</h6>
+                <h6 class="fw-bold mb-3 small text-uppercase">📈 Resumen de Promedios (Col I)</h6>
                 <div id="contenedorPromedios"></div>
             </div>
         </div>
@@ -221,17 +195,11 @@
                     <h6 class="fw-bold m-0 small text-uppercase text-muted">☁️ Registros en la Nube</h6>
                     <button class="btn-sync btn-sm" onclick="cargarDatosNube()">🔄 Sincronizar</button>
                 </div>
-                <div class="table-responsive-custom border shadow-sm" style="border-color: var(--border-color) !important;">
+                <div class="table-responsive-custom border shadow-sm">
                     <table class="table table-sm table-hover mb-0" id="tablaDatos">
                         <thead class="table-light small text-center">
                             <tr>
-                                <th>FECHA</th>
-                                <th>DÍA</th>
-                                <th>CATEGORÍA</th>
-                                <th>ACTIVIDAD</th>
-                                <th>TÉCNICO</th>
-                                <th>PTS</th>
-                                <th>ACC</th>
+                                <th>FECHA</th><th>DÍA</th><th>CATEGORÍA</th><th>ACTIVIDAD</th><th>TÉCNICO</th><th>PTS</th><th>ACC</th>
                             </tr>
                         </thead>
                         <tbody class="small text-center"></tbody>
@@ -243,7 +211,6 @@
 </div>
 
 <script>
-    // --- LÓGICA ORIGINAL SIN TOCAR ---
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec"; 
     let miGrafico = null;
     let datosLocales = []; 
@@ -286,43 +253,70 @@
         mostrarLoading(true);
         const mesNombre = document.getElementById('selectorMes').value;
         const tbody = document.querySelector('#tablaDatos tbody');
+        const contenedor = document.getElementById('contenedorPromedios');
+        
         try {
             const res = await fetch(`${WEB_APP_URL}?mes=${mesNombre}&nocache=${new Date().getTime()}`);
             let filas = await res.json();
+            
             tbody.innerHTML = "";
-            if (filas.length > 1) {
-                datosLocales = filas.slice(1).map((f, i) => {
-                    return { data: f, filaOriginal: i + 2 };
-                }).filter(item => item.data[4] && item.data[4].toString().trim() !== "");
+            contenedor.innerHTML = "";
+            let rankingData = [];
 
-                actualizarDashboard(datosLocales.map(item => item.data), mesNombre);
+            if (filas.length > 1) {
+                // --- 1. PROCESAR PROMEDIOS (Desde Fila 22, Columnas H e I) ---
+                const datosResumen = filas.slice(21); // Ignora las primeras 21 filas (índice 0-20)
+                const listaTecnicos = ["Vicens Cristian", "Alegre Maximiliano", "Altamirano Cesar", "Emma Calvo", "Gonzalez Fernando", "Rodriguez Gabriel"];
                 
+                listaTecnicos.forEach(nombre => {
+                    // Busca el nombre en la Columna H (índice 7)
+                    const filaTecnico = datosResumen.find(r => r[7] && r[7].toString().trim().toLowerCase() === nombre.toLowerCase());
+                    
+                    // Toma el valor de la Columna I (índice 8)
+                    const promedioDirecto = filaTecnico ? (parseFloat(filaTecnico[8]) || 0).toFixed(2) : "0.00";
+                    const numFilaExcel = filaTecnico ? filas.indexOf(filaTecnico) + 1 : "N/A";
+
+                    rankingData.push({ nombre, promedio: parseFloat(promedioDirecto) });
+
+                    contenedor.innerHTML += `
+                        <div class="mini-card-tec">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small fw-bold">${nombre}</span>
+                                <span class="badge bg-primary" style="font-size: 0.9rem;">${promedioDirecto}</span>
+                            </div>
+                            <span class="txt-calculo">Leyendo Celda Excel: I${numFilaExcel}</span>
+                        </div>`;
+                });
+
+                rankingData.sort((a,b) => b.promedio - a.promedio);
+                renderizarGrafico(rankingData.map(r => r.nombre), rankingData.map(r => r.promedio));
+
+                // --- 2. RENDERIZAR TABLA DE TAREAS (Col A a F) ---
+                datosLocales = filas.slice(1).map((f, i) => ({ data: f, filaOriginal: i + 2 }))
+                                   .filter(item => item.data[4] && item.data[4].toString().trim() !== "");
+
                 [...datosLocales].reverse().forEach((item) => {
                     const fila = item.data;
                     let fRaw = fila[0].toString();
                     let fDisplay = fRaw.includes('T') ? fRaw.split('T')[0].split('-').reverse().join('/') : fRaw;
-                    let clase = (fila[2].includes("AUSENCIA")) ? "status-ausencia" : "";
                     
                     const tr = document.createElement('tr');
-                    tr.className = clase;
+                    if(fila[2].toString().toUpperCase().includes("AUSENCIA")) tr.className = "status-ausencia";
                     tr.innerHTML = `
-                        <td>${fDisplay}</td>
-                        <td>${fila[1]}</td>
-                        <td>${fila[2]}</td>
-                        <td class="col-actividad text-start small" title="${fila[3] || ''}">${fila[3] || '-'}</td>
+                        <td>${fDisplay}</td><td>${fila[1]}</td><td>${fila[2]}</td>
+                        <td class="col-actividad text-start small" title="${fila[3]}">${fila[3] || '-'}</td>
                         <td class="fw-bold" style="color: var(--tec-color)">${fila[4]}</td>
                         <td class="fw-bold">${fila[5]}</td>
                         <td>
-                            <button class="btn-dup" onclick="duplicarFilaLocal('${fila[0]}','${fila[2]}','${fila[4]}','${fila[3]}','${fila[5]}')" title="Duplicar">📋</button>
-                            <button class="btn-del" onclick="borrarFila(${item.filaOriginal})" title="Eliminar">🗑️</button>
+                            <button class="btn-dup" onclick="duplicarFilaLocal('${fila[0]}','${fila[2]}','${fila[4]}','${fila[3]}','${fila[5]}')">📋</button>
+                            <button class="btn-del" onclick="borrarFila(${item.filaOriginal})">🗑️</button>
                         </td>`;
                     tbody.appendChild(tr);
                 });
-            } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-muted">No hay registros</td></tr>';
             }
             document.getElementById('ultimaActualizacion').innerText = new Date().toLocaleTimeString();
-        } catch (e) { console.error(e); } 
+            document.getElementById('infoMesActual').innerText = `${mesNombre} | Tabla detectada`;
+        } catch (e) { console.error("Error:", e); } 
         finally { mostrarLoading(false); }
     }
 
@@ -337,47 +331,6 @@
         finally { mostrarLoading(false); }
     }
 
-    function actualizarDashboard(datos, nombreMes) {
-        const mesesRef = { "Enero":0, "Febrero":1, "Marzo":2, "Abril":3, "Mayo":4, "Junio":5, "Julio":6, "Agosto":7, "Septiembre":8, "Octubre":9, "Noviembre":10, "Diciembre":11 };
-        const anio = 2026;
-        const numMes = mesesRef[nombreMes];
-        const diasDelMes = new Date(anio, numMes + 1, 0).getDate();
-        let domingos = 0;
-        for(let i=1; i<=diasDelMes; i++) { if(new Date(anio, numMes, i).getDay() === 0) domingos++; }
-        document.getElementById('infoMesActual').innerText = `${nombreMes} | ${diasDelMes}d | ${domingos} dom`;
-
-        let tecnicos = {};
-        datos.forEach(f => {
-            const tec = f[4].toString().trim();
-            if(!tecnicos[tec]) tecnicos[tec] = { pts: 0, aus: 0, sab: 0 };
-            tecnicos[tec].pts += parseFloat(f[5]) || 0;
-            if(f[2].toString().toUpperCase().includes("AUSENCIA")) tecnicos[tec].aus += 1;
-            if(f[1].toString().toLowerCase().includes("sab")) tecnicos[tec].sab += 1;
-        });
-
-        const ranking = [];
-        const contenedor = document.getElementById('contenedorPromedios');
-        contenedor.innerHTML = "";
-
-        for (let t in tecnicos) {
-            const restaTotal = tecnicos[t].aus + domingos + (tecnicos[t].sab * 0.5);
-            const div = diasDelMes - restaTotal;
-            const prom = div > 0 ? (tecnicos[t].pts / div).toFixed(2) : 0;
-            ranking.push({ nombre: t, promedio: parseFloat(prom) });
-
-            contenedor.innerHTML += `
-                <div class="mini-card-tec">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="small fw-bold">${t}</span>
-                        <span class="badge bg-primary" style="font-size: 0.9rem;">${prom}</span>
-                    </div>
-                    <span class="txt-calculo">${tecnicos[t].pts.toFixed(1)} / (${diasDelMes}m - ${domingos}d - ${tecnicos[t].aus}a - ${tecnicos[t].sab * 0.5}s)</span>
-                </div>`;
-        }
-        ranking.sort((a, b) => b.promedio - a.promedio);
-        renderizarGrafico(ranking.map(r => r.nombre), ranking.map(r => r.promedio));
-    }
-
     function renderizarGrafico(labels, valores) {
         const ctx = document.getElementById('graficoPromedios').getContext('2d');
         if (miGrafico) miGrafico.destroy();
@@ -385,7 +338,7 @@
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: [{ label: 'Promedio', data: valores, backgroundColor: '#58a6ff', borderRadius: 5, barThickness: 18 }]
+                datasets: [{ label: 'Promedio del Mes', data: valores, backgroundColor: '#58a6ff', borderRadius: 5, barThickness: 18 }]
             },
             options: {
                 indexAxis: 'y', responsive: true, maintainAspectRatio: false,
