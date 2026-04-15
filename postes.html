@@ -1,229 +1,453 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Inventario - CONNECTTO</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <style>
-    body { background-color: #f0f2f5; padding: 30px 0; font-family: 'Segoe UI', sans-serif; }
-    .card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .btn-guardar { background-color: #28a745; color: white; font-weight: bold; border: none; }
-    .btn-guardar:hover { background-color: #218838; }
-    .btn-edit { background-color: #ffc107; color: #000; border: none; padding: 5px 12px; border-radius: 5px; }
-    .tabla-contenedor { background: white; border-radius: 10px; padding: 25px; margin-top: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    #loader { display: none; }
-    .modo-edicion { border: 2px solid #ffc107 !important; background-color: #fffdf5; }
-    .nav-tabs { border-bottom: 2px solid #dee2e6; margin-bottom: 20px; }
-    .nav-link { cursor: pointer; font-weight: 600; color: #6c757d; }
-    .nav-link.active { color: #0d6efd !important; border-bottom: 3px solid #0d6efd !important; }
-    .filtro-anio { max-width: 140px; font-weight: bold; border: 2px solid #0d6efd; border-radius: 8px; }
-    .badge-anio { font-size: 0.8rem; vertical-align: middle; margin-left: 10px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Panel PGP V1.8 - Consola Técnica</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-main: #0f172a;
+            --bg-side: #1e293b;
+            --bg-card: #334155;
+            --bg-input: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-color: #475569;
+            --header-height: 60px;
+        }
+
+        body, html { 
+            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-main); color: var(--text-main); overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            height: var(--header-height);
+            background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon {
+            background: var(--primary);
+            color: white;
+            width: 35px; height: 35px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; font-weight: bold; font-size: 18px;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+
+        .header-titles h1 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
+        .header-titles span { font-size: 11px; opacity: 0.7; text-transform: uppercase; }
+
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+        .live-indicator {
+            display: flex; align-items: center; gap: 6px; font-size: 12px;
+            background: rgba(255,255,255,0.05);
+            padding: 5px 12px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .dot {
+            height: 8px; width: 8px;
+            background-color: var(--success);
+            border-radius: 50%; display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .main-wrapper { display: flex; height: calc(100vh - var(--header-height)); width: 100vw; }
+
+        .content-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border-color); }
+        #mapa-general { height: 45%; width: 100%; border-bottom: 2px solid var(--border-color); z-index: 1; filter: brightness(0.9) contrast(1.1); }
+        
+        .status-bar { display: flex; justify-content: space-between; padding: 6px 15px; background: #020617; font-size: 11px; font-weight: bold; border-bottom: 1px solid var(--border-color); }
+        .status-ok { color: var(--success); border-left: 4px solid var(--success); }
+        .status-error { color: var(--danger); border-left: 4px solid var(--danger); }
+        .status-loading { color: var(--warning); border-left: 4px solid var(--warning); }
+
+        .contenedor-tabla { flex: 1; overflow: auto; background: var(--bg-main); }
+        table.tabla-principal { border-collapse: collapse; width: 100%; min-width: 1000px; font-size: 11px; color: var(--text-main); }
+        .tabla-principal th { position: sticky; top: 0; background: #1e293b; padding: 10px; border-bottom: 2px solid var(--border-color); text-align: left; z-index: 5; color: var(--text-muted); }
+        .tabla-principal td { padding: 7px 10px; border-bottom: 1px solid var(--border-color); }
+        tr:hover { background-color: #334155; cursor: pointer; }
+        
+        .content-right { width: 380px; background: var(--bg-side); display: flex; flex-direction: column; overflow-y: auto; padding: 15px; box-sizing: border-box; box-shadow: -4px 0 15px rgba(0,0,0,0.3); }
+        h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px; text-transform: uppercase; }
+        .section-box { margin-bottom: 20px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: #1e293b; }
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .full { grid-column: span 2; }
+
+        label { font-size: 10px; font-weight: bold; color: var(--text-muted); margin-bottom: 2px; display: block; }
+        input, select, textarea { 
+            width: 100%; padding: 7px; border: 1px solid var(--border-color); border-radius: 4px; 
+            font-size: 12px; box-sizing: border-box; background: var(--bg-input); color: white;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+
+        .btn-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+        button { padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        
+        .btn-save { background: var(--primary); color: white; grid-column: span 2; padding: 12px; font-size: 13px; margin-bottom: 5px; }
+        .btn-maps { background: #4285F4; color: white; }
+        .btn-cancel { background: #475569; color: white; }
+        .btn-new { background: var(--success); color: white; }
+        .btn-sync { background: #059669; color: white; }
+        .btn-del { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-del:hover { background: var(--danger); color: white; }
+
+        .resumen-mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; }
+        .card-mini { padding: 5px; border-radius: 4px; background: #0f172a; text-align: center; font-size: 9px; cursor: pointer; border: 1px solid var(--border-color); }
+        .card-mini span { display: block; font-size: 14px; font-weight: bold; }
+
+        .custom-popup .leaflet-popup-content-wrapper { background: #1e293b; color: white; border-radius: 8px; padding: 5px; }
+        .custom-popup .leaflet-popup-tip { background: #1e293b; }
+        .popup-title { color: var(--primary); font-weight: bold; border-bottom: 1px solid var(--border-color); margin-bottom: 5px; display: block; }
+
+        /* Estilos del Visor de Imagen */
+        .preview-container { 
+            margin-top: 10px; border: 1px dashed var(--border-color); border-radius: 6px; 
+            height: 180px; display: flex; align-items: center; justify-content: center; 
+            overflow: hidden; background: #0f172a; position: relative;
+        }
+        .preview-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .preview-label { position: absolute; bottom: 5px; right: 5px; font-size: 9px; background: rgba(0,0,0,0.6); padding: 2px 5px; border-radius: 4px; color: white; }
+    </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="card p-4 mb-4" id="cardForm">
-    <h3 class="text-center mb-4" id="tituloForm">📦 Registro de Movimientos</h3>
-    <form id="formStock" class="row g-3">
-      <input type="hidden" name="filaId" id="filaId">
-      <input type="hidden" name="hojaActual" id="hojaActual" value="Postes">
-      
-      <div class="col-md-4">
-        <label class="form-label fw-bold">Fecha</label>
-        <input type="date" name="fecha" id="fecha" class="form-control" required>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label fw-bold">Responsable</label>
-        <input type="text" name="responsable" id="responsable" class="form-control" placeholder="Nombre">
-      </div>
-      <div class="col-md-4">
-        <label class="form-label fw-bold">Utilizado en</label>
-        <input type="text" name="utilizado" id="utilizado" class="form-control" placeholder="Obra o Depósito">
-      </div>
-      <div class="col-md-4">
-        <label class="form-label fw-bold"># Compra</label>
-        <input type="number" name="compra" id="compra" class="form-control">
-      </div>
-      <div class="col-md-4">
-        <label class="form-label fw-bold">Monto ($)</label>
-        <input type="text" name="monto" id="monto" class="form-control">
-      </div>
-      <div class="col-md-4">
-        <label class="form-label fw-bold"># Retirados</label>
-        <input type="number" name="retirados" id="retirados" class="form-control">
-      </div>
-      
-      <div class="col-12 mt-4 text-center">
-        <button type="button" id="btnAccion" onclick="procesar()" class="btn btn-guardar px-5 py-2">Guardar Registro</button>
-        <button type="button" id="btnCancelar" onclick="cancelarEdicion()" class="btn btn-secondary py-2 ms-2" style="display:none;">Cancelar</button>
-        <div id="loader" class="spinner-border text-success ms-3" role="status"></div>
-      </div>
-    </form>
-  </div>
+<header class="app-header">
+    <div class="header-logo">
+        <div class="logo-icon">P</div>
+        <div class="header-titles">
+            <h1>PANEL PGP <small>V1.8</small></h1>
+            <span>CONSOLA TÉCNICA - JAVIERCITO</span>
+        </div>
+    </div>
+    <div class="header-actions">
+        <div class="live-indicator">
+            <span class="dot"></span> SISTEMA EN VIVO
+        </div>
+    </div>
+</header>
 
-  <div class="tabla-contenedor">
-    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
-      <ul class="nav nav-tabs border-0 mb-0" id="tabHojas">
-        <li class="nav-item">
-          <a class="nav-link active" id="tabPostes" onclick="cambiarHoja('Postes')">📍 Postes</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="tabTutores" onclick="cambiarHoja('Tutores')">🌿 Tutores</a>
-        </li>
-      </ul>
-      
-      <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
-        <label class="fw-bold mb-0">Filtrar Año:</label>
-        <select id="filtroAnio" class="form-select filtro-anio" onchange="cargarTabla()">
-          <option value="todos">Todos</option>
-          <option value="2026" selected>2026</option>
-          <option value="2025">2025</option>
-          <option value="2024">2024</option>
-        </select>
-        <button onclick="cargarTabla()" class="btn btn-sm btn-outline-primary" title="Refrescar">🔄</button>
-      </div>
+<div class="main-wrapper">
+    <div class="content-left">
+        <div id="mapa-general"></div>
+        <div id="statusBar" class="status-bar">
+            <span id="statusText">Listo</span>
+            <span id="statusTime">--:--:--</span>
+        </div>
+        <div class="contenedor-tabla">
+            <table class="tabla-principal" id="tabla">
+                <thead>
+                    <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CAT</th><th>ESTADO</th><th>FOTO</th><th>ACC</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead class="table-dark">
-          <tr>
-            <th>Fecha</th>
-            <th>Compra</th>
-            <th>Monto</th>
-            <th>Retirados</th>
-            <th>Responsable</th>
-            <th>Utilizado en</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody id="cuerpoTabla"></tbody>
-      </table>
+    <div class="content-right">
+        <div class="section-box">
+            <h3>Filtros y Control</h3>
+            <div class="control-grid">
+                <div class="full"><input type="text" id="fId" placeholder="Buscar ID o Detalle..." onkeyup="buscar()"></div>
+                <select id="filtroZona" onchange="buscar()"><option value="Todas">Todas las Zonas</option></select>
+                <select id="filtroEstado" onchange="buscar()">
+                    <option value="Todos">Todos los Estados</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Finalizado">Finalizado</option>
+                </select>
+            </div>
+            <div class="btn-stack">
+                <button class="btn-new" onclick="agregarFila()">➕ Nueva Tarea</button>
+                <button class="btn-sync" onclick="cargarDesdeGoogleSheets()">🔄 Sincronizar</button>
+            </div>
+            <div class="resumen-mini">
+                <div class="card-mini" onclick="aplicarFiltroRapido('Todos')">TOT<span id="res-total">0</span></div>
+                <div class="card-mini" onclick="aplicarFiltroRapido('Pendiente')">PEN<span id="res-pend" style="color:var(--danger)">0</span></div>
+                <div class="card-mini" onclick="aplicarFiltroRapido('En proceso')">PRO<span id="res-proc" style="color:var(--primary)">0</span></div>
+                <div class="card-mini" onclick="aplicarFiltroRapido('Finalizado')">FIN<span id="res-fin" style="color:var(--success)">0</span></div>
+            </div>
+        </div>
+
+        <div class="section-box" id="panelEdicion">
+            <h3>Editor de Tarea</h3>
+            <div class="control-grid">
+                <div class="full">
+                    <label>ID Registro (Editable)</label>
+                    <input type="text" id="m_id" placeholder="ID de tarea...">
+                </div>
+                <div><label>Fecha</label><input type="text" id="m_fec"></div>
+                <div><label>Zona</label><input type="text" id="m_zon"></div>
+                <div class="full"><label>Detalle de la Tarea</label><textarea id="m_det" rows="3"></textarea></div>
+                <div><label>Latitud</label><input type="text" id="m_lat"></div>
+                <div><label>Longitud</label><input type="text" id="m_lon"></div>
+                <div><label>Categoría</label><select id="m_cat"></select></div>
+                <div><label>Estado</label>
+                    <select id="m_est">
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En proceso">En proceso</option>
+                        <option value="Finalizado">Finalizado</option>
+                    </select>
+                </div>
+                <div><label>Escalera</label><select id="m_esc"><option value="NO">NO</option><option value="SI">SI</option></select></div>
+                <div><label>Finalización</label><input type="text" id="m_cie"></div>
+                <div class="full">
+                    <label>Subir Foto (Drive)</label>
+                    <input type="file" id="m_foto" accept="image/*" style="font-size:10px;">
+                </div>
+            </div>
+
+            <div class="preview-container" id="imagePreviewContainer">
+                <span id="noImageText" style="font-size:10px; color:var(--text-muted)">Sin imagen seleccionada</span>
+                <img id="imgVisualizer" src="" style="display:none;">
+                <span class="preview-label">VISTA PREVIA</span>
+            </div>
+
+            <div class="btn-stack">
+                <button class="btn-save" onclick="prepararGuardado()">💾 GUARDAR CAMBIOS</button>
+                <button class="btn-maps" onclick="abrirGoogleMaps()">📍 Google Maps</button>
+                <button class="btn-cancel" onclick="limpiarPanel()">✖ Limpiar</button>
+                <button class="btn-del" onclick="borrarDesdePanel()">🗑️ Eliminar</button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
-<script>
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxGbkE9TDB3D2eflGSHwY8LO-9Bvc9WKZUxFua4eyTqLwL8dVnkqTX-ymX6xwzROWQWxA/exec";
-  let hojaActiva = "Postes";
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+    const GAPP_URL = "https://script.google.com/macros/s/AKfycbx_D5lbheYvkeeuRuMwuoOChPIZUvZrxOezOuba-66_txXaSPwm8xYovgoO5OwSEg3F/exec"; 
 
-  window.onload = cargarTabla;
+    let datos = [];
+    let filaActualIdx = null; 
+    const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJE", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
-  function cambiarHoja(nombre) {
-    hojaActiva = nombre;
-    document.getElementById('hojaActual').value = nombre;
-    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-    if(nombre === 'Postes') document.getElementById('tabPostes').classList.add('active');
-    else document.getElementById('tabTutores').classList.add('active');
-    cancelarEdicion();
-    cargarTabla();
-  }
+    let map = L.map('mapa-general').setView([-27.46, -58.83], 12);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+    let markerLayer = L.featureGroup().addTo(map);
 
-  function cargarTabla() {
-    const cuerpo = document.getElementById('cuerpoTabla');
-    const anioSeleccionado = document.getElementById('filtroAnio').value;
-    cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Cargando datos...</td></tr>';
-    
-    fetch(`${WEB_APP_URL}?hoja=${hojaActiva}`)
-      .then(res => res.json())
-      .then(filas => {
-        cuerpo.innerHTML = "";
+    window.abrirGoogleMaps = function() {
+        const lat = document.getElementById("m_lat").value;
+        const lon = document.getElementById("m_lon").value;
+        if(lat && lon) window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank');
+    }
+
+    window.limpiarPanel = function() {
+        filaActualIdx = null;
+        document.querySelectorAll('#panelEdicion input, #panelEdicion textarea').forEach(el => el.value = "");
+        document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}">${c}</option>`).join("");
+        document.getElementById("m_foto").value = "";
+        // Reset visor
+        document.getElementById("imgVisualizer").style.display = "none";
+        document.getElementById("imgVisualizer").src = "";
+        document.getElementById("noImageText").style.display = "block";
+    }
+
+    function actualizarAviso(tipo, mensaje) {
+        const bar = document.getElementById("statusBar");
+        document.getElementById("statusText").innerText = mensaje;
+        document.getElementById("statusTime").innerText = new Date().toLocaleTimeString();
+        bar.className = "status-bar " + (tipo === 'ok' ? 'status-ok' : tipo === 'error' ? 'status-error' : 'status-loading');
+    }
+
+    function repararCoordenada(str) {
+        if (!str || str === "0" || str === "-") return NaN;
+        let s = String(str).replace(',', '.').replace(/[^-0-9.]/g, '').trim();
+        let puro = s.replace('.', '').replace('-', '');
+        if (puro.length > 2) return parseFloat("-" + puro.substring(0, 2) + "." + puro.substring(2));
+        return parseFloat(s);
+    }
+
+    window.cargarDesdeGoogleSheets = async function() {
+        actualizarAviso('loading', '⏳ Conectando con Drive...');
+        try {
+            const resp = await fetch(GAPP_URL + "?cb=" + Date.now());
+            const json = await resp.json();
+            datos = json.map(d => ({
+                ID: d.ID || "", FECHA: d.FECHA || "", ZONA: d.ZONA || "", DETALLE: d.DETALLE || "",
+                LAT: d.LATITUD || "", LON: d.LONGITUD || "", ESC: d.ESCALERA || "NO",
+                CAT: d.CATEGORIA || "", ESTADO: d.ESTADO || "Pendiente", CIERRE: d.FINALIZACION || "",
+                IMAGEN: d.IMAGEN || ""
+            }));
+            const zonasUnicas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
+            const selectZona = document.getElementById("filtroZona");
+            selectZona.innerHTML = '<option value="Todas">Todas las Zonas</option>';
+            zonasUnicas.forEach(z => { selectZona.innerHTML += `<option value="${z}">${z}</option>`; });
+            window.buscar();
+            actualizarAviso('ok', '✅ Sincronizado');
+        } catch (e) { actualizarAviso('error', '❌ Error Drive'); }
+    }
+
+    window.buscar = function() {
+        const txt = document.getElementById("fId").value.toLowerCase();
+        const zon = document.getElementById("filtroZona").value;
+        const est = document.getElementById("filtroEstado").value;
+        const filtrados = datos.map((d, i) => ({ item: d, originalIndex: i }))
+            .filter(({ item: d }) => {
+                const matchEst = (est === "Todos" || d.ESTADO === est);
+                const matchZon = (zon === "Todas" || d.ZONA === zon);
+                return matchEst && matchZon && (d.ID.toString().toLowerCase().includes(txt) || d.DETALLE.toLowerCase().includes(txt));
+            });
+        window.render(filtrados);
+    };
+
+    window.render = function(lista) {
+        const tbody = document.querySelector("#tabla tbody");
+        tbody.innerHTML = ""; 
+        markerLayer.clearLayers();
+        let cnt = { pend: 0, proc: 0, fin: 0 };
         
-        // Filtrar por año antes de mostrar
-        const filasFiltradas = filas.filter(fila => {
-          if (anioSeleccionado === "todos") return true;
-          let fechaFila = new Date(fila[0]);
-          return !isNaN(fechaFila) && fechaFila.getFullYear().toString() === anioSeleccionado;
+        datos.forEach(d => {
+            const est = d.ESTADO.toLowerCase();
+            if(est.includes("pend")) cnt.pend++; else if(est.includes("proc")) cnt.proc++; else if(est.includes("fin")) cnt.fin++;
         });
 
-        if (filasFiltradas.length === 0) {
-          cuerpo.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No hay registros para el año ${anioSeleccionado} en ${hojaActiva}.</td></tr>`;
-          return;
+        lista.forEach((entry) => {
+            const d = entry.item;
+            const estL = d.ESTADO.toLowerCase();
+            let la = repararCoordenada(d.LAT);
+            let lo = repararCoordenada(d.LON);
+
+            if(!isNaN(la) && !isNaN(lo)) {
+                const col = estL.includes("pend") ? "#ef4444" : estL.includes("proc") ? "#3b82f6" : "#22c55e";
+                const m = L.circleMarker([la, lo], { radius: 8, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
+                m.bindPopup(`<div class="custom-popup"><span class="popup-title">ID: ${d.ID}</span><b>Zona:</b> ${d.ZONA}<br><b>Detalle:</b> ${d.DETALLE}</div>`);
+                m.addTo(markerLayer);
+            }
+
+            const tr = document.createElement("tr");
+            tr.onclick = () => window.activarEdicion(entry.originalIndex);
+            const imgIcon = d.IMAGEN ? '🖼️' : '---';
+            tr.innerHTML = `<td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td><td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td><td>${d.ESTADO}</td><td>${imgIcon}</td><td>✎</td>`;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById("res-total").innerText = datos.length;
+        document.getElementById("res-pend").innerText = cnt.pend;
+        document.getElementById("res-proc").innerText = cnt.proc;
+        document.getElementById("res-fin").innerText = cnt.fin;
+    }
+
+    window.activarEdicion = (idx) => {
+        filaActualIdx = idx;
+        const d = datos[idx];
+        document.getElementById("m_id").value = d.ID;
+        document.getElementById("m_fec").value = d.FECHA;
+        document.getElementById("m_zon").value = d.ZONA;
+        document.getElementById("m_det").value = d.DETALLE;
+        document.getElementById("m_lat").value = d.LAT;
+        document.getElementById("m_lon").value = d.LON;
+        document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
+        document.getElementById("m_est").value = d.ESTADO;
+        document.getElementById("m_esc").value = d.ESC;
+        document.getElementById("m_cie").value = d.CIERRE;
+        document.getElementById("m_foto").value = "";
+
+        // VISUALIZAR IMAGEN
+        const img = document.getElementById("imgVisualizer");
+        const txt = document.getElementById("noImageText");
+        if(d.IMAGEN && d.IMAGEN.startsWith("http")) {
+            img.src = d.IMAGEN;
+            img.style.display = "block";
+            txt.style.display = "none";
+        } else {
+            img.style.display = "none";
+            img.src = "";
+            txt.style.display = "block";
         }
+    };
 
-        filasFiltradas.reverse().forEach(fila => { 
-          let tr = document.createElement('tr');
-          let f = new Date(fila[0]);
-          let fechaISO = !isNaN(f) ? f.toISOString().split('T')[0] : "";
-          let fechaMostrar = !isNaN(f) ? f.toLocaleDateString('es-AR') : fila[0];
-          
-          tr.innerHTML = `
-            <td>${fechaMostrar}</td>
-            <td class="fw-bold text-primary">${fila[1] || '0'}</td>
-            <td class="text-success">${fila[2] ? '$' + fila[2] : '-'}</td>
-            <td class="text-danger">${fila[3] || '0'}</td>
-            <td>${fila[4] || '-'}</td>
-            <td><span class="badge bg-secondary">${fila[5] || '-'}</span></td>
-            <td>
-              <button class="btn-edit" onclick="prepararEdicion('${fechaISO}', '${fila[1]}', '${fila[2]}', '${fila[3]}', '${fila[4]}', '${fila[5]}', ${fila[6]})">✏️</button>
-            </td>
-          `;
-          cuerpo.appendChild(tr);
-        });
-      })
-      .catch(err => {
-        cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error de conexión con la base de datos.</td></tr>';
-      });
-  }
+    window.prepararGuardado = function() {
+        const file = document.getElementById("m_foto").files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => window.guardarDesdeModal(e.target.result);
+            reader.readAsDataURL(file);
+        } else {
+            window.guardarDesdeModal(null);
+        }
+    };
 
-  function prepararEdicion(fecha, compra, monto, retirados, resp, util, id) {
-    document.getElementById('filaId').value = id;
-    document.getElementById('fecha').value = fecha;
-    document.getElementById('compra').value = (compra === 'undefined' || compra === 'null') ? '' : compra;
-    document.getElementById('monto').value = (monto === 'undefined' || monto === 'null') ? '' : monto;
-    document.getElementById('retirados').value = (retirados === 'undefined' || retirados === 'null') ? '' : retirados;
-    document.getElementById('responsable').value = (resp === 'undefined' || resp === 'null') ? '' : resp;
-    document.getElementById('utilizado').value = (util === 'undefined' || util === 'null') ? '' : util;
-    
-    document.getElementById('cardForm').classList.add('modo-edicion');
-    document.getElementById('tituloForm').innerText = "✏️ Editando " + hojaActiva + " (Fila " + id + ")";
-    document.getElementById('btnAccion').innerText = "Actualizar Registro";
-    document.getElementById('btnAccion').className = "btn btn-warning px-5 py-2";
-    document.getElementById('btnCancelar').style.display = "inline-block";
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+    window.guardarDesdeModal = async function(base64Data) {
+        let nuevoId = document.getElementById("m_id").value.trim();
+        if(!nuevoId) return alert("El ID es obligatorio");
 
-  function cancelarEdicion() {
-    document.getElementById('formStock').reset();
-    document.getElementById('filaId').value = "";
-    document.getElementById('cardForm').classList.remove('modo-edicion');
-    document.getElementById('tituloForm').innerText = "📦 Registro de Movimientos";
-    document.getElementById('btnAccion').innerText = "Guardar Registro";
-    document.getElementById('btnAccion').className = "btn btn-guardar px-5 py-2";
-    document.getElementById('btnCancelar').style.display = "none";
-  }
+        const r = {
+            ID: nuevoId, FECHA: document.getElementById("m_fec").value, ZONA: document.getElementById("m_zon").value,
+            DETALLE: document.getElementById("m_det").value, LATITUD: document.getElementById("m_lat").value,
+            LONGITUD: document.getElementById("m_lon").value, ESCALERA: document.getElementById("m_esc").value,
+            CATEGORIA: document.getElementById("m_cat").value, ESTADO: document.getElementById("m_est").value,
+            FINALIZACION: document.getElementById("m_cie").value,
+            base64Img: base64Data,
+            IMAGEN: filaActualIdx !== null ? datos[filaActualIdx].IMAGEN : "" 
+        };
 
-  function procesar() {
-    const form = document.getElementById('formStock');
-    const loader = document.getElementById('loader');
-    const btn = document.getElementById('btnAccion');
-    const datos = Object.fromEntries(new FormData(form));
+        actualizarAviso('loading', '💾 Guardando en la nube...');
+        try {
+            const params = new URLSearchParams();
+            params.append('action', 'update');
+            params.append('row', JSON.stringify(r));
+            await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+            setTimeout(window.cargarDesdeGoogleSheets, 1500);
+            actualizarAviso('ok', '✅ Guardado. Sincronizando link...');
+        } catch(e) { actualizarAviso('error', '❌ Error al guardar'); }
+    };
 
-    if(!datos.fecha) return alert("Seleccione una fecha.");
+    window.borrarDesdePanel = () => {
+        const id = document.getElementById("m_id").value;
+        if(id && confirm("¿Seguro que desea eliminar el registro " + id + "?")) window.eliminarFila(filaActualIdx, id);
+    }
 
-    loader.style.display = "inline-block";
-    btn.disabled = true;
+    window.eliminarFila = async function(idx, id) {
+        actualizarAviso('loading', '🗑️ Eliminando...');
+        try {
+            const params = new URLSearchParams();
+            params.append('action', 'delete');
+            params.append('id', id);
+            await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
+            datos.splice(idx, 1);
+            window.buscar();
+            limpiarPanel();
+            actualizarAviso('ok', '✅ Registro eliminado');
+        } catch (e) { actualizarAviso('error', '❌ Error al eliminar'); }
+    }
 
-    fetch(WEB_APP_URL, {
-      method: "POST",
-      mode: 'no-cors', 
-      body: JSON.stringify(datos)
-    })
-    .then(() => {
-      alert("Operación completada.");
-      cancelarEdicion();
-      loader.style.display = "none";
-      btn.disabled = false;
-      setTimeout(cargarTabla, 1500);
-    })
-    .catch(err => {
-      alert("Error al conectar.");
-      loader.style.display = "none";
-      btn.disabled = false;
-    });
-  }
+    window.aplicarFiltroRapido = (est) => {
+        document.getElementById("filtroEstado").value = est;
+        window.buscar();
+    }
+
+    window.agregarFila = () => {
+        limpiarPanel();
+        document.getElementById("m_fec").value = new Date().toLocaleDateString();
+        document.getElementById("m_id").focus();
+    };
+
+    window.onload = window.cargarDesdeGoogleSheets;
 </script>
 </body>
 </html>
