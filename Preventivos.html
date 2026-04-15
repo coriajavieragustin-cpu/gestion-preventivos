@@ -11,7 +11,6 @@
             --success: #22c55e;
             --danger: #ef4444;
             --warning: #f59e0b;
-            /* Colores de Fondo Dark */
             --bg-main: #0f172a;
             --bg-side: #1e293b;
             --bg-card: #334155;
@@ -30,7 +29,6 @@
             flex-direction: column;
         }
 
-        /* --- ENCABEZADO --- */
         .app-header {
             height: var(--header-height);
             background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
@@ -78,10 +76,8 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
-        /* --- ESTRUCTURA PRINCIPAL --- */
         .main-wrapper { display: flex; height: calc(100vh - var(--header-height)); width: 100vw; }
 
-        /* IZQUIERDA */
         .content-left { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border-color); }
         #mapa-general { height: 45%; width: 100%; border-bottom: 2px solid var(--border-color); z-index: 1; filter: brightness(0.9) contrast(1.1); }
         
@@ -96,7 +92,6 @@
         .tabla-principal td { padding: 7px 10px; border-bottom: 1px solid var(--border-color); }
         tr:hover { background-color: #334155; cursor: pointer; }
         
-        /* DERECHA */
         .content-right { width: 380px; background: var(--bg-side); display: flex; flex-direction: column; overflow-y: auto; padding: 15px; box-sizing: border-box; box-shadow: -4px 0 15px rgba(0,0,0,0.3); }
         h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px; text-transform: uppercase; }
         .section-box { margin-bottom: 20px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: #1e293b; }
@@ -126,10 +121,18 @@
         .card-mini { padding: 5px; border-radius: 4px; background: #0f172a; text-align: center; font-size: 9px; cursor: pointer; border: 1px solid var(--border-color); }
         .card-mini span { display: block; font-size: 14px; font-weight: bold; }
 
-        /* Estilo del Globo (Popup) Dark */
         .custom-popup .leaflet-popup-content-wrapper { background: #1e293b; color: white; border-radius: 8px; padding: 5px; }
         .custom-popup .leaflet-popup-tip { background: #1e293b; }
         .popup-title { color: var(--primary); font-weight: bold; border-bottom: 1px solid var(--border-color); margin-bottom: 5px; display: block; }
+
+        /* Estilos del Visor de Imagen */
+        .preview-container { 
+            margin-top: 10px; border: 1px dashed var(--border-color); border-radius: 6px; 
+            height: 180px; display: flex; align-items: center; justify-content: center; 
+            overflow: hidden; background: #0f172a; position: relative;
+        }
+        .preview-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .preview-label { position: absolute; bottom: 5px; right: 5px; font-size: 9px; background: rgba(0,0,0,0.6); padding: 2px 5px; border-radius: 4px; color: white; }
     </style>
 </head>
 <body>
@@ -159,7 +162,7 @@
         <div class="contenedor-tabla">
             <table class="tabla-principal" id="tabla">
                 <thead>
-                    <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CAT</th><th>ESTADO</th><th>FIN</th><th>ACC</th></tr>
+                    <tr><th>ID</th><th>FECHA</th><th>ZONA</th><th>DETALLE</th><th>LAT</th><th>LON</th><th>ESC</th><th>CAT</th><th>ESTADO</th><th>FOTO</th><th>ACC</th></tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -213,9 +216,20 @@
                 </div>
                 <div><label>Escalera</label><select id="m_esc"><option value="NO">NO</option><option value="SI">SI</option></select></div>
                 <div><label>Finalización</label><input type="text" id="m_cie"></div>
+                <div class="full">
+                    <label>Subir Foto (Drive)</label>
+                    <input type="file" id="m_foto" accept="image/*" style="font-size:10px;">
+                </div>
             </div>
+
+            <div class="preview-container" id="imagePreviewContainer">
+                <span id="noImageText" style="font-size:10px; color:var(--text-muted)">Sin imagen seleccionada</span>
+                <img id="imgVisualizer" src="" style="display:none;">
+                <span class="preview-label">VISTA PREVIA</span>
+            </div>
+
             <div class="btn-stack">
-                <button class="btn-save" onclick="guardarDesdeModal()">💾 GUARDAR CAMBIOS</button>
+                <button class="btn-save" onclick="prepararGuardado()">💾 GUARDAR CAMBIOS</button>
                 <button class="btn-maps" onclick="abrirGoogleMaps()">📍 Google Maps</button>
                 <button class="btn-cancel" onclick="limpiarPanel()">✖ Limpiar</button>
                 <button class="btn-del" onclick="borrarDesdePanel()">🗑️ Eliminar</button>
@@ -226,15 +240,13 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
-    // --- LA LÓGICA SE MANTIENE EXACTAMENTE IGUAL A TU CÓDIGO ORIGINAL ---
-    const GAPP_URL = "https://script.google.com/macros/s/AKfycbwCk2zhOh5sFhY1YVjoJPOz5KhR_1hRt5xAxKey0_1T3-tbkAAnfP-GD0e1H1vqj3uL/exec"; 
+    const GAPP_URL = "https://script.google.com/macros/s/AKfycbx_D5lbheYvkeeuRuMwuoOChPIZUvZrxOezOuba-66_txXaSPwm8xYovgoO5OwSEg3F/exec"; 
 
     let datos = [];
     let filaActualIdx = null; 
     const CATS = ["POSTES", "MOVIMIENTO ADSS", "VANO BAJO", "HERRAJE", "PODA", "INTERVENCION DE TERRENO", "NO SE PUEDE REPARAR", "FO LASTIMADA URGENTE", "TUTOR", "CJA / BOTELLA"];
 
     let map = L.map('mapa-general').setView([-27.46, -58.83], 12);
-    // Mantenemos el mismo layer de satélite que tenías
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
     let markerLayer = L.featureGroup().addTo(map);
 
@@ -248,6 +260,11 @@
         filaActualIdx = null;
         document.querySelectorAll('#panelEdicion input, #panelEdicion textarea').forEach(el => el.value = "");
         document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}">${c}</option>`).join("");
+        document.getElementById("m_foto").value = "";
+        // Reset visor
+        document.getElementById("imgVisualizer").style.display = "none";
+        document.getElementById("imgVisualizer").src = "";
+        document.getElementById("noImageText").style.display = "block";
     }
 
     function actualizarAviso(tipo, mensaje) {
@@ -273,7 +290,8 @@
             datos = json.map(d => ({
                 ID: d.ID || "", FECHA: d.FECHA || "", ZONA: d.ZONA || "", DETALLE: d.DETALLE || "",
                 LAT: d.LATITUD || "", LON: d.LONGITUD || "", ESC: d.ESCALERA || "NO",
-                CAT: d.CATEGORIA || "", ESTADO: d.ESTADO || "Pendiente", CIERRE: d.FINALIZACION || ""
+                CAT: d.CATEGORIA || "", ESTADO: d.ESTADO || "Pendiente", CIERRE: d.FINALIZACION || "",
+                IMAGEN: d.IMAGEN || ""
             }));
             const zonasUnicas = [...new Set(datos.map(d => d.ZONA).filter(z => z))].sort();
             const selectZona = document.getElementById("filtroZona");
@@ -317,20 +335,14 @@
             if(!isNaN(la) && !isNaN(lo)) {
                 const col = estL.includes("pend") ? "#ef4444" : estL.includes("proc") ? "#3b82f6" : "#22c55e";
                 const m = L.circleMarker([la, lo], { radius: 8, fillColor: col, color: "#fff", weight: 2, fillOpacity: 0.9 });
-                
-                m.bindPopup(`
-                    <div class="custom-popup">
-                        <span class="popup-title">ID: ${d.ID}</span>
-                        <b>Zona:</b> ${d.ZONA}<br>
-                        <b>Detalle:</b> ${d.DETALLE}
-                    </div>
-                `);
+                m.bindPopup(`<div class="custom-popup"><span class="popup-title">ID: ${d.ID}</span><b>Zona:</b> ${d.ZONA}<br><b>Detalle:</b> ${d.DETALLE}</div>`);
                 m.addTo(markerLayer);
             }
 
             const tr = document.createElement("tr");
             tr.onclick = () => window.activarEdicion(entry.originalIndex);
-            tr.innerHTML = `<td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td><td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td><td>${d.ESTADO}</td><td>${d.CIERRE}</td><td>✎</td>`;
+            const imgIcon = d.IMAGEN ? '🖼️' : '---';
+            tr.innerHTML = `<td>${d.ID}</td><td>${d.FECHA}</td><td>${d.ZONA}</td><td>${d.DETALLE}</td><td>${d.LAT}</td><td>${d.LON}</td><td>${d.ESC}</td><td>${d.CAT}</td><td>${d.ESTADO}</td><td>${imgIcon}</td><td>✎</td>`;
             tbody.appendChild(tr);
         });
 
@@ -353,9 +365,34 @@
         document.getElementById("m_est").value = d.ESTADO;
         document.getElementById("m_esc").value = d.ESC;
         document.getElementById("m_cie").value = d.CIERRE;
+        document.getElementById("m_foto").value = "";
+
+        // VISUALIZAR IMAGEN
+        const img = document.getElementById("imgVisualizer");
+        const txt = document.getElementById("noImageText");
+        if(d.IMAGEN && d.IMAGEN.startsWith("http")) {
+            img.src = d.IMAGEN;
+            img.style.display = "block";
+            txt.style.display = "none";
+        } else {
+            img.style.display = "none";
+            img.src = "";
+            txt.style.display = "block";
+        }
     };
 
-    window.guardarDesdeModal = async function() {
+    window.prepararGuardado = function() {
+        const file = document.getElementById("m_foto").files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => window.guardarDesdeModal(e.target.result);
+            reader.readAsDataURL(file);
+        } else {
+            window.guardarDesdeModal(null);
+        }
+    };
+
+    window.guardarDesdeModal = async function(base64Data) {
         let nuevoId = document.getElementById("m_id").value.trim();
         if(!nuevoId) return alert("El ID es obligatorio");
 
@@ -364,7 +401,9 @@
             DETALLE: document.getElementById("m_det").value, LATITUD: document.getElementById("m_lat").value,
             LONGITUD: document.getElementById("m_lon").value, ESCALERA: document.getElementById("m_esc").value,
             CATEGORIA: document.getElementById("m_cat").value, ESTADO: document.getElementById("m_est").value,
-            FINALIZACION: document.getElementById("m_cie").value
+            FINALIZACION: document.getElementById("m_cie").value,
+            base64Img: base64Data,
+            IMAGEN: filaActualIdx !== null ? datos[filaActualIdx].IMAGEN : "" 
         };
 
         actualizarAviso('loading', '💾 Guardando en la nube...');
@@ -373,14 +412,8 @@
             params.append('action', 'update');
             params.append('row', JSON.stringify(r));
             await fetch(GAPP_URL, { method: 'POST', mode: 'no-cors', body: params });
-            
-            if(filaActualIdx !== null) {
-                datos[filaActualIdx] = { ...datos[filaActualIdx], ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, CIERRE: r.FINALIZACION, ESC: r.ESCALERA };
-            } else {
-                datos.unshift({ ...r, LAT: r.LATITUD, LON: r.LONGITUD, CAT: r.CATEGORIA, CIERRE: r.FINALIZACION, ESC: r.ESCALERA });
-            }
-            window.buscar();
-            actualizarAviso('ok', '✅ Guardado');
+            setTimeout(window.cargarDesdeGoogleSheets, 1500);
+            actualizarAviso('ok', '✅ Guardado. Sincronizando link...');
         } catch(e) { actualizarAviso('error', '❌ Error al guardar'); }
     };
 
