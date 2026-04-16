@@ -240,7 +240,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script type="module">
-    const GAPP_URL = "https://script.google.com/macros/s/AKfycbz67ZK2qT29LElHpJJPHr30Td64lr0bfxA9lkbL9gUvGJ-lLU4bVQYJEnlcD7nNvJSN/exec"; 
+    const GAPP_URL = "https://script.google.com/macros/s/AKfycbztfhB27YklfWOSrhHTQpTEHMZczUvYewP_AijUV2z1HjVWB8yXXM8b7rkSrr6QulvnbA/exec"; 
 
     let datos = [];
     let filaActualIdx = null; 
@@ -351,35 +351,45 @@
         document.getElementById("res-proc").innerText = cnt.proc;
         document.getElementById("res-fin").innerText = cnt.fin;
     }
+window.activarEdicion = (idx) => {
+    filaActualIdx = idx;
+    const d = datos[idx];
+    document.getElementById("m_id").value = d.ID;
+    document.getElementById("m_fec").value = d.FECHA;
+    document.getElementById("m_zon").value = d.ZONA;
+    document.getElementById("m_det").value = d.DETALLE;
+    document.getElementById("m_lat").value = d.LAT;
+    document.getElementById("m_lon").value = d.LON;
+    document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
+    document.getElementById("m_est").value = d.ESTADO;
+    document.getElementById("m_esc").value = d.ESC;
+    document.getElementById("m_cie").value = d.CIERRE;
+    document.getElementById("m_foto").value = "";
 
-    window.activarEdicion = (idx) => {
-        filaActualIdx = idx;
-        const d = datos[idx];
-        document.getElementById("m_id").value = d.ID;
-        document.getElementById("m_fec").value = d.FECHA;
-        document.getElementById("m_zon").value = d.ZONA;
-        document.getElementById("m_det").value = d.DETALLE;
-        document.getElementById("m_lat").value = d.LAT;
-        document.getElementById("m_lon").value = d.LON;
-        document.getElementById("m_cat").innerHTML = CATS.map(c => `<option value="${c}" ${c === d.CAT ? 'selected' : ''}>${c}</option>`).join("");
-        document.getElementById("m_est").value = d.ESTADO;
-        document.getElementById("m_esc").value = d.ESC;
-        document.getElementById("m_cie").value = d.CIERRE;
-        document.getElementById("m_foto").value = "";
+    // VISUALIZADOR DE IMAGEN CORREGIDO
+    const img = document.getElementById("imgVisualizer");
+    const txt = document.getElementById("noImageText");
 
-        // VISUALIZAR IMAGEN
-        const img = document.getElementById("imgVisualizer");
-        const txt = document.getElementById("noImageText");
-        if(d.IMAGEN && d.IMAGEN.startsWith("http")) {
-            img.src = d.IMAGEN;
+    if(d.IMAGEN && d.IMAGEN.includes("drive.google.com")) {
+        // 1. Limpiamos espacios en blanco del link
+        let linkLimpio = d.IMAGEN.replace(/\s+/g, ''); 
+        
+        // 2. Extraemos el ID de la imagen
+        const match = linkLimpio.match(/\/d\/(.+?)\//);
+        
+        if (match && match[1]) {
+            const id = match[1];
+            // 3. Generamos el link de visualización directa
+            img.src = `https://lh3.googleusercontent.com/u/0/d/${id}`;
             img.style.display = "block";
             txt.style.display = "none";
-        } else {
-            img.style.display = "none";
-            img.src = "";
-            txt.style.display = "block";
         }
-    };
+    } else {
+        img.style.display = "none";
+        img.src = "";
+        txt.style.display = "block";
+    }    
+};
 
     window.prepararGuardado = function() {
         const file = document.getElementById("m_foto").files[0];
