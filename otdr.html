@@ -3,64 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTDR Pro - Gestión de Red</title>
+    <title>OTDR Pro - Dashboard Técnico</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <style>
-        :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 6px; box-sizing: border-box; color: var(--text); }
+        :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; --accent: #00ff41; --cyan: #00ffff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 6px; box-sizing: border-box; color: var(--text); }
         
-        .main-grid { display: grid; grid-template-columns: 260px 1fr 260px; height: 55vh; gap: 6px; margin-bottom: 6px; }
-        .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
-        .content { flex-grow: 1; overflow-y: auto; background: #08090c; }
+        /* Sección Superior: Gráfico + Cuadro de Info */
+        .top-layout { display: grid; grid-template-columns: 1fr 300px; height: 40vh; gap: 6px; margin-bottom: 6px; }
+        .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; }
+        .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; }
+        
         .chart-wrapper { background: #000; flex-grow: 1; padding: 12px; position: relative; }
-
-        table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th { background: #15171d; color: #777; padding: 8px; position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--border); text-align: center; }
-        td { padding: 6px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; }
         
-        .selected { background: #1c2533 !important; }
-        .crit { color: #ffffff !important; font-weight: bold; background: #ff1744 !important; }
-        .tag { border: 1px solid #00ff41; color: #00ff41; padding: 2px 8px; font-size: 12px; border-radius: 3px; background: rgba(0,255,65,0.05); }
+        /* Estilos del Cuadro de Información Lateral */
+        .info-content { padding: 10px; overflow-y: auto; background: #08090c; flex-grow: 1; }
+        .info-card { background: #161a21; border-left: 3px solid var(--accent); padding: 8px; margin-bottom: 8px; border-radius: 2px; font-size: 11px; }
+        .info-card h4 { margin: 0 0 5px 0; font-size: 12px; color: #fff; display: flex; justify-content: space-between; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+        .info-item { color: #888; font-size: 9px; text-transform: uppercase; }
+        .info-val { color: #eee; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
 
-        .bottom-window { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 4px; }
+        /* Sección Inferior: Tabla */
+        .bottom-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 4px; }
         .table-scroll { overflow: auto; flex-grow: 1; background: #08090c; }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #08090c; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { background: #15171d; color: #777; padding: 8px; border-bottom: 1px solid var(--border); text-align: center; position: sticky; top: 0; z-index: 10; }
+        .dist-sub { display: block; font-size: 9px; color: var(--accent); font-weight: normal; margin-top: 2px; }
+        td { padding: 8px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; }
+        
+        .row-selected { background: #1c2533 !important; }
+        .crit { color: #ffffff !important; font-weight: bold; background: #ff1744 !important; }
+        input[type="checkbox"] { cursor: pointer; accent-color: var(--accent); }
     </style>
 </head>
 <body>
 
-<div class="main-grid">
+<div class="top-layout">
     <div class="window">
-        <div class="header">Selector de Pelos</div>
-        <div class="content">
-            <table>
-                <thead><tr><th>✔</th><th>Pelo</th><th>Buffer</th></tr></thead>
-                <tbody id="listBody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="window">
-        <div class="header">Monitor OTDR - Escala 5.0 dB (Corte en 0.5)</div>
+        <div class="header">Monitor OTDR - Análisis de Atenuación</div>
         <div class="chart-wrapper"><canvas id="otdrChart"></canvas></div>
     </div>
 
     <div class="window">
-        <div class="header">Referencia Técnica</div>
-        <div class="content" id="sidePanel" style="padding:15px;"></div>
+        <div class="header">Información de Pelos</div>
+        <div class="info-content" id="infoPanel">
+            <div style="color:#555; text-align:center; margin-top:20px;">Seleccione hilos en la tabla para ver detalles</div>
+        </div>
     </div>
 </div>
 
-<div class="bottom-window">
-    <div class="header">Auditoría de Certificaciones - Planilla Completa</div>
+<div class="bottom-section">
+    <div class="header">Planilla de Certificaciones</div>
     <div class="table-scroll">
         <table>
-            <thead><tr id="headRow"><th>BUF</th><th>PELO</th><th>OLT/ODF</th></tr></thead>
+            <thead>
+                <tr id="headRow">
+                    <th style="width:30px">✔</th>
+                    <th>BUFFER</th>
+                    <th>PELO</th>
+                    <th>PUERTO ODF</th>
+                    <th>OLT</th>
+                    <th>RAMAL</th>
+                    <th>ODF</th>
+                </tr>
+            </thead>
             <tbody id="gridBody"></tbody>
         </table>
     </div>
@@ -75,7 +84,7 @@
         "amarillo": "#ffff00", "violeta": "#9900ff", "rosa": "#ff66cc", "celeste": "#00ffff"
     };
 
-    const COLS = {
+    const COLS_CONFIG = {
         "FA00 (1490)": "FA00", "FA01 (1690)": "FA01", "FA1 (1960)": "FA1",
         "FA2 (2360)": "FA2", "FA3 (2820)": "FA3", "FA4 (3680)": "FA4",
         "FA5 (4400)": "FA5", "FA6 (4470)": "FA6", "FA7 (5130)": "FA7",
@@ -83,11 +92,6 @@
         "FA9 (6070)": "FA9", "FAA (6680)": "FAA", "FAA BY (7690)": "FAABY",
         "FAB (7180)": "FAB", "FAC (7620)": "FAC", "FAD (8090)": "FAD"
     };
-
-    function getTxtCol(color) {
-        const c = color.toLowerCase().trim();
-        return ["blanco", "amarillo", "celeste", "rosa"].includes(c) ? "#000" : "#fff";
-    }
 
     let data = [];
     let chart = null;
@@ -98,48 +102,50 @@
             const res = await fetch(API);
             data = await res.json();
             const hr = document.getElementById('headRow');
-            Object.values(COLS).forEach(v => { 
-                let th = document.createElement('th'); 
-                th.innerText = v; 
-                hr.appendChild(th); 
+            Object.keys(COLS_CONFIG).forEach(key => {
+                let th = document.createElement('th');
+                const dist = key.match(/\(([^)]+)\)/);
+                th.innerHTML = `${COLS_CONFIG[key]} <span class="dist-sub">${dist ? dist[1]+'m' : ''}</span>`;
+                hr.appendChild(th);
             });
             render();
-        } catch(e) { console.error("Error cargando datos:", e); }
+        } catch(e) { console.error("Error:", e); }
     }
 
     function render() {
-        const lb = document.getElementById('listBody');
         const gb = document.getElementById('gridBody');
-        lb.innerHTML = ''; gb.innerHTML = '';
+        gb.innerHTML = '';
 
         data.forEach((d, i) => {
             const isS = selectedIndices.includes(i);
-            const pKey = d.PELO.toLowerCase().trim();
-            const bKey = d.BUFFER.toLowerCase().trim();
+            const pKey = (d.PELO || "").toLowerCase().trim();
+            const bKey = (d.BUFFER || "").toLowerCase().trim();
             const cP = COLORS[pKey] || "#555";
             const cB = COLORS[bKey] || "#555";
 
-            let r1 = document.createElement('tr');
-            if(isS) r1.className = 'selected';
-            r1.innerHTML = `<td><input type="checkbox" ${isS?'checked':''}></td><td style="color:${cP}; font-weight:bold;">● ${d.PELO}</td><td>${d.BUFFER}</td>`;
-            r1.onclick = () => toggle(i);
-            lb.appendChild(r1);
-
-            let r2 = document.createElement('tr');
-            if(isS) r2.className = 'selected';
-            let h = `<td style="background:${cB}; color:${getTxtCol(d.BUFFER)}; font-weight:bold">${d.BUFFER}</td>
-                     <td style="background:${cP}; color:${getTxtCol(d.PELO)}; font-weight:bold">${d.PELO}</td>
-                     <td style="color:#666; font-size:9px">${d.OLT || 'SN'} / ${d.ODF || '--'}</td>`;
+            let row = document.createElement('tr');
+            if(isS) row.className = 'row-selected';
             
-            Object.keys(COLS).forEach(k => {
+            row.innerHTML = `
+                <td><input type="checkbox" ${isS?'checked':''}></td>
+                <td style="background:${cB}; color:#fff; font-weight:bold">${d.BUFFER || ''}</td>
+                <td style="color:${cP}; font-weight:bold">${d.PELO || ''}</td>
+                <td style="color:var(--cyan)">${d["Puerto ODF"] || '--'}</td>
+                <td style="color:var(--accent)">${d.OLT || '-'}</td>
+                <td>${d.Ramal || '--'}</td>
+                <td style="color:#aaa">${d.ODF || '--'}</td>
+            `;
+            
+            Object.keys(COLS_CONFIG).forEach(k => {
                 let v = parseFloat(d[k]) || 0;
-                h += `<td class="${v > 0.5 ? 'crit' : ''}">${v === 0 ? '-' : v.toFixed(2)}</td>`;
+                row.innerHTML += `<td class="${v > 0.5 ? 'crit' : ''}">${v === 0 ? '-' : v.toFixed(2)}</td>`;
             });
-            r2.innerHTML = h;
-            r2.onclick = () => toggle(i);
-            gb.appendChild(r2);
+
+            row.onclick = (e) => { if(e.target.type !== 'checkbox') toggle(i); };
+            row.querySelector('input').onchange = () => toggle(i);
+            gb.appendChild(row);
         });
-        updateChart();
+        updateDashboard();
     }
 
     function toggle(idx) {
@@ -151,70 +157,63 @@
         render();
     }
 
-    function updateChart() {
+    function updateDashboard() {
+        // Actualizar Gráfico
+        const chartLabels = Object.keys(COLS_CONFIG).map(k => {
+            const d = k.match(/\(([^)]+)\)/);
+            return [COLS_CONFIG[k], d ? d[1]+'m' : ''];
+        });
+
         const datasets = selectedIndices.map(idx => {
             const d = data[idx];
-            const pC = COLORS[d.PELO.toLowerCase().trim()] || '#00ff41'; // Color del pelo
-            const vals = Object.keys(COLS).map(k => parseFloat(d[k]) || 0);
             return {
                 label: `Pelo ${d.PELO}`,
-                data: vals,
-                backgroundColor: pC, // CAMBIO: Ahora la barra es SIEMPRE del color del pelo
-                borderColor: '#111',
-                borderWidth: 1,
-                barPercentage: 0.8,
-                categoryPercentage: 0.8
+                data: Object.keys(COLS_CONFIG).map(k => parseFloat(d[k]) || 0),
+                backgroundColor: COLORS[(d.PELO || "").toLowerCase().trim()] || '#00ff41',
+                borderWidth: 1
             };
         });
 
         if (chart) chart.destroy();
         chart = new Chart(document.getElementById('otdrChart'), {
             type: 'bar',
-            data: { labels: Object.values(COLS), datasets: datasets },
+            data: { labels: chartLabels, datasets: datasets },
             options: {
-                responsive: true, 
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { 
-                        grid: { display: false }, 
-                        ticks: { color: '#ffffff', font: {size: 11, weight: 'bold'}} 
-                    },
-                    y: { 
-                        min: 0, 
-                        max: 5.0, 
-                        grid: { color: '#1a1d23' }, 
-                        ticks: { color: '#888', stepSize: 1 } 
-                    }
+                    x: { ticks: { color: '#fff', font: {size: 9} } },
+                    y: { min: 0, max: 2.0, ticks: { color: '#888' } }
                 },
                 plugins: {
-                    legend: { 
-                        display: selectedIndices.length > 1, 
-                        labels: {color: '#aaa', font: {size: 10}, boxWidth: 12} 
-                    },
-                    annotation: { 
-                        annotations: { 
-                            l: { 
-                                type: 'line', yMin: 0.5, yMax: 0.5, 
-                                borderColor: 'rgba(255, 23, 68, 0.7)', 
-                                borderWidth: 2, 
-                                borderDash: [5, 5],
-                                label: {
-                                    display: true, content: 'LIMITE 0.5 dB', 
-                                    backgroundColor: '#ff1744', color: '#fff', font: {size: 9}
-                                }
-                            } 
-                        } 
-                    }
+                    legend: { display: false },
+                    annotation: { annotations: { l: { type: 'line', yMin: 0.5, yMax: 0.5, borderColor: 'red', borderWidth: 2, borderDash: [5, 5] } } }
                 }
             }
         });
 
-        const last = data[selectedIndices[selectedIndices.length - 1]];
-        document.getElementById('sidePanel').innerHTML = `
-            <div style="margin-bottom:15px"><span style="font-size:9px; color:#555; display:block">UBICACIÓN OLT</span><span class="tag">${last.OLT || 'SIN REGISTRO'}</span></div>
-            <div style="margin-bottom:15px"><span style="font-size:9px; color:#555; display:block">CONECTOR ODF</span><span style="color:#fff; font-size:14px; font-weight:bold">${last.ODF || '--'}</span></div>
-            <div><span style="font-size:9px; color:#555; display:block">HILO ACTUAL</span><span style="color:#fff; font-size:14px; font-weight:bold">${last.PELO}</span></div>
-        `;
+        // Actualizar Cuadro de Información Lateral
+        const infoPanel = document.getElementById('infoPanel');
+        infoPanel.innerHTML = '';
+        
+        selectedIndices.forEach(idx => {
+            const d = data[idx];
+            const pKey = (d.PELO || "").toLowerCase().trim();
+            const colorPelo = COLORS[pKey] || "#eee";
+            
+            const card = document.createElement('div');
+            card.className = 'info-card';
+            card.style.borderLeftColor = colorPelo;
+            card.innerHTML = `
+                <h4>Pelo ${d.PELO} <span style="font-size:10px; color:#555;">ID: ${idx+1}</span></h4>
+                <div class="info-grid">
+                    <div><div class="info-item">Buffer</div><div class="info-val">${d.BUFFER}</div></div>
+                    <div><div class="info-item">Puerto ODF</div><div class="info-val" style="color:var(--cyan)">${d["Puerto ODF"]}</div></div>
+                    <div><div class="info-item">OLT</div><div class="info-val" style="color:var(--accent)">${d.OLT}</div></div>
+                    <div><div class="info-item">Ramal</div><div class="info-val">${d.Ramal}</div></div>
+                </div>
+            `;
+            infoPanel.appendChild(card);
+        });
     }
     load();
 </script>
