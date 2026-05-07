@@ -3,60 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTDR Pro - Dashboard Técnico</title>
+    <title>OTDR Pro - Auditoría Visual</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <style>
         :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; --accent: #00ff41; --cyan: #00ffff; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 6px; box-sizing: border-box; color: var(--text); }
         
-        /* Sección Superior: Gráfico + Cuadro de Info */
-        .top-layout { display: grid; grid-template-columns: 1fr 300px; height: 40vh; gap: 6px; margin-bottom: 6px; }
+        .top-layout { display: grid; grid-template-columns: 1fr 320px; height: 40vh; gap: 6px; margin-bottom: 6px; }
         .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; }
         .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; }
         
         .chart-wrapper { background: #000; flex-grow: 1; padding: 12px; position: relative; }
         
-        /* Estilos del Cuadro de Información Lateral */
-        .info-content { padding: 10px; overflow-y: auto; background: #08090c; flex-grow: 1; }
-        .info-card { background: #161a21; border-left: 3px solid var(--accent); padding: 8px; margin-bottom: 8px; border-radius: 2px; font-size: 11px; }
-        .info-card h4 { margin: 0 0 5px 0; font-size: 12px; color: #fff; display: flex; justify-content: space-between; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-        .info-item { color: #888; font-size: 9px; text-transform: uppercase; }
-        .info-val { color: #eee; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
+        /* Panel Lateral con Colores de Buffer y Pelo */
+        .info-content { padding: 8px; overflow-y: auto; background: #08090c; flex-grow: 1; }
+        .info-card { padding: 12px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .info-card h4 { margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .info-item { font-size: 8px; text-transform: uppercase; opacity: 0.8; font-weight: bold; }
+        .info-val { font-size: 12px; font-weight: 800; }
 
-        /* Sección Inferior: Tabla */
         .bottom-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 4px; }
         .table-scroll { overflow: auto; flex-grow: 1; background: #08090c; }
 
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th { background: #15171d; color: #777; padding: 8px; border-bottom: 1px solid var(--border); text-align: center; position: sticky; top: 0; z-index: 10; }
-        .dist-sub { display: block; font-size: 9px; color: var(--accent); font-weight: normal; margin-top: 2px; }
+        th { background: #15171d; color: #777; padding: 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+        .dist-sub { display: block; font-size: 9px; color: var(--accent); margin-top: 2px; }
         td { padding: 8px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; }
         
         .row-selected { background: #1c2533 !important; }
         .crit { color: #ffffff !important; font-weight: bold; background: #ff1744 !important; }
-        input[type="checkbox"] { cursor: pointer; accent-color: var(--accent); }
     </style>
 </head>
 <body>
 
 <div class="top-layout">
     <div class="window">
-        <div class="header">Monitor OTDR - Análisis de Atenuación</div>
+        <div class="header">Monitor de Atenuación OTDR</div>
         <div class="chart-wrapper"><canvas id="otdrChart"></canvas></div>
     </div>
 
     <div class="window">
-        <div class="header">Información de Pelos</div>
-        <div class="info-content" id="infoPanel">
-            <div style="color:#555; text-align:center; margin-top:20px;">Seleccione hilos en la tabla para ver detalles</div>
-        </div>
+        <div class="header">Información del Pelo Seleccionado</div>
+        <div class="info-content" id="infoPanel"></div>
     </div>
 </div>
 
 <div class="bottom-section">
-    <div class="header">Planilla de Certificaciones</div>
+    <div class="header">Base de Datos Técnica (Corte Crítico: 0.5 dB)</div>
     <div class="table-scroll">
         <table>
             <thead>
@@ -78,9 +73,10 @@
 <script>
     const API = "https://script.google.com/macros/s/AKfycby8sfyLk-wzEeFdE8VybET5llJqFlyaNhuKyApezHqKWcv_hkQqFBQOhSDzU1AVgqGlXw/exec";
     
+    // Paleta estándar de colores para fibras
     const COLORS = {
         "azul": "#0055ff", "naranja": "#ff8800", "verde": "#00cc00", "marron": "#8b4513",
-        "gris": "#808080", "blanco": "#ffffff", "rojo": "#ff0000", "negro": "#333333",
+        "gris": "#808080", "blanco": "#ffffff", "rojo": "#ff0000", "negro": "#111111",
         "amarillo": "#ffff00", "violeta": "#9900ff", "rosa": "#ff66cc", "celeste": "#00ffff"
     };
 
@@ -109,7 +105,7 @@
                 hr.appendChild(th);
             });
             render();
-        } catch(e) { console.error("Error:", e); }
+        } catch(e) { console.error("Error cargando datos:", e); }
     }
 
     function render() {
@@ -120,16 +116,16 @@
             const isS = selectedIndices.includes(i);
             const pKey = (d.PELO || "").toLowerCase().trim();
             const bKey = (d.BUFFER || "").toLowerCase().trim();
-            const cP = COLORS[pKey] || "#555";
-            const cB = COLORS[bKey] || "#555";
+            const colorPelo = COLORS[pKey] || "#555";
+            const colorBuffer = COLORS[bKey] || "#222";
 
             let row = document.createElement('tr');
             if(isS) row.className = 'row-selected';
             
             row.innerHTML = `
                 <td><input type="checkbox" ${isS?'checked':''}></td>
-                <td style="background:${cB}; color:#fff; font-weight:bold">${d.BUFFER || ''}</td>
-                <td style="color:${cP}; font-weight:bold">${d.PELO || ''}</td>
+                <td style="background:${colorBuffer}; color:${colorBuffer==='#ffffff'?'#000':'#fff'}; font-weight:bold">${d.BUFFER}</td>
+                <td style="color:${colorPelo}; font-weight:bold">${d.PELO}</td>
                 <td style="color:var(--cyan)">${d["Puerto ODF"] || '--'}</td>
                 <td style="color:var(--accent)">${d.OLT || '-'}</td>
                 <td>${d.Ramal || '--'}</td>
@@ -158,21 +154,13 @@
     }
 
     function updateDashboard() {
-        // Actualizar Gráfico
-        const chartLabels = Object.keys(COLS_CONFIG).map(k => {
-            const d = k.match(/\(([^)]+)\)/);
-            return [COLS_CONFIG[k], d ? d[1]+'m' : ''];
-        });
-
-        const datasets = selectedIndices.map(idx => {
-            const d = data[idx];
-            return {
-                label: `Pelo ${d.PELO}`,
-                data: Object.keys(COLS_CONFIG).map(k => parseFloat(d[k]) || 0),
-                backgroundColor: COLORS[(d.PELO || "").toLowerCase().trim()] || '#00ff41',
-                borderWidth: 1
-            };
-        });
+        const chartLabels = Object.keys(COLS_CONFIG).map(k => [COLS_CONFIG[k], k.match(/\(([^)]+)\)/)?.[1]+'m']);
+        const datasets = selectedIndices.map(idx => ({
+            label: `Pelo ${data[idx].PELO}`,
+            data: Object.keys(COLS_CONFIG).map(k => parseFloat(data[idx][k]) || 0),
+            backgroundColor: COLORS[(data[idx].PELO || "").toLowerCase().trim()] || '#00ff41',
+            borderWidth: 1
+        }));
 
         if (chart) chart.destroy();
         chart = new Chart(document.getElementById('otdrChart'), {
@@ -184,31 +172,33 @@
                     x: { ticks: { color: '#fff', font: {size: 9} } },
                     y: { min: 0, max: 2.0, ticks: { color: '#888' } }
                 },
-                plugins: {
-                    legend: { display: false },
-                    annotation: { annotations: { l: { type: 'line', yMin: 0.5, yMax: 0.5, borderColor: 'red', borderWidth: 2, borderDash: [5, 5] } } }
-                }
+                plugins: { legend: { display: false }, annotation: { annotations: { l: { type: 'line', yMin: 0.5, yMax: 0.5, borderColor: 'red', borderWidth: 2, borderDash: [5, 5] } } } }
             }
         });
 
-        // Actualizar Cuadro de Información Lateral
+        // ACTUALIZACIÓN DE TARJETAS CON COLOR DE BUFFER Y PELO
         const infoPanel = document.getElementById('infoPanel');
         infoPanel.innerHTML = '';
         
         selectedIndices.forEach(idx => {
             const d = data[idx];
-            const pKey = (d.PELO || "").toLowerCase().trim();
-            const colorPelo = COLORS[pKey] || "#eee";
+            const colorPelo = COLORS[(d.PELO || "").toLowerCase().trim()] || "#ffffff";
+            const colorBuffer = COLORS[(d.BUFFER || "").toLowerCase().trim()] || "#161a21";
+            
+            // Ajuste de contraste para texto sobre fondo
+            const textContrast = (colorBuffer === '#ffffff' || colorBuffer === '#ffff00') ? '#000' : '#fff';
             
             const card = document.createElement('div');
             card.className = 'info-card';
-            card.style.borderLeftColor = colorPelo;
+            card.style.backgroundColor = colorBuffer;
+            card.style.color = textContrast;
+            
             card.innerHTML = `
-                <h4>Pelo ${d.PELO} <span style="font-size:10px; color:#555;">ID: ${idx+1}</span></h4>
+                <h4 style="color:${colorPelo}; border-color:${colorPelo}">PELO ${d.PELO}</h4>
                 <div class="info-grid">
                     <div><div class="info-item">Buffer</div><div class="info-val">${d.BUFFER}</div></div>
-                    <div><div class="info-item">Puerto ODF</div><div class="info-val" style="color:var(--cyan)">${d["Puerto ODF"]}</div></div>
-                    <div><div class="info-item">OLT</div><div class="info-val" style="color:var(--accent)">${d.OLT}</div></div>
+                    <div><div class="info-item">Puerto ODF</div><div class="info-val" style="color:${colorPelo === '#ffffff' ? '#00ffff' : colorPelo}">${d["Puerto ODF"]}</div></div>
+                    <div><div class="info-item">OLT</div><div class="info-val">${d.OLT}</div></div>
                     <div><div class="info-item">Ramal</div><div class="info-val">${d.Ramal}</div></div>
                 </div>
             `;
