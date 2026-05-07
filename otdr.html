@@ -10,26 +10,29 @@
         :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; --accent: #00ff41; --cyan: #00ffff; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 6px; box-sizing: border-box; color: var(--text); }
         
+        /* Barra superior para selector de hojas */
+        .top-bar { display: flex; gap: 10px; align-items: center; background: var(--win); padding: 8px; border: 1px solid var(--border); margin-bottom: 6px; border-radius: 4px; }
+        select { background: #1a1c22; color: var(--accent); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; outline: none; }
+
         .top-layout { display: grid; grid-template-columns: 1fr 320px; height: 40vh; gap: 6px; margin-bottom: 6px; }
         .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; }
         .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; }
         
         .chart-wrapper { background: #000; flex-grow: 1; padding: 12px; position: relative; }
         
-        /* Panel Lateral con Colores de Buffer y Pelo */
         .info-content { padding: 8px; overflow-y: auto; background: #08090c; flex-grow: 1; }
         .info-card { padding: 12px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .info-card h4 { margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
         .info-item { font-size: 8px; text-transform: uppercase; opacity: 0.8; font-weight: bold; }
-        .info-val { font-size: 12px; font-weight: 800; }
+        .info-val { font-size: 11px; font-weight: 800; }
 
         .bottom-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 4px; }
         .table-scroll { overflow: auto; flex-grow: 1; background: #08090c; }
 
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
         th { background: #15171d; color: #777; padding: 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
-        .dist-sub { display: block; font-size: 9px; color: var(--accent); margin-top: 2px; }
+        .dist-sub { display: block; font-size: 9px; color: var(--accent); }
         td { padding: 8px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; }
         
         .row-selected { background: #1c2533 !important; }
@@ -38,12 +41,18 @@
 </head>
 <body>
 
+<div class="top-bar">
+    <span style="font-size: 11px; font-weight: bold; color: #fff;">PROYECTO / ZONA:</span>
+    <select id="sheetPicker" onchange="loadSheet(this.value)">
+        <option>Cargando hojas...</option>
+    </select>
+</div>
+
 <div class="top-layout">
     <div class="window">
-        <div class="header">Monitor de Atenuación OTDR</div>
+        <div class="header" id="chartTitle">Monitor de Atenuación OTDR</div>
         <div class="chart-wrapper"><canvas id="otdrChart"></canvas></div>
     </div>
-
     <div class="window">
         <div class="header">Información del Pelo Seleccionado</div>
         <div class="info-content" id="infoPanel"></div>
@@ -53,90 +62,100 @@
 <div class="bottom-section">
     <div class="header">Base de Datos Técnica (Corte Crítico: 0.5 dB)</div>
     <div class="table-scroll">
-        <table>
-            <thead>
-                <tr id="headRow">
-                    <th style="width:30px">✔</th>
-                    <th>BUFFER</th>
-                    <th>PELO</th>
-                    <th>PUERTO ODF</th>
-                    <th>OLT</th>
-                    <th>RAMAL</th>
-                    <th>ODF</th>
-                </tr>
-            </thead>
+        <table id="mainTable">
+            <thead id="headRow"></thead>
             <tbody id="gridBody"></tbody>
         </table>
     </div>
 </div>
 
 <script>
-    const API = "https://script.google.com/macros/s/AKfycby8sfyLk-wzEeFdE8VybET5llJqFlyaNhuKyApezHqKWcv_hkQqFBQOhSDzU1AVgqGlXw/exec";
+    // REEMPLAZA ESTA URL CON LA DE TU APP SCRIPT PUBLICADA
+    const API_BASE = "https://script.google.com/macros/s/AKfycbxcxP8Nvkd7uYZyyHYxOyx9zQjRr153xAmgMngp3rwQk-pJiRzU-2blQnhfLIo3K71PNw/exec";
     
-    // Paleta estándar de colores para fibras
     const COLORS = {
         "azul": "#0055ff", "naranja": "#ff8800", "verde": "#00cc00", "marron": "#8b4513",
         "gris": "#808080", "blanco": "#ffffff", "rojo": "#ff0000", "negro": "#111111",
         "amarillo": "#ffff00", "violeta": "#9900ff", "rosa": "#ff66cc", "celeste": "#00ffff"
     };
 
-    const COLS_CONFIG = {
-        "FA00 (1490)": "FA00", "FA01 (1690)": "FA01", "FA1 (1960)": "FA1",
-        "FA2 (2360)": "FA2", "FA3 (2820)": "FA3", "FA4 (3680)": "FA4",
-        "FA5 (4400)": "FA5", "FA6 (4470)": "FA6", "FA7 (5130)": "FA7",
-        "FA8 (5440)": "FA8", "FA7BY1 (5700)": "F7B1", "FA7 BY2 (5870)": "F7B2",
-        "FA9 (6070)": "FA9", "FAA (6680)": "FAA", "FAA BY (7690)": "FAABY",
-        "FAB (7180)": "FAB", "FAC (7620)": "FAC", "FAD (8090)": "FAD"
-    };
-
-    let data = [];
+    let fullData = [];
+    let currentHeaders = [];
+    let attenuationCols = [];
     let chart = null;
     let selectedIndices = [0];
 
-    async function load() {
+    // 1. Obtener nombres de las hojas al iniciar
+    async function init() {
         try {
-            const res = await fetch(API);
-            data = await res.json();
-            const hr = document.getElementById('headRow');
-            Object.keys(COLS_CONFIG).forEach(key => {
-                let th = document.createElement('th');
-                const dist = key.match(/\(([^)]+)\)/);
-                th.innerHTML = `${COLS_CONFIG[key]} <span class="dist-sub">${dist ? dist[1]+'m' : ''}</span>`;
-                hr.appendChild(th);
-            });
+            const res = await fetch(`${API_BASE}?action=getSheets`);
+            const sheets = await res.json();
+            const picker = document.getElementById('sheetPicker');
+            picker.innerHTML = sheets.map(s => `<option value="${s}">${s}</option>`).join('');
+            loadSheet(sheets[0]);
+        } catch(e) { console.error("Error inicial:", e); }
+    }
+
+    // 2. Cargar datos de la hoja seleccionada
+    async function loadSheet(name) {
+        try {
+            const res = await fetch(`${API_BASE}?sheet=${encodeURIComponent(name)}`);
+            const json = await res.json();
+            
+            fullData = json.data;
+            currentHeaders = json.headers;
+
+            // Detectamos qué columnas son de atenuación (contienen distancias o empiezan con FA)
+            attenuationCols = currentHeaders.filter(h => h.includes('(') || h.startsWith('FA'));
+            
+            buildTableHead();
             render();
-        } catch(e) { console.error("Error cargando datos:", e); }
+        } catch(e) { console.error("Error cargando hoja:", e); }
+    }
+
+    function buildTableHead() {
+        const hr = document.getElementById('headRow');
+        // Encabezados fijos + dinámicos
+        let html = `<th>✔</th>`;
+        currentHeaders.forEach(h => {
+            const dist = h.match(/\(([^)]+)\)/);
+            html += `<th>${h.replace(/\s*\(.*\)/, "")} ${dist ? `<span class="dist-sub">${dist[1]}m</span>` : ''}</th>`;
+        });
+        hr.innerHTML = html;
     }
 
     function render() {
         const gb = document.getElementById('gridBody');
         gb.innerHTML = '';
 
-        data.forEach((d, i) => {
+        fullData.forEach((d, i) => {
             const isS = selectedIndices.includes(i);
-            const pKey = (d.PELO || "").toLowerCase().trim();
-            const bKey = (d.BUFFER || "").toLowerCase().trim();
+            const pKey = (d.PELO || "").toString().toLowerCase().trim();
+            const bKey = (d.BUFFER || "").toString().toLowerCase().trim();
             const colorPelo = COLORS[pKey] || "#555";
             const colorBuffer = COLORS[bKey] || "#222";
 
             let row = document.createElement('tr');
             if(isS) row.className = 'row-selected';
             
-            row.innerHTML = `
-                <td><input type="checkbox" ${isS?'checked':''}></td>
-                <td style="background:${colorBuffer}; color:${colorBuffer==='#ffffff'?'#000':'#fff'}; font-weight:bold">${d.BUFFER}</td>
-                <td style="color:${colorPelo}; font-weight:bold">${d.PELO}</td>
-                <td style="color:var(--cyan)">${d["Puerto ODF"] || '--'}</td>
-                <td style="color:var(--accent)">${d.OLT || '-'}</td>
-                <td>${d.Ramal || '--'}</td>
-                <td style="color:#aaa">${d.ODF || '--'}</td>
-            `;
-            
-            Object.keys(COLS_CONFIG).forEach(k => {
-                let v = parseFloat(d[k]) || 0;
-                row.innerHTML += `<td class="${v > 0.5 ? 'crit' : ''}">${v === 0 ? '-' : v.toFixed(2)}</td>`;
+            let cells = `<td><input type="checkbox" ${isS?'checked':''}></td>`;
+            currentHeaders.forEach(h => {
+                let val = d[h] || "";
+                let style = "";
+                let cls = "";
+
+                if(h === "BUFFER") style = `background:${colorBuffer}; color:${(colorBuffer==='#ffffff'||colorBuffer==='#ffff00')?'#000':'#fff'}; font-weight:bold`;
+                if(h === "PELO") style = `color:${colorPelo}; font-weight:bold`;
+                
+                if(attenuationCols.includes(h)) {
+                    let num = parseFloat(val) || 0;
+                    if(num > 0.5) cls = "crit";
+                    val = num === 0 ? "-" : num.toFixed(2);
+                }
+                cells += `<td style="${style}" class="${cls}">${val}</td>`;
             });
 
+            row.innerHTML = cells;
             row.onclick = (e) => { if(e.target.type !== 'checkbox') toggle(i); };
             row.querySelector('input').onchange = () => toggle(i);
             gb.appendChild(row);
@@ -154,58 +173,56 @@
     }
 
     function updateDashboard() {
-        const chartLabels = Object.keys(COLS_CONFIG).map(k => [COLS_CONFIG[k], k.match(/\(([^)]+)\)/)?.[1]+'m']);
         const datasets = selectedIndices.map(idx => ({
-            label: `Pelo ${data[idx].PELO}`,
-            data: Object.keys(COLS_CONFIG).map(k => parseFloat(data[idx][k]) || 0),
-            backgroundColor: COLORS[(data[idx].PELO || "").toLowerCase().trim()] || '#00ff41',
+            label: `Pelo ${fullData[idx].PELO || idx}`,
+            data: attenuationCols.map(h => parseFloat(fullData[idx][h]) || 0),
+            backgroundColor: COLORS[(fullData[idx].PELO || "").toString().toLowerCase().trim()] || '#00ff41',
             borderWidth: 1
         }));
 
         if (chart) chart.destroy();
         chart = new Chart(document.getElementById('otdrChart'), {
             type: 'bar',
-            data: { labels: chartLabels, datasets: datasets },
+            data: { labels: attenuationCols.map(h => h.split(' ')[0]), datasets: datasets },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
                     x: { ticks: { color: '#fff', font: {size: 9} } },
                     y: { min: 0, max: 2.0, ticks: { color: '#888' } }
                 },
-                plugins: { legend: { display: false }, annotation: { annotations: { l: { type: 'line', yMin: 0.5, yMax: 0.5, borderColor: 'red', borderWidth: 2, borderDash: [5, 5] } } } }
+                plugins: { 
+                    legend: { display: false },
+                    annotation: { annotations: { l: { type: 'line', yMin: 0.5, yMax: 0.5, borderColor: 'red', borderWidth: 2, borderDash: [5, 5] } } }
+                }
             }
         });
 
-        // ACTUALIZACIÓN DE TARJETAS CON COLOR DE BUFFER Y PELO
         const infoPanel = document.getElementById('infoPanel');
         infoPanel.innerHTML = '';
-        
         selectedIndices.forEach(idx => {
-            const d = data[idx];
-            const colorPelo = COLORS[(d.PELO || "").toLowerCase().trim()] || "#ffffff";
-            const colorBuffer = COLORS[(d.BUFFER || "").toLowerCase().trim()] || "#161a21";
-            
-            // Ajuste de contraste para texto sobre fondo
-            const textContrast = (colorBuffer === '#ffffff' || colorBuffer === '#ffff00') ? '#000' : '#fff';
+            const d = fullData[idx];
+            const colorPelo = COLORS[(d.PELO || "").toString().toLowerCase().trim()] || "#ffffff";
+            const colorBuffer = COLORS[(d.BUFFER || "").toString().toLowerCase().trim()] || "#161a21";
+            const contrast = (colorBuffer === '#ffffff' || colorBuffer === '#ffff00') ? '#000' : '#fff';
             
             const card = document.createElement('div');
             card.className = 'info-card';
             card.style.backgroundColor = colorBuffer;
-            card.style.color = textContrast;
+            card.style.color = contrast;
             
             card.innerHTML = `
                 <h4 style="color:${colorPelo}; border-color:${colorPelo}">PELO ${d.PELO}</h4>
                 <div class="info-grid">
-                    <div><div class="info-item">Buffer</div><div class="info-val">${d.BUFFER}</div></div>
-                    <div><div class="info-item">Puerto ODF</div><div class="info-val" style="color:${colorPelo === '#ffffff' ? '#00ffff' : colorPelo}">${d["Puerto ODF"]}</div></div>
-                    <div><div class="info-item">OLT</div><div class="info-val">${d.OLT}</div></div>
-                    <div><div class="info-item">Ramal</div><div class="info-val">${d.Ramal}</div></div>
+                    ${currentHeaders.filter(h => !attenuationCols.includes(h)).map(h => `
+                        <div><div class="info-item">${h}</div><div class="info-val">${d[h] || '--'}</div></div>
+                    `).join('')}
                 </div>
             `;
             infoPanel.appendChild(card);
         });
     }
-    load();
+
+    window.onload = init;
 </script>
 </body>
 </html>
