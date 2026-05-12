@@ -4,25 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OTDR Pro - Auditoría Visual & Mapa</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-omnivore/0.3.4/leaflet-omnivore.min.js"></script>
     
     <style>
-        :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; --accent: #00ff41; --cyan: #00ffff; }
+        :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; --accent: #00ff41; --cyan: #00ffff; --crit-color: #ff1744; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 6px; box-sizing: border-box; color: var(--text); }
         
         .top-bar { display: flex; gap: 10px; align-items: center; background: var(--win); padding: 8px; border: 1px solid var(--border); margin-bottom: 6px; border-radius: 4px; flex-shrink: 0; }
         select { background: #1a1c22; color: var(--accent); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; outline: none; }
 
-        .top-layout { display: grid; grid-template-columns: 1fr 1fr 300px; height: 50vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
+        /* Diseño ajustado: Mapa más grande sin el monitor central */
+        .top-layout { display: grid; grid-template-columns: 1fr 350px; height: 55vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
         .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; }
         .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; }
         
         #map { background: #000; flex-grow: 1; cursor: crosshair; }
-        .chart-wrapper { background: #000; flex-grow: 1; position: relative; }
         
         .info-content { padding: 8px; overflow-y: auto; background: #08090c; flex-grow: 1; }
         .info-card { padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
@@ -36,7 +34,7 @@
         td { padding: 8px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; }
         
         .row-selected { background: #1c2533 !important; }
-        .crit { color: #ffffff !important; font-weight: bold; background: #ff1744 !important; }
+        .crit { color: #ffffff !important; font-weight: bold; background: var(--crit-color) !important; }
 
         .map-label {
             background: rgba(0, 0, 0, 0.85);
@@ -47,31 +45,27 @@
             padding: 2px 6px;
             border-radius: 3px;
             white-space: nowrap;
-            box-shadow: 0 0 5px rgba(0,255,65,0.5);
         }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <span style="font-size: 11px; font-weight: bold; color: #fff;">PROYECTO / ZONA:</span>
+    <span style="font-size: 11px; font-weight: bold; color: #fff;">PROYECTO:</span>
     <select id="sheetPicker" onchange="loadSheet(this.value)">
         <option>Cargando hojas...</option>
     </select>
-    <span style="font-size: 10px; color: #666; margin-left: auto;">Click en 2 puntos para medir distancia</span>
+    <span style="font-size: 10px; color: #666; margin-left: auto;">Traza y Cajas Activas | Medición: Click en mapa</span>
 </div>
 
 <div class="top-layout">
+    <!-- Mapa expandido -->
     <div class="window">
-        <div class="header">Mapa (Cartelitos de Descripción Activos)</div>
+        <div class="header">Mapa de Infraestructura y Traza</div>
         <div id="map"></div>
     </div>
 
-    <div class="window">
-        <div class="header">Monitor de Atenuación OTDR</div>
-        <div class="chart-wrapper"><canvas id="otdrChart"></canvas></div>
-    </div>
-
+    <!-- Detalle Técnico lateral -->
     <div class="window">
         <div class="header">Detalle Técnico</div>
         <div class="info-content" id="infoPanel"></div>
@@ -98,13 +92,14 @@
         "amarillo": "#ffff00", "violeta": "#9900ff", "rosa": "#ff66cc", "celeste": "#00ffff"
     };
 
-    let fullData = [], currentHeaders = [], attenuationCols = [], chart = null, selectedIndices = [0], map = null;
-    let measurePoints = [], measureLine = null;
+    let fullData = [], currentHeaders = [], attenuationCols = [], selectedIndices = [0], map = null;
+    let measurePoints = [], measureLine = null, kmlLayer = null;
 
     function initMap() {
         map = L.map('map').setView([-27.469, -58.830], 12);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
+        // Herramienta de Medición
         map.on('click', function(e) {
             if (measurePoints.length >= 2) {
                 if (measureLine) map.removeLayer(measureLine);
@@ -118,18 +113,37 @@
             }
         });
 
-        const customLayer = L.geoJson(null, {
-            style: { color: '#00ffff', weight: 3, opacity: 0.5 },
-            pointToLayer: (feature, latlng) => L.circleMarker(latlng, { radius: 6, fillColor: "#00ff41", color: "#000", weight: 1, fillOpacity: 0.8 }),
+        // Capa de Infraestructura (Puntos y Líneas/Trazas)
+        kmlLayer = L.geoJson(null, {
+            style: function(feature) {
+                return { color: '#00ffff', weight: 4, opacity: 0.6 }; // Estilo para la traza (líneas)
+            },
+            pointToLayer: (feature, latlng) => L.circleMarker(latlng, { 
+                radius: 7, 
+                fillColor: "#00ff41", 
+                color: "#000", 
+                weight: 1, 
+                fillOpacity: 0.9 
+            }),
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
-                    const contenido = feature.properties.description || feature.properties.name || "Sin datos";
-                    layer.bindTooltip(`<div>${contenido}</div>`, { permanent: true, direction: 'top', className: 'map-label', offset: [0, -10] });
+                    const nombre = feature.properties.name || "";
+                    const desc = (feature.properties.description || "").replace(/<[^>]*>/g, '');
+                    const tooltipContent = `<b>${nombre}</b>${desc ? '<br>'+desc : ''}`;
+                    
+                    layer.bindTooltip(tooltipContent, { 
+                        permanent: false, 
+                        direction: 'top', 
+                        className: 'map-label', 
+                        offset: [0, -5] 
+                    });
                 }
             }
         });
 
-        omnivore.kml(KML_URL, null, customLayer).on('ready', () => map.fitBounds(customLayer.getBounds())).addTo(map);
+        omnivore.kml(KML_URL, null, kmlLayer)
+            .on('ready', () => map.fitBounds(kmlLayer.getBounds()))
+            .addTo(map);
     }
 
     async function init() {
@@ -176,8 +190,7 @@
             let cells = `<td><input type="checkbox" ${isS?'checked':''}></td>`;
             currentHeaders.forEach(h => {
                 let val = d[h] || "";
-                let style = "";
-                let cls = "";
+                let style = ""; let cls = "";
                 if(h === "BUFFER") style = `background:${COLORS[(d.BUFFER||"").toLowerCase().trim()] || "#222"}; color:#fff; font-weight:bold`;
                 if(h === "PELO") style = `color:${COLORS[pKey] || "#555"}; font-weight:bold`;
                 if(attenuationCols.includes(h)) {
@@ -195,64 +208,60 @@
     }
 
     function toggle(idx) {
-        if(selectedIndices.includes(idx)) {
-            // Eliminamos la restricción para permitir limpiar todo
-            selectedIndices = selectedIndices.filter(i => i !== idx);
-        } else {
-            selectedIndices.push(idx);
-        }
+        selectedIndices = selectedIndices.includes(idx) ? selectedIndices.filter(i => i !== idx) : [...selectedIndices, idx];
         render();
     }
 
     function updateDashboard() {
         const infoPanel = document.getElementById('infoPanel');
         
-        // Si no hay filas, destruimos el gráfico y limpiamos el panel
+        // Resetear visual del Mapa (Cajas y Traza)
+        if (kmlLayer) {
+            kmlLayer.eachLayer(l => { 
+                if(l.setStyle) {
+                    // Si es punto (círculo)
+                    if (l instanceof L.CircleMarker) {
+                        l.setStyle({ fillColor: "#00ff41", color: "#000", weight: 1 });
+                    } else {
+                        // Si es línea (traza)
+                        l.setStyle({ color: '#00ffff', weight: 4, opacity: 0.6 });
+                    }
+                }
+            });
+        }
+
         if (selectedIndices.length === 0) {
-            if (chart) chart.destroy();
-            chart = null;
             infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una fila para analizar.</div>';
             return;
         }
 
-        const datasets = selectedIndices.map(idx => ({
-            label: `Pelo ${fullData[idx].PELO}`,
-            data: attenuationCols.map(h => parseFloat(fullData[idx][h]) || 0),
-            backgroundColor: COLORS[(fullData[idx].PELO || "").toString().toLowerCase().trim()] || '#00ff41',
-            borderWidth: 1
-        }));
-
-        if (chart) chart.destroy();
-        chart = new Chart(document.getElementById('otdrChart'), {
-            type: 'bar',
-            data: { labels: attenuationCols.map(h => h.split(' ')[0]), datasets: datasets },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { ticks: { color: '#fff', font: {size: 8} } },
-                    y: { min: 0, max: 2.0, ticks: { color: '#888' } }
-                },
-                plugins: { 
-                    legend: { display: datasets.length < 5 },
-                    annotation: { annotations: { l: { type: 'line', yMin: 0.5, yMax: 0.5, borderColor: 'red', borderWidth: 2, borderDash: [5, 5] } } }
-                }
-            }
-        });
-
-        infoPanel.innerHTML = '';
+        // Marcar Fallas Críticas en el Mapa
         selectedIndices.forEach(idx => {
-            const d = fullData[idx];
-            const card = document.createElement('div');
-            card.className = 'info-card';
-            card.innerHTML = `
-                <h4>PELO ${d.PELO}</h4>
-                <div style="font-size: 10px;">
-                    ${currentHeaders.filter(h => !attenuationCols.includes(h) && d[h]).map(h => `
-                        <div style="margin-bottom: 2px;"><b>${h}:</b> ${d[h]}</div>
-                    `).join('')}
-                </div>`;
-            infoPanel.appendChild(card);
+            attenuationCols.forEach(col => {
+                if (parseFloat(fullData[idx][col]) > 0.5) {
+                    const idBuscado = col.replace(/\s*\(.*\)/, "").trim().toUpperCase();
+                    kmlLayer.eachLayer(l => {
+                        const nombreYDesc = ( (l.feature.properties.name || "") + " " + (l.feature.properties.description || "") ).toUpperCase();
+                        if (nombreYDesc.includes(idBuscado)) {
+                            l.setStyle({ fillColor: "#ff1744", color: "#fff", weight: 3 });
+                            l.openTooltip(); // Abre el cartel automáticamente si hay falla
+                        }
+                    });
+                }
+            });
         });
+
+        // Actualizar Panel de Información lateral
+        infoPanel.innerHTML = selectedIndices.map(idx => `
+            <div class="info-card">
+                <h4>PELO ${fullData[idx].PELO}</h4>
+                <div style="font-size: 10px;">
+                    ${currentHeaders.filter(h => !attenuationCols.includes(h) && fullData[idx][h]).map(h => `
+                        <div><b>${h}:</b> ${fullData[idx][h]}</div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
     }
 
     window.onload = init;
