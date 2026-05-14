@@ -21,13 +21,27 @@
         
         #map { background: #000; flex-grow: 1; cursor: crosshair; }
         
-        /* Botón para limpiar medidas */
         .clear-measure { position: absolute; bottom: 10px; left: 10px; z-index: 1000; background: var(--win); color: var(--text); border: 1px solid var(--border); padding: 5px; font-size: 9px; cursor: pointer; border-radius: 3px; text-transform: uppercase; }
-        .clear-measure:hover { color: var(--crit-color); border-color: var(--crit-color); }
 
         .info-content { padding: 8px; overflow-y: auto; background: #08090c; flex-grow: 1; }
-        .info-card { padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+        .info-card { padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); position: relative; }
         .info-card h4 { margin: 0 0 5px 0; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); color: var(--accent); }
+
+        /* Estilo del Visualizador de Fibra parpadeante */
+        .fiber-visual { 
+            position: absolute; top: 8px; right: 8px; width: 35px; height: 35px; 
+            border-radius: 50%; border: 2px solid #333; display: flex; align-items: center; justify-content: center;
+            background: #000; 
+        }
+        .fiber-core { 
+            width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3);
+            animation: blink-color 1.2s infinite ease-in-out; 
+        }
+
+        @keyframes blink-color {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 5px currentColor; }
+            50% { opacity: 0.3; transform: scale(0.8); box-shadow: 0 0 0px currentColor; }
+        }
 
         .bottom-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 4px; }
         .table-scroll { overflow: auto; flex-grow: 1; background: #08090c; }
@@ -89,75 +103,49 @@
     let measurePoints = [], measureMarkers = [], measureLine = null, kmlLayer = null;
 
     function initMap() {
-        // Capas base
         const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
         const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
 
-        map = L.map('map', {
-            center: [-27.469, -58.830],
-            zoom: 12,
-            layers: [dark],
-            doubleClickZoom: false
-        });
+        map = L.map('map', { center: [-27.469, -58.830], zoom: 12, layers: [dark], doubleClickZoom: false });
 
-        const baseMaps = {
-            "Mapa Oscuro": dark,
-            "Mapa Claro": light,
-            "Satélite": satellite
-        };
-
+        const baseMaps = { "Mapa Oscuro": dark, "Mapa Claro": light, "Satélite": satellite };
         L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
-        // Herramienta de Medición Continua
         map.on('click', function(e) {
             const point = e.latlng;
             measurePoints.push(point);
-            
-            // Crear marcador visual para cada clic
             const marker = L.circleMarker(point, { radius: 3, color: '#ff1744' }).addTo(map);
             measureMarkers.push(marker);
 
             if (measurePoints.length > 1) {
                 if (measureLine) map.removeLayer(measureLine);
                 measureLine = L.polyline(measurePoints, {color: '#ff1744', weight: 3, dashArray: '5, 10'}).addTo(map);
-                
-                // Calcular distancia total acumulada
                 let totalDist = 0;
-                for (let i = 0; i < measurePoints.length - 1; i++) {
-                    totalDist += measurePoints[i].distanceTo(measurePoints[i+1]);
-                }
-                
+                for (let i = 0; i < measurePoints.length - 1; i++) totalDist += measurePoints[i].distanceTo(measurePoints[i+1]);
                 L.popup().setLatLng(point).setContent(`<b>Distancia Total:</b> ${totalDist.toFixed(1)} m`).openOn(map);
             }
         });
 
         kmlLayer = L.geoJson(null, {
             style: () => ({ color: '#00ffff', weight: 4, opacity: 0.6 }),
-            pointToLayer: (feature, latlng) => L.circleMarker(latlng, { 
-                radius: 7, fillColor: "#00ff41", color: "#000", weight: 1, fillOpacity: 0.9 
-            }),
+            pointToLayer: (feature, latlng) => L.circleMarker(latlng, { radius: 7, fillColor: "#00ff41", color: "#000", weight: 1, fillOpacity: 0.9 }),
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
                     const nombre = feature.properties.name || "";
                     const desc = (feature.properties.description || "").replace(/<[^>]*>/g, '');
-                    const tooltipContent = `<b>${nombre}</b>${desc ? '<br>'+desc : ''}`;
-                    layer.bindTooltip(tooltipContent, { direction: 'top', className: 'map-label', offset: [0, -5] });
+                    layer.bindTooltip(`<b>${nombre}</b>${desc ? '<br>'+desc : ''}`, { direction: 'top', className: 'map-label', offset: [0, -5] });
                 }
             }
         });
 
-        omnivore.kml(KML_URL, null, kmlLayer)
-            .on('ready', () => map.fitBounds(kmlLayer.getBounds()))
-            .addTo(map);
+        omnivore.kml(KML_URL, null, kmlLayer).on('ready', () => map.fitBounds(kmlLayer.getBounds())).addTo(map);
     }
 
     function resetMeasurement() {
         if (measureLine) map.removeLayer(measureLine);
         measureMarkers.forEach(m => map.removeLayer(m));
-        measurePoints = [];
-        measureMarkers = [];
-        map.closePopup();
+        measurePoints = []; measureMarkers = []; map.closePopup();
     }
 
     async function init() {
@@ -236,33 +224,40 @@
             });
         }
         if (selectedIndices.length === 0) {
-            infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una fila para analizar.</div>';
+            infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una fila.</div>';
             return;
         }
+
         selectedIndices.forEach(idx => {
             attenuationCols.forEach(col => {
                 if (parseFloat(fullData[idx][col]) > 0.5) {
                     const idBuscado = col.replace(/\s*\(.*\)/, "").trim().toUpperCase();
                     kmlLayer.eachLayer(l => {
                         const nombreYDesc = ( (l.feature.properties.name || "") + " " + (l.feature.properties.description || "") ).toUpperCase();
-                        if (nombreYDesc.includes(idBuscado)) {
-                            l.setStyle({ fillColor: "#ff1744", color: "#fff", weight: 3 });
-                            l.openTooltip();
-                        }
+                        if (nombreYDesc.includes(idBuscado)) { l.setStyle({ fillColor: "#ff1744", color: "#fff", weight: 3 }); l.openTooltip(); }
                     });
                 }
             });
         });
-        infoPanel.innerHTML = selectedIndices.map(idx => `
-            <div class="info-card">
-                <h4>PELO ${fullData[idx].PELO}</h4>
-                <div style="font-size: 10px;">
-                    ${currentHeaders.filter(h => !attenuationCols.includes(h) && fullData[idx][h]).map(h => `
-                        <div><b>${h}:</b> ${fullData[idx][h]}</div>
-                    `).join('')}
+
+        infoPanel.innerHTML = selectedIndices.map(idx => {
+            const bufferColor = COLORS[(fullData[idx].BUFFER || "").toLowerCase().trim()] || "#333";
+            const peloColor = COLORS[(fullData[idx].PELO || "").toLowerCase().trim()] || "#555";
+            
+            return `
+                <div class="info-card">
+                    <div class="fiber-visual" style="border-color: ${bufferColor}">
+                        <div class="fiber-core" style="background-color: ${peloColor}; color: ${peloColor}"></div>
+                    </div>
+                    <h4>PELO ${fullData[idx].PELO}</h4>
+                    <div style="font-size: 10px;">
+                        ${currentHeaders.filter(h => !attenuationCols.includes(h) && fullData[idx][h]).map(h => `
+                            <div><b>${h}:</b> ${fullData[idx][h]}</div>
+                        `).join('')}
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
     window.onload = init;
 </script>
