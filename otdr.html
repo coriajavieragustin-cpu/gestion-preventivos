@@ -15,13 +15,16 @@
         .top-bar { display: flex; gap: 10px; align-items: center; background: var(--win); padding: 8px; border: 1px solid var(--border); margin-bottom: 6px; border-radius: 4px; flex-shrink: 0; }
         select { background: #1a1c22; color: var(--accent); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; outline: none; }
 
-        /* Diseño ajustado: Mapa más grande sin el monitor central */
         .top-layout { display: grid; grid-template-columns: 1fr 350px; height: 55vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
-        .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; }
+        .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; position: relative; }
         .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; }
         
         #map { background: #000; flex-grow: 1; cursor: crosshair; }
         
+        /* Botón para limpiar medidas */
+        .clear-measure { position: absolute; bottom: 10px; left: 10px; z-index: 1000; background: var(--win); color: var(--text); border: 1px solid var(--border); padding: 5px; font-size: 9px; cursor: pointer; border-radius: 3px; text-transform: uppercase; }
+        .clear-measure:hover { color: var(--crit-color); border-color: var(--crit-color); }
+
         .info-content { padding: 8px; overflow-y: auto; background: #08090c; flex-grow: 1; }
         .info-card { padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
         .info-card h4 { margin: 0 0 5px 0; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); color: var(--accent); }
@@ -36,16 +39,7 @@
         .row-selected { background: #1c2533 !important; }
         .crit { color: #ffffff !important; font-weight: bold; background: var(--crit-color) !important; }
 
-        .map-label {
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid var(--accent);
-            color: #fff;
-            font-weight: bold;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 3px;
-            white-space: nowrap;
-        }
+        .map-label { background: rgba(0, 0, 0, 0.85); border: 1px solid var(--accent); color: #fff; font-weight: bold; font-size: 10px; padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -55,17 +49,16 @@
     <select id="sheetPicker" onchange="loadSheet(this.value)">
         <option>Cargando hojas...</option>
     </select>
-    <span style="font-size: 10px; color: #666; margin-left: auto;">Traza y Cajas Activas | Medición: Click en mapa</span>
+    <span style="font-size: 10px; color: #666; margin-left: auto;">Traza y Cajas Activas | Medición: Click secuencial</span>
 </div>
 
 <div class="top-layout">
-    <!-- Mapa expandido -->
     <div class="window">
         <div class="header">Mapa de Infraestructura y Traza</div>
         <div id="map"></div>
+        <button class="clear-measure" onclick="resetMeasurement()">Limpiar Medida</button>
     </div>
 
-    <!-- Detalle Técnico lateral -->
     <div class="window">
         <div class="header">Detalle Técnico</div>
         <div class="info-content" id="infoPanel"></div>
@@ -93,50 +86,63 @@
     };
 
     let fullData = [], currentHeaders = [], attenuationCols = [], selectedIndices = [0], map = null;
-    let measurePoints = [], measureLine = null, kmlLayer = null;
+    let measurePoints = [], measureMarkers = [], measureLine = null, kmlLayer = null;
 
     function initMap() {
-        map = L.map('map').setView([-27.469, -58.830], 12);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+        // Capas base
+        const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+        const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
 
-        // Herramienta de Medición
+        map = L.map('map', {
+            center: [-27.469, -58.830],
+            zoom: 12,
+            layers: [dark],
+            doubleClickZoom: false
+        });
+
+        const baseMaps = {
+            "Mapa Oscuro": dark,
+            "Mapa Claro": light,
+            "Satélite": satellite
+        };
+
+        L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+
+        // Herramienta de Medición Continua
         map.on('click', function(e) {
-            if (measurePoints.length >= 2) {
+            const point = e.latlng;
+            measurePoints.push(point);
+            
+            // Crear marcador visual para cada clic
+            const marker = L.circleMarker(point, { radius: 3, color: '#ff1744' }).addTo(map);
+            measureMarkers.push(marker);
+
+            if (measurePoints.length > 1) {
                 if (measureLine) map.removeLayer(measureLine);
-                measurePoints = [];
-            }
-            measurePoints.push(e.latlng);
-            if (measurePoints.length === 2) {
                 measureLine = L.polyline(measurePoints, {color: '#ff1744', weight: 3, dashArray: '5, 10'}).addTo(map);
-                const d = measurePoints[0].distanceTo(measurePoints[1]).toFixed(1);
-                L.popup().setLatLng(e.latlng).setContent(`<b>Distancia:</b> ${d} m`).openOn(map);
+                
+                // Calcular distancia total acumulada
+                let totalDist = 0;
+                for (let i = 0; i < measurePoints.length - 1; i++) {
+                    totalDist += measurePoints[i].distanceTo(measurePoints[i+1]);
+                }
+                
+                L.popup().setLatLng(point).setContent(`<b>Distancia Total:</b> ${totalDist.toFixed(1)} m`).openOn(map);
             }
         });
 
-        // Capa de Infraestructura (Puntos y Líneas/Trazas)
         kmlLayer = L.geoJson(null, {
-            style: function(feature) {
-                return { color: '#00ffff', weight: 4, opacity: 0.6 }; // Estilo para la traza (líneas)
-            },
+            style: () => ({ color: '#00ffff', weight: 4, opacity: 0.6 }),
             pointToLayer: (feature, latlng) => L.circleMarker(latlng, { 
-                radius: 7, 
-                fillColor: "#00ff41", 
-                color: "#000", 
-                weight: 1, 
-                fillOpacity: 0.9 
+                radius: 7, fillColor: "#00ff41", color: "#000", weight: 1, fillOpacity: 0.9 
             }),
             onEachFeature: (feature, layer) => {
                 if (feature.properties) {
                     const nombre = feature.properties.name || "";
                     const desc = (feature.properties.description || "").replace(/<[^>]*>/g, '');
                     const tooltipContent = `<b>${nombre}</b>${desc ? '<br>'+desc : ''}`;
-                    
-                    layer.bindTooltip(tooltipContent, { 
-                        permanent: false, 
-                        direction: 'top', 
-                        className: 'map-label', 
-                        offset: [0, -5] 
-                    });
+                    layer.bindTooltip(tooltipContent, { direction: 'top', className: 'map-label', offset: [0, -5] });
                 }
             }
         });
@@ -144,6 +150,14 @@
         omnivore.kml(KML_URL, null, kmlLayer)
             .on('ready', () => map.fitBounds(kmlLayer.getBounds()))
             .addTo(map);
+    }
+
+    function resetMeasurement() {
+        if (measureLine) map.removeLayer(measureLine);
+        measureMarkers.forEach(m => map.removeLayer(m));
+        measurePoints = [];
+        measureMarkers = [];
+        map.closePopup();
     }
 
     async function init() {
@@ -186,7 +200,6 @@
             const pKey = (d.PELO || "").toString().toLowerCase().trim();
             let row = document.createElement('tr');
             if(isS) row.className = 'row-selected';
-            
             let cells = `<td><input type="checkbox" ${isS?'checked':''}></td>`;
             currentHeaders.forEach(h => {
                 let val = d[h] || "";
@@ -214,28 +227,18 @@
 
     function updateDashboard() {
         const infoPanel = document.getElementById('infoPanel');
-        
-        // Resetear visual del Mapa (Cajas y Traza)
         if (kmlLayer) {
             kmlLayer.eachLayer(l => { 
                 if(l.setStyle) {
-                    // Si es punto (círculo)
-                    if (l instanceof L.CircleMarker) {
-                        l.setStyle({ fillColor: "#00ff41", color: "#000", weight: 1 });
-                    } else {
-                        // Si es línea (traza)
-                        l.setStyle({ color: '#00ffff', weight: 4, opacity: 0.6 });
-                    }
+                    if (l instanceof L.CircleMarker) l.setStyle({ fillColor: "#00ff41", color: "#000", weight: 1 });
+                    else l.setStyle({ color: '#00ffff', weight: 4, opacity: 0.6 });
                 }
             });
         }
-
         if (selectedIndices.length === 0) {
             infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una fila para analizar.</div>';
             return;
         }
-
-        // Marcar Fallas Críticas en el Mapa
         selectedIndices.forEach(idx => {
             attenuationCols.forEach(col => {
                 if (parseFloat(fullData[idx][col]) > 0.5) {
@@ -244,14 +247,12 @@
                         const nombreYDesc = ( (l.feature.properties.name || "") + " " + (l.feature.properties.description || "") ).toUpperCase();
                         if (nombreYDesc.includes(idBuscado)) {
                             l.setStyle({ fillColor: "#ff1744", color: "#fff", weight: 3 });
-                            l.openTooltip(); // Abre el cartel automáticamente si hay falla
+                            l.openTooltip();
                         }
                     });
                 }
             });
         });
-
-        // Actualizar Panel de Información lateral
         infoPanel.innerHTML = selectedIndices.map(idx => `
             <div class="info-card">
                 <h4>PELO ${fullData[idx].PELO}</h4>
@@ -263,7 +264,6 @@
             </div>
         `).join('');
     }
-
     window.onload = init;
 </script>
 </body>
