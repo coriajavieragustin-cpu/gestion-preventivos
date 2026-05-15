@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-omnivore/0.3.4/leaflet-omnivore.min.js"></script>
     
     <style>
-        :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; --accent: #00ff41; --cyan: #00ffff; --crit-color: #ff1744; }
+        :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; --accent: #00ff41; --cyan: #00ffff; --crit-color: #ff1744; --cut-color: #7a0000; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 6px; box-sizing: border-box; color: var(--text); }
         
         .top-bar { display: flex; gap: 10px; align-items: center; background: var(--win); padding: 8px; border: 1px solid var(--border); margin-bottom: 6px; border-radius: 4px; flex-shrink: 0; }
@@ -27,7 +27,6 @@
         .info-card { padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); position: relative; }
         .info-card h4 { margin: 0 0 5px 0; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); color: var(--accent); }
 
-        /* Estilo del Visualizador de Fibra parpadeante */
         .fiber-visual { 
             position: absolute; top: 8px; right: 8px; width: 35px; height: 35px; 
             border-radius: 50%; border: 2px solid #333; display: flex; align-items: center; justify-content: center;
@@ -51,7 +50,10 @@
         td { padding: 8px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; }
         
         .row-selected { background: #1c2533 !important; }
+        
+        /* Estilos de estados */
         .crit { color: #ffffff !important; font-weight: bold; background: var(--crit-color) !important; }
+        .cut-fiber { color: #ff9999 !important; font-weight: bold; background: var(--cut-color) !important; border: 1px solid red !important; }
 
         .map-label { background: rgba(0, 0, 0, 0.85); border: 1px solid var(--accent); color: #fff; font-weight: bold; font-size: 10px; padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
     </style>
@@ -63,7 +65,7 @@
     <select id="sheetPicker" onchange="loadSheet(this.value)">
         <option>Cargando hojas...</option>
     </select>
-    <span style="font-size: 10px; color: #666; margin-left: auto;">Traza y Cajas Activas | Medición: Click secuencial</span>
+    <span style="font-size: 10px; color: #666; margin-left: auto;">Traza y Cajas Activas | Rojo: Crítico | Bordó: Corte (0)</span>
 </div>
 
 <div class="top-layout">
@@ -80,7 +82,7 @@
 </div>
 
 <div class="bottom-section">
-    <div class="header">Base de Datos Técnica (Corte Crítico: 0.5 dB)</div>
+    <div class="header">Base de Datos Técnica (Corte Crítico: 0.5 dB | 0.00: Pelo Cortado)</div>
     <div class="table-scroll">
         <table id="mainTable">
             <thead id="headRow"></thead>
@@ -190,14 +192,26 @@
             if(isS) row.className = 'row-selected';
             let cells = `<td><input type="checkbox" ${isS?'checked':''}></td>`;
             currentHeaders.forEach(h => {
-                let val = d[h] || "";
+                let val = d[h];
                 let style = ""; let cls = "";
                 if(h === "BUFFER") style = `background:${COLORS[(d.BUFFER||"").toLowerCase().trim()] || "#222"}; color:#fff; font-weight:bold`;
                 if(h === "PELO") style = `color:${COLORS[pKey] || "#555"}; font-weight:bold`;
+                
                 if(attenuationCols.includes(h)) {
-                    let num = parseFloat(val) || 0;
-                    if(num > 0.5) cls = "crit";
-                    val = num === 0 ? "-" : num.toFixed(2);
+                    let num = parseFloat(val);
+                    // Detección de PELO CORTADO (valor 0)
+                    if (val !== "" && val !== null && num === 0) {
+                        cls = "cut-fiber";
+                        val = "0.00";
+                    } 
+                    // Detección de CRÍTICO (>0.5)
+                    else if(num > 0.5) {
+                        cls = "crit";
+                        val = num.toFixed(2);
+                    } 
+                    else {
+                        val = (isNaN(num) || val === "" || val === null) ? "-" : num.toFixed(2);
+                    }
                 }
                 cells += `<td style="${style}" class="${cls}">${val}</td>`;
             });
@@ -230,11 +244,16 @@
 
         selectedIndices.forEach(idx => {
             attenuationCols.forEach(col => {
-                if (parseFloat(fullData[idx][col]) > 0.5) {
+                let num = parseFloat(fullData[idx][col]);
+                // Marcamos en el mapa tanto los cortes (0) como los críticos (>0.5)
+                if (num === 0 || num > 0.5) {
                     const idBuscado = col.replace(/\s*\(.*\)/, "").trim().toUpperCase();
                     kmlLayer.eachLayer(l => {
                         const nombreYDesc = ( (l.feature.properties.name || "") + " " + (l.feature.properties.description || "") ).toUpperCase();
-                        if (nombreYDesc.includes(idBuscado)) { l.setStyle({ fillColor: "#ff1744", color: "#fff", weight: 3 }); l.openTooltip(); }
+                        if (nombreYDesc.includes(idBuscado)) { 
+                            l.setStyle({ fillColor: "#ff1744", color: "#fff", weight: 3 }); 
+                            l.openTooltip(); 
+                        }
                     });
                 }
             });
