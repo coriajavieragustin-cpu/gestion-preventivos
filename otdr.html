@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-omnivore/0.3.4/leaflet-omnivore.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; --accent: #00ff41; --cyan: #00ffff; --crit-color: #ff1744; --cut-color: #7a0000; }
@@ -15,11 +16,13 @@
         .top-bar { display: flex; gap: 10px; align-items: center; background: var(--win); padding: 8px; border: 1px solid var(--border); margin-bottom: 6px; border-radius: 4px; flex-shrink: 0; }
         select { background: #1a1c22; color: var(--accent); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; outline: none; }
 
-        .top-layout { display: grid; grid-template-columns: 1fr 350px; height: 55vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
+        /* Ajuste a 3 columnas para integrar OTDR a la derecha */
+        .top-layout { display: grid; grid-template-columns: 1fr 300px 400px; height: 55vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
         .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; position: relative; }
-        .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; }
+        .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         
         #map { background: #000; flex-grow: 1; cursor: crosshair; }
+        #otdrCanvas { background: #000; flex-grow: 1; width: 100% !important; }
         
         .clear-measure { position: absolute; bottom: 10px; left: 10px; z-index: 1000; background: var(--win); color: var(--text); border: 1px solid var(--border); padding: 5px; font-size: 9px; cursor: pointer; border-radius: 3px; text-transform: uppercase; }
 
@@ -50,12 +53,13 @@
         td { padding: 8px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; }
         
         .row-selected { background: #1c2533 !important; }
-        
-        /* Estilos de estados */
         .crit { color: #ffffff !important; font-weight: bold; background: var(--crit-color) !important; }
         .cut-fiber { color: #ff9999 !important; font-weight: bold; background: var(--cut-color) !important; border: 1px solid red !important; }
 
         .map-label { background: rgba(0, 0, 0, 0.85); border: 1px solid var(--accent); color: #fff; font-weight: bold; font-size: 10px; padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+
+        #loadingOTDR { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 20; color: var(--cyan); font-size: 10px; }
+        .btn-manual { background: #222; color: var(--cyan); border: 1px solid var(--border); font-size: 9px; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
     </style>
 </head>
 <body>
@@ -79,6 +83,16 @@
         <div class="header">Detalle Técnico</div>
         <div class="info-content" id="infoPanel"></div>
     </div>
+
+    <div class="window">
+        <div class="header">
+            <span>Análisis Reflectometría (.SOR)</span>
+            <button class="btn-manual" onclick="document.getElementById('manualFile').click()">📂 CARGAR</button>
+            <input type="file" id="manualFile" accept=".sor" hidden onchange="cargarArchivoManual(this)">
+        </div>
+        <div id="loadingOTDR">PROCESANDO TRAZA...</div>
+        <canvas id="otdrCanvas"></canvas>
+    </div>
 </div>
 
 <div class="bottom-section">
@@ -101,9 +115,75 @@
         "amarillo": "#ffff00", "violeta": "#9900ff", "rosa": "#ff66cc", "celeste": "#00ffff"
     };
 
-    let fullData = [], currentHeaders = [], attenuationCols = [], selectedIndices = [0], map = null;
+    let fullData = [], currentHeaders = [], attenuationCols = [], selectedIndices = [0], map = null, otdrChart = null;
     let measurePoints = [], measureMarkers = [], measureLine = null, kmlLayer = null;
 
+    // --- FUNCIONES OTDR (NUEVAS) ---
+    async function autoLoadOTDR(url) {
+        if (!url || !url.includes("http")) return;
+        document.getElementById('loadingOTDR').style.display = 'flex';
+        try {
+            let fileId = url.match(/[-\w]{25,}/);
+            let downloadUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
+            const res = await fetch(downloadUrl);
+            const buffer = await res.arrayBuffer();
+            processSor(buffer);
+        } catch (e) { console.error("Error OTDR Drive:", e); }
+        finally { document.getElementById('loadingOTDR').style.display = 'none'; }
+    }
+
+    function cargarArchivoManual(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => processSor(e.target.result);
+        reader.readAsArrayBuffer(file);
+    }
+
+    function processSor(buffer) {
+        const view = new DataView(buffer);
+        const content = new TextDecoder('ascii').decode(buffer);
+        const dataKey = "DataPts";
+        const dataPos = content.indexOf(dataKey);
+        if (dataPos === -1) return;
+
+        const sampDist = 1.02; 
+        const numPoints = view.getUint32(dataPos + dataKey.length, true);
+        const startOffset = dataPos + dataKey.length + 4;
+        const pts = []; const lbls = [];
+        const maxLimit = Math.min(numPoints, 12000);
+
+        for (let i = 25; i < maxLimit; i++) {
+            const bytePos = startOffset + (i * 2);
+            if (bytePos + 2 <= buffer.byteLength) {
+                let db = view.getUint16(bytePos, true) / 1000;
+                if (db < 65) {
+                    pts.push(db);
+                    lbls.push(((i * sampDist) / 1000).toFixed(3));
+                }
+            }
+        }
+        renderOTDR(pts, lbls);
+    }
+
+    function renderOTDR(pts, lbls) {
+        const ctx = document.getElementById('otdrCanvas').getContext('2d');
+        if (otdrChart) otdrChart.destroy();
+        otdrChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: lbls, datasets: [{ data: pts, borderColor: '#00ffff', borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0.1 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { 
+                    y: { reverse: true, grid: { color: '#1a1a1a' }, ticks: { color: '#555', font: { size: 9 } } },
+                    x: { ticks: { color: '#555', maxTicksLimit: 8, font: { size: 9 } }, grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // --- LÓGICA ORIGINAL (SIN CAMBIOS) ---
     function initMap() {
         const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
         const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
@@ -199,15 +279,11 @@
                 
                 if(attenuationCols.includes(h)) {
                     let num = parseFloat(val);
-                    // Detección de PELO CORTADO (valor 0)
                     if (val !== "" && val !== null && num === 0) {
-                        cls = "cut-fiber";
-                        val = "0.00";
+                        cls = "cut-fiber"; val = "0.00";
                     } 
-                    // Detección de CRÍTICO (>0.5)
                     else if(num > 0.5) {
-                        cls = "crit";
-                        val = num.toFixed(2);
+                        cls = "crit"; val = num.toFixed(2);
                     } 
                     else {
                         val = (isNaN(num) || val === "" || val === null) ? "-" : num.toFixed(2);
@@ -216,7 +292,13 @@
                 cells += `<td style="${style}" class="${cls}">${val}</td>`;
             });
             row.innerHTML = cells;
-            row.onclick = (e) => { if(e.target.type !== 'checkbox') toggle(i); };
+            // Se integra la carga OTDR en el click de fila sin alterar el toggle
+            row.onclick = (e) => { 
+                if(e.target.type !== 'checkbox') {
+                    toggle(i); 
+                    if(d["IMAGEN"]) autoLoadOTDR(d["IMAGEN"]);
+                }
+            };
             gb.appendChild(row);
         });
         updateDashboard();
@@ -245,7 +327,6 @@
         selectedIndices.forEach(idx => {
             attenuationCols.forEach(col => {
                 let num = parseFloat(fullData[idx][col]);
-                // Marcamos en el mapa tanto los cortes (0) como los críticos (>0.5)
                 if (num === 0 || num > 0.5) {
                     const idBuscado = col.replace(/\s*\(.*\)/, "").trim().toUpperCase();
                     kmlLayer.eachLayer(l => {
