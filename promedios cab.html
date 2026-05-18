@@ -189,8 +189,8 @@
 <body>
 
 <div class="container">
-    <h1>Planilla Automatizada RETAZOS</h1>
-    <p>Cálculo de trazas con <strong>margen de seguridad de +20 metros</strong>. Filtro automático enfocado en optimización de retazos.</p>
+    <h1>Planilla Automatizada de Despliegue y Ahorro de Materiales</h1>
+    <p>Cálculo de trazas con <strong>margen de seguridad de +40 metros</strong>. Filtro automático enfocado en optimización de retazos.</p>
      
     <div class="grid-carga">
         <div class="file-upload-box" onclick="document.getElementById('file-kmz').click()">
@@ -219,7 +219,7 @@
     </div>
 
     <div class="section-header">
-        <h3>Plan Exclusivo de Bobinas a Utilizar en Terreno (+20m Margen)</h3>
+        <h3>Plan Exclusivo de Bobinas a Utilizar en Terreno (+40m Margen)</h3>
         <button class="btn-excel" id="btn-exportar-cruce" style="display:none;" onclick="exportarReporteCruce()">📥 Guardar Planilla de Despliegue</button>
     </div>
 
@@ -229,7 +229,7 @@
                 <tr>
                     <th>Tramo de Obra (KMZ)</th>
                     <th>Longitud Real</th>
-                    <th>Con Margen (+20m)</th>
+                    <th>Con Margen (+40m)</th>
                     <th>Asignar Bobina (inv.Codigo)</th>
                     <th>SN Artículo (inv.SNArticulo)</th>
                     <th>Metraje Inicial (inv.Cantidad)</th>
@@ -284,7 +284,7 @@
         reader.readAsArrayBuffer(file);
     });
 
-    // Procesar archivo Excel con Mapeo por Encabezados e Inclusión de inv.SNArticulo
+    // Procesar archivo Excel con Mapeo por Encabezados
     document.getElementById('file-excel').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -337,13 +337,12 @@
         reader.readAsArrayBuffer(file);
     });
 
-    // Algoritmo de Cruce y Cálculo de Métricas de Traza
+    // Algoritmo de Cruce y Métrica con Margen de +40 metros
     function ejecutarCruceDeDatos() {
         document.getElementById('ind-trazas').innerText = datosTrazas.length || "-";
         
         if (datosTrazas.length === 0) return;
 
-        // Calcular Metraje Total y Promedio basados en la longitud real del KMZ
         let sumaMetrajeReal = datosTrazas.reduce((acc, t) => acc + t.longitud, 0);
         let promedioMetrajeReal = datosTrazas.length > 0 ? (sumaMetrajeReal / datosTrazas.length).toFixed(1) : 0;
 
@@ -355,11 +354,11 @@
         datosStock.forEach(b => b.asignada = false);
         resultadosCruce = [];
 
-        // Ordenamos las trazas de mayor a menor longitud requerida
+        // Ordenamos de mayor a menor longitud requerida
         let trazasOrdenadas = [...datosTrazas].sort((a,b) => b.longitud - a.longitud);
 
         trazasOrdenadas.forEach(traza => {
-            const MARGEN_SEGURIDAD = 20; 
+            const MARGEN_SEGURIDAD = 40; // Cambiado a 40 metros de margen
             let longitudConMargen = traza.longitud + MARGEN_SEGURIDAD;
 
             let candidatas = datosStock.filter(b => !b.asignada && b.metros >= longitudConMargen);
@@ -458,7 +457,7 @@
     function exportarReporteCruce() {
         if(resultadosCruce.length === 0) return;
         let matriz = [
-            ["ORDEN DE TRABAJO Y ASIGNACIÓN DE MATERIALES (CON MARGEN +20M)"],
+            ["ORDEN DE TRABAJO Y ASIGNACIÓN DE MATERIALES (CON MARGEN +40M)"],
             [],
             ["Tramo (KMZ)", "Longitud Real (m)", "Longitud con Margen (m)", "Bobina Designada (inv.Codigo)", "SN Artículo (inv.SNArticulo)", "Metraje Original (inv.Cantidad)", "Remanente Final / Scrap", "Tipo de Bobina"]
         ];
