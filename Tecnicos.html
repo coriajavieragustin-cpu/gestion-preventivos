@@ -45,7 +45,6 @@
             font-size: 0.85rem;
         }
 
-        /* Contenedor especial para selección múltiple de técnicos */
         .tecnicos-selector-box {
             background-color: #0d1117;
             border: 1px solid var(--border-color);
@@ -156,18 +155,32 @@
                         <div id="infoDia" class="badge bg-primary mt-1 w-100" style="display:none; font-size: 0.7rem;"></div>
                     </div>
                     <div class="mb-2">
-                        <label class="small fw-bold">CATEGORÍA</label>
-                        <select id="formCat" class="form-select form-select-sm">
-                            <option value="ARMADO / REPARACION DE CAJAS">ARMADO / REPARACION DE CAJAS</option>
-                            <option value="AUSENCIA">AUSENCIA</option>
-                            <option value="AUSENCIA PARCIAL">AUSENCIA PARCIAL</option>
-                            <option value="CABLEADO TRONCAL / SUBTRONCAL">CABLEADO TRONCAL / SUBTRONCAL</option>
-                            <option value="CONEXIONES CLIENTES">CONEXIONES CLIENTES</option>
-                            <option value="INSTALACIONES CLIENTES">INSTALACIONES CLIENTES</option>
-                            <option value="MANTENIMIENTO CLIENTES">MANTENIMIENTO CLIENTES</option>
-                            <option value="DIA NO LABORAL">DIA NO LABORAL</option>
-                        </select>
-                    </div>
+    <label class="small fw-bold">CATEGORÍA</label>
+    <select id="formCat" class="form-select form-select-sm">
+        <option value="ARMADO / REPARACION DE CAJAS">ARMADO / REPARACION DE CAJAS</option>
+        <option value="ARMADO Y SANGRADO DE CAJAS">ARMADO Y SANGRADO DE CAJAS</option>
+        <option value="AUSENCIA">AUSENCIA</option>
+        <option value="AUSENCIA PARCIAL">AUSENCIA PARCIAL</option>
+        <option value="BOTELLAS/ARMADO">BOTELLAS/ARMADO</option>
+        <option value="CABLEADO TRONCAL / SUBTRONCAL">CABLEADO TRONCAL / SUBTRONCAL</option>
+        <option value="CABLEADOS DISTRIBUCION">CABLEADOS DISTRIBUCION</option>
+        <option value="CONEXIONES CLIENTES">CONEXIONES CLIENTES</option>
+        <option value="DESMONTES DE FIBRA">DESMONTES DE FIBRA</option>
+        <option value="HORAS EXTRAS">HORAS EXTRAS</option>
+        <option value="PLANTADO DE POSTES CON RETIRO">PLANTADO DE POSTES CON RETIRO</option>
+        <option value="PLANTADO DE POSTES">PLANTADO DE POSTES</option>
+        <option value="PREVENTIVOS">PREVENTIVOS</option>
+        <option value="RELEVAMIENTOS DE CAJAS">RELEVAMIENTOS DE CAJAS</option>
+        <option value="REPLANTADO DE POSTES/TUTOR">REPLANTADO DE POSTES/TUTOR</option>
+        <option value="TRASLADO PAQUETERIA / TALLER">TRASLADO PAQUETERIA / TALLER</option>
+        <option value="SPLITER DAÑADO">SPLITER DAÑADO</option>
+        <option value="CAJA MALA SEÑAL">CAJA MALA SEÑAL</option>
+        <option value="INSTALACIONES CLIENTES">INSTALACIONES CLIENTES</option>
+        <option value="MANTENIMIENTO CLIENTES">MANTENIMIENTO CLIENTES</option>
+        <option value="TRABAJOS NOC">TRABAJOS NOC</option>
+        <option value="DIA NO LABORAL">DIA NO LABORAL</option>
+    </select>
+</div>
                     
                     <div class="mb-2">
                         <label class="small fw-bold text-warning">TÉCNICOS (Soporta varios)</label>
@@ -201,14 +214,19 @@
 
                     <div class="mb-2">
                         <label class="small fw-bold">ACTIVIDAD</label>
-                        <textarea id="formAct" class="form-control form-control-sm" rows="2"></textarea>
+                        <textarea id="formAct" class="form-control form-control-sm" rows="2" placeholder="Escribí la tarea aquí..."></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="small fw-bold">PUNTAJE</label>
                         <input type="number" id="formPts" class="form-control form-control-sm" value="0" step="0.1">
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-sm fw-bold">💾 GUARDAR REGISTRO</button>
+                    <div class="row g-2">
+                        <div class="col-8">
+                            <button type="submit" class="btn btn-primary btn-sm fw-bold w-100">💾 GUARDAR</button>
+                        </div>
+                        <div class="col-4">
+                            <button type="button" class="btn btn-outline-danger btn-sm fw-bold w-100" onclick="limpiarFormularioCompleto()" title="Limpiar todos los campos">🧹 RESET</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -263,7 +281,6 @@
     document.getElementById('registroForm').onsubmit = async (e) => {
         e.preventDefault();
         
-        // Obtener todos los técnicos que están seleccionados
         const checkboxes = document.querySelectorAll('.chk-tecnico:checked');
         if (checkboxes.length === 0) {
             alert("Por favor, selecciona al menos un técnico.");
@@ -279,7 +296,7 @@
         const mesSeleccionado = document.getElementById('selectorMes').value;
 
         try {
-            // Enviamos un envío/fetch por cada técnico seleccionado consecutivamente
+            // Recorre los técnicos elegidos y guarda cada fila en Sheets
             for (let i = 0; i < checkboxes.length; i++) {
                 const tecnicoNombre = checkboxes[i].value;
                 const payload = {
@@ -295,14 +312,14 @@
                         ""
                     ]
                 };
-                
-                // Ejecución del envío a Google Apps Script
                 await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
             }
 
-            // Limpieza de campos de texto y desmarcado de técnicos tras éxito
+            // MEJORA: Solo limpia la actividad y reinicia el puntaje. 
+            // La fecha, la categoría y los técnicos se quedan tildados para meter otra tarea rápido.
             document.getElementById('formAct').value = "";
-            checkboxes.forEach(chk => chk.checked = false);
+            document.getElementById('formPts').value = "0";
+            document.getElementById('formAct').focus(); // Deja el cursor listo para escribir de nuevo
             
             setTimeout(cargarDatosNube, 1000);
         } catch (e) { 
@@ -311,6 +328,15 @@
             mostrarLoading(false); 
         }
     };
+
+    // Función por si terminás de cargar ese grupo y querés limpiar todo a cero
+    function limpiarFormularioCompleto() {
+        document.getElementById('formAct').value = "";
+        document.getElementById('formPts').value = "0";
+        document.getElementById('formFecha').valueAsDate = new Date();
+        document.querySelectorAll('.chk-tecnico').forEach(chk => chk.checked = false);
+        actualizarDiaEnFormulario();
+    }
 
     async function cargarDatosNube() {
         mostrarLoading(true);
@@ -327,7 +353,6 @@
             let rankingData = [];
 
             if (filas.length > 1) {
-                // --- 1. PROCESAR PROMEDIOS (Desde Fila 22, Columnas H e I) ---
                 const datosResumen = filas.slice(21); 
                 const listaTecnicos = ["Vicens Cristian", "Alegre Maximiliano", "Altamirano Cesar", "Emma Calvo", "Gonzalez Fernando", "Rodriguez Gabriel"];
                 
@@ -351,7 +376,6 @@
                 rankingData.sort((a,b) => b.promedio - a.promedio);
                 renderizarGrafico(rankingData.map(r => r.nombre), rankingData.map(r => r.promedio));
 
-                // --- 2. RENDERIZAR TABLA DE TAREAS (Col A a F) ---
                 datosLocales = filas.slice(1).map((f, i) => ({ data: f, filaOriginal: i + 2 }))
                                            .filter(item => item.data[4] && item.data[4].toString().trim() !== "");
 
@@ -416,7 +440,6 @@
         document.getElementById('formFecha').value = fechaISO;
         document.getElementById('formCat').value = cat;
         
-        // Al duplicar, desmarcamos todos los técnicos y marcamos únicamente al dueño original de la fila
         document.querySelectorAll('.chk-tecnico').forEach(chk => {
             chk.checked = (chk.value.toLowerCase() === tec.toLowerCase());
         });
