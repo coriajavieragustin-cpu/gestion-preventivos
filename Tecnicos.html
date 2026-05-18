@@ -45,6 +45,20 @@
             font-size: 0.85rem;
         }
 
+        /* Contenedor especial para selección múltiple de técnicos */
+        .tecnicos-selector-box {
+            background-color: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 8px 12px;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+        .tecnicos-selector-box .form-check-label {
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
         .btn-sync { 
             background-color: var(--accent); 
             color: white; 
@@ -154,14 +168,37 @@
                             <option value="DIA NO LABORAL">DIA NO LABORAL</option>
                         </select>
                     </div>
+                    
                     <div class="mb-2">
-                        <label class="small fw-bold">TÉCNICO</label>
-                        <select id="formTec" class="form-select form-select-sm">
-                            <option>Vicens Cristian</option><option>Alegre Maximiliano</option>
-                            <option>Gonzalez Fernando</option><option>Rodriguez Gabriel</option>
-                            <option>Emma Calvo</option><option>Altamirano Cesar</option>
-                        </select>
+                        <label class="small fw-bold text-warning">TÉCNICOS (Soporta varios)</label>
+                        <div class="tecnicos-selector-box" id="contenedorCheckboxesTecnicos">
+                            <div class="form-check">
+                                <input class="form-check-input chk-tecnico" type="checkbox" value="Vicens Cristian" id="tec_vicens">
+                                <label class="form-check-label text-white" for="tec_vicens">Vicens Cristian</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input chk-tecnico" type="checkbox" value="Alegre Maximiliano" id="tec_alegre">
+                                <label class="form-check-label text-white" for="tec_alegre">Alegre Maximiliano</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input chk-tecnico" type="checkbox" value="Gonzalez Fernando" id="tec_gonzalez">
+                                <label class="form-check-label text-white" for="tec_gonzalez">Gonzalez Fernando</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input chk-tecnico" type="checkbox" value="Rodriguez Gabriel" id="tec_rodriguez">
+                                <label class="form-check-label text-white" for="tec_rodriguez">Rodriguez Gabriel</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input chk-tecnico" type="checkbox" value="Emma Calvo" id="tec_emma">
+                                <label class="form-check-label text-white" for="tec_emma">Emma Calvo</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input chk-tecnico" type="checkbox" value="Altamirano Cesar" id="tec_altamirano">
+                                <label class="form-check-label text-white" for="tec_altamirano">Altamirano Cesar</label>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="mb-2">
                         <label class="small fw-bold">ACTIVIDAD</label>
                         <textarea id="formAct" class="form-control form-control-sm" rows="2"></textarea>
@@ -171,7 +208,7 @@
                         <input type="number" id="formPts" class="form-control form-control-sm" value="0" step="0.1">
                     </div>
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-sm fw-bold">💾 GUARDAR</button>
+                        <button type="submit" class="btn btn-primary btn-sm fw-bold">💾 GUARDAR REGISTRO</button>
                     </div>
                 </form>
             </div>
@@ -225,28 +262,54 @@
 
     document.getElementById('registroForm').onsubmit = async (e) => {
         e.preventDefault();
+        
+        // Obtener todos los técnicos que están seleccionados
+        const checkboxes = document.querySelectorAll('.chk-tecnico:checked');
+        if (checkboxes.length === 0) {
+            alert("Por favor, selecciona al menos un técnico.");
+            return;
+        }
+
         mostrarLoading(true);
         const fInput = document.getElementById('formFecha').value;
         const nombreDia = actualizarDiaEnFormulario();
-        const payload = {
-            action: 'insertar',
-            mes: document.getElementById('selectorMes').value,
-            datos: [
-                fInput.split('-').reverse().join('/'), 
-                nombreDia, 
-                document.getElementById('formCat').value, 
-                document.getElementById('formAct').value, 
-                document.getElementById('formTec').value, 
-                document.getElementById('formPts').value, 
-                ""
-            ]
-        };
+        const categoria = document.getElementById('formCat').value;
+        const actividad = document.getElementById('formAct').value;
+        const puntaje = document.getElementById('formPts').value;
+        const mesSeleccionado = document.getElementById('selectorMes').value;
+
         try {
-            await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            // Enviamos un envío/fetch por cada técnico seleccionado consecutivamente
+            for (let i = 0; i < checkboxes.length; i++) {
+                const tecnicoNombre = checkboxes[i].value;
+                const payload = {
+                    action: 'insertar',
+                    mes: mesSeleccionado,
+                    datos: [
+                        fInput.split('-').reverse().join('/'), 
+                        nombreDia, 
+                        categoria, 
+                        actividad, 
+                        tecnicoNombre, 
+                        puntaje, 
+                        ""
+                    ]
+                };
+                
+                // Ejecución del envío a Google Apps Script
+                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            }
+
+            // Limpieza de campos de texto y desmarcado de técnicos tras éxito
             document.getElementById('formAct').value = "";
+            checkboxes.forEach(chk => chk.checked = false);
+            
             setTimeout(cargarDatosNube, 1000);
-        } catch (e) { alert("Error al guardar"); } 
-        finally { mostrarLoading(false); }
+        } catch (e) { 
+            alert("Error al guardar los registros"); 
+        } finally { 
+            mostrarLoading(false); 
+        }
     };
 
     async function cargarDatosNube() {
@@ -265,14 +328,11 @@
 
             if (filas.length > 1) {
                 // --- 1. PROCESAR PROMEDIOS (Desde Fila 22, Columnas H e I) ---
-                const datosResumen = filas.slice(21); // Ignora las primeras 21 filas (índice 0-20)
+                const datosResumen = filas.slice(21); 
                 const listaTecnicos = ["Vicens Cristian", "Alegre Maximiliano", "Altamirano Cesar", "Emma Calvo", "Gonzalez Fernando", "Rodriguez Gabriel"];
                 
                 listaTecnicos.forEach(nombre => {
-                    // Busca el nombre en la Columna H (índice 7)
                     const filaTecnico = datosResumen.find(r => r[7] && r[7].toString().trim().toLowerCase() === nombre.toLowerCase());
-                    
-                    // Toma el valor de la Columna I (índice 8)
                     const promedioDirecto = filaTecnico ? (parseFloat(filaTecnico[8]) || 0).toFixed(2) : "0.00";
                     const numFilaExcel = filaTecnico ? filas.indexOf(filaTecnico) + 1 : "N/A";
 
@@ -293,7 +353,7 @@
 
                 // --- 2. RENDERIZAR TABLA DE TAREAS (Col A a F) ---
                 datosLocales = filas.slice(1).map((f, i) => ({ data: f, filaOriginal: i + 2 }))
-                                   .filter(item => item.data[4] && item.data[4].toString().trim() !== "");
+                                           .filter(item => item.data[4] && item.data[4].toString().trim() !== "");
 
                 [...datosLocales].reverse().forEach((item) => {
                     const fila = item.data;
@@ -355,7 +415,12 @@
         let fechaISO = f.includes('T') ? f.split('T')[0] : (f.includes('/') ? f.split('/').reverse().join('-') : f);
         document.getElementById('formFecha').value = fechaISO;
         document.getElementById('formCat').value = cat;
-        document.getElementById('formTec').value = tec;
+        
+        // Al duplicar, desmarcamos todos los técnicos y marcamos únicamente al dueño original de la fila
+        document.querySelectorAll('.chk-tecnico').forEach(chk => {
+            chk.checked = (chk.value.toLowerCase() === tec.toLowerCase());
+        });
+
         document.getElementById('formAct').value = act || "";
         document.getElementById('formPts').value = pts;
         actualizarDiaEnFormulario();
