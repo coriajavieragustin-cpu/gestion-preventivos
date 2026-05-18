@@ -87,6 +87,7 @@
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Tecnicos.html" target="_blank" class="btn-nav">👷 Técnicos</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Preventivos.html" target="_blank" class="btn-nav">🛠️ Preventivos</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/otdr.html" target="_blank" class="btn-nav">📉 OTDR</a>
+            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/promedios%20cab.html" target="_blank" class="btn-nav">📐 Calculo de cables</a>
             <hr style="border-color: #333">
             <a href="#" class="btn-nav">📊 Reportes</a>
         </nav>
@@ -249,11 +250,11 @@
         } catch (e) { console.error(e); }
     }
 
-    function procesarLogicaTecnicos(datos, nombreMes) {
+    function procesarLogicaTecnicos(datos, textMes) {
         const mesesRef = { "Enero":0, "Febrero":1, "Marzo":2, "Abril":3, "Mayo":4, "Junio":5, "Julio":6, "Agosto":7, "Septiembre":8, "Octubre":9, "Noviembre":10, "Diciembre":11 };
-        const diasDelMes = new Date(2026, mesesRef[nombreMes] + 1, 0).getDate();
+        const diasDelMes = new Date(2026, mesesRef[textMes] + 1, 0).getDate();
         let domingos = 0;
-        for(let i=1; i<=diasDelMes; i++) { if(new Date(2026, mesesRef[nombreMes], i).getDay() === 0) domingos++; }
+        for(let i=1; i<=diasDelMes; i++) { if(new Date(2026, mesesRef[textMes], i).getDay() === 0) domingos++; }
         document.getElementById('valInfoDias').innerText = `${diasDelMes}d / ${domingos} dom`;
         
         let tecnicos = {};
