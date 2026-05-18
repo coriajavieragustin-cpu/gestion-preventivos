@@ -83,13 +83,10 @@
             <div id="digitalClock">00:00:00</div>
         </div>
         <nav>
-            <a href="#" class="btn-nav">🏠 Inicio</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Tecnicos.html" target="_blank" class="btn-nav">👷 Técnicos</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Preventivos.html" target="_blank" class="btn-nav">🛠️ Preventivos</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/otdr.html" target="_blank" class="btn-nav">📉 OTDR</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/promedios%20cab.html" target="_blank" class="btn-nav">📐 Calculo de cables</a>
-            <hr style="border-color: #333">
-            <a href="#" class="btn-nav">📊 Reportes</a>
         </nav>
 
         <div class="sync-section">
@@ -194,6 +191,11 @@
     }
     setInterval(updateClock, 1000); updateClock();
 
+    function obtenerFechaHoraActual() {
+        const now = new Date();
+        return now.toLocaleDateString('es-ES') + ' ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
     window.onload = () => {
         const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         document.getElementById('selectorMes').value = meses[new Date().getMonth()];
@@ -223,7 +225,10 @@
         try {
             const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${Date.now()}`);
             const filas = await res.json();
-            if (filas.length > 1) { procesarLogicaTecnicos(filas.slice(1), mes); }
+            if (filas.length > 1) { 
+                procesarLogicaTecnicos(filas.slice(1), mes); 
+                document.getElementById('timeTec').innerText = obtenerFechaHoraActual();
+            }
         } catch (e) { console.error(e); }
     }
 
@@ -247,6 +252,7 @@
             document.getElementById('prevProceso').innerText = stats.proc;
             renderBarChart('chartPrevZona', zonas, chartZona, (c) => chartZona = c, "TAREAS POR ZONA");
             renderBarChart('chartPrevCat', cats, chartCat, (c) => chartCat = c, "TAREAS POR CATEGORÍA");
+            document.getElementById('timePrev').innerText = obtenerFechaHoraActual();
         } catch (e) { console.error(e); }
     }
 
@@ -258,7 +264,7 @@
         document.getElementById('valInfoDias').innerText = `${diasDelMes}d / ${domingos} dom`;
         
         let tecnicos = {};
-        let categoriasCount = {};
+        let categoriesCount = {};
         let totalVal = 0;
 
         datos.forEach(f => {
@@ -272,7 +278,7 @@
             if(cat.toUpperCase().includes("AUSENCIA")) {
                 tecnicos[t].aus += 1;
             } else {
-                categoriasCount[cat] = (categoriasCount[cat] || 0) + 1;
+                categoriesCount[cat] = (categoriesCount[cat] || 0) + 1;
                 totalVal++;
             }
             if(f[1].toString().toLowerCase().includes("sab")) tecnicos[t].sab += 1;
@@ -304,7 +310,7 @@
 
         document.getElementById('valPromMesTec').innerText = cantTec > 0 ? (sumaPromedios / cantTec).toFixed(2) : "0.00";
         
-        renderTorta(categoriasCount, totalVal);
+        renderTorta(categoriesCount, totalVal);
         renderMiniRank(ranking.slice(0, 6)); 
     }
 
