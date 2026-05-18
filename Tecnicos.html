@@ -246,9 +246,12 @@
             </div>
 
             <div class="card p-3 shadow-sm">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
                     <h6 class="fw-bold m-0 small text-uppercase text-muted">☁️ Registros en la Nube</h6>
-                    <button class="btn-sync btn-sm" onclick="cargarDatosNube()">🔄 Sincronizar</button>
+                    <div class="d-flex gap-2 w-auto flex-grow-1 flex-md-grow-0" style="max-width: 400px;">
+                        <input type="text" id="barraBusqueda" class="form-control form-control-sm" placeholder="🔍 Buscar técnico, tarea, categoría..." onkeyup="filtrarTablaLocal()">
+                        <button class="btn-sync btn-sm text-nowrap" onclick="cargarDatosNube()">🔄 Sincronizar</button>
+                    </div>
                 </div>
                 <div class="table-responsive-custom border shadow-sm">
                     <table class="table table-sm table-hover mb-0" id="tablaDatos">
@@ -290,13 +293,12 @@
         mostrarLoading(true);
         const fInput = document.getElementById('formFecha').value;
         const nombreDia = actualizarDiaEnFormulario();
-        const categoria = document.getElementById('formCat').value;
+        const category = document.getElementById('formCat').value;
         const actividad = document.getElementById('formAct').value;
         const puntaje = document.getElementById('formPts').value;
         const mesSeleccionado = document.getElementById('selectorMes').value;
 
         try {
-            // Recorre los técnicos elegidos y guarda cada fila en Sheets
             for (let i = 0; i < checkboxes.length; i++) {
                 const tecnicoNombre = checkboxes[i].value;
                 const payload = {
@@ -305,7 +307,7 @@
                     datos: [
                         fInput.split('-').reverse().join('/'), 
                         nombreDia, 
-                        categoria, 
+                        category, 
                         actividad, 
                         tecnicoNombre, 
                         puntaje, 
@@ -315,11 +317,9 @@
                 await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
             }
 
-            // MEJORA: Solo limpia la actividad y reinicia el puntaje. 
-            // La fecha, la categoría y los técnicos se quedan tildados para meter otra tarea rápido.
             document.getElementById('formAct').value = "";
             document.getElementById('formPts').value = "0";
-            document.getElementById('formAct').focus(); // Deja el cursor listo para escribir de nuevo
+            document.getElementById('formAct').focus(); 
             
             setTimeout(cargarDatosNube, 1000);
         } catch (e) { 
@@ -329,7 +329,6 @@
         }
     };
 
-    // Función por si terminás de cargar ese grupo y querés limpiar todo a cero
     function limpiarFormularioCompleto() {
         document.getElementById('formAct').value = "";
         document.getElementById('formPts').value = "0";
@@ -343,6 +342,7 @@
         const mesNombre = document.getElementById('selectorMes').value;
         const tbody = document.querySelector('#tablaDatos tbody');
         const contenedor = document.getElementById('contenedorPromedios');
+        document.getElementById('barraBusqueda').value = ""; // Resetea el buscador al sincronizar
         
         try {
             const res = await fetch(`${WEB_APP_URL}?mes=${mesNombre}&nocache=${new Date().getTime()}`);
@@ -402,6 +402,21 @@
             document.getElementById('infoMesActual').innerText = `${mesNombre} | Tabla detectada`;
         } catch (e) { console.error("Error:", e); } 
         finally { mostrarLoading(false); }
+    }
+
+    // Nueva función para filtrar los registros locales en tiempo real
+    function filtrarTablaLocal() {
+        const textoBusqueda = document.getElementById('barraBusqueda').value.toLowerCase();
+        const filasTabla = document.querySelectorAll('#tablaDatos tbody tr');
+
+        filasTabla.forEach(tr => {
+            const contenidoTexto = tr.textContent.toLowerCase();
+            if (contenidoTexto.includes(textoBusqueda)) {
+                tr.style.display = "";
+            } else {
+                tr.style.display = "none";
+            }
+        });
     }
 
     async function borrarFila(nro) {
