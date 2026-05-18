@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador de Trazas KMZ - Dark Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #0f172a; /* Fondo oscuro profundo (Slate 900) */
+            margin: 0;
+            padding: 30px;
+            color: #e2e8f0; /* Texto claro principal */
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #1e293b; /* Fondo del contenedor (Slate 800) */
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+        h1 {
+            color: #3a86ff; /* Azul eléctrico para destacar en la oscuridad */
+            margin-top: 0;
+            font-size: 24px;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 10px;
+        }
+        p {
+            color: #94a3b8; /* Texto secundario suavizado */
+            font-size: 14px;
+        }
+        .file-upload-box {
+            border: 2px dashed #3a86ff;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px;
+            background: #1a2333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+        }
+        .file-upload-box:hover {
+            background: #243249;
+            border-color: #6366f1;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .upload-label {
+            color: #3a86ff;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            transition: color 0.3s;
+        }
+        .file-upload-box:hover .upload-label {
+            color: #38bdf8;
+        }
+        .dashboard {
+            display: table;
+            width: 100%;
+            margin-bottom: 25px;
+            border-collapse: separate;
+            border-spacing: 15px 0;
+        }
+        .card {
+            display: table-cell;
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            width: 33.33%;
+            border: 1px solid #334155;
+        }
+        .card-title {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .card-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #38bdf8; /* Azul cyan brillante */
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            margin-bottom: 12px;
+        }
+        h3 {
+            margin: 0;
+            color: #3a86ff;
+        }
+        .controls-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        select {
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            background-color: #0f172a;
+            outline: none;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: border 0.2s;
+        }
+        select:focus {
+            border-color: #3a86ff;
+        }
+        .btn-excel {
+            background-color: #107c41;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            transition: background 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn-excel:hover {
+            background-color: #0b592e;
+        }
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            background-color: #0f172a;
+        }
+        /* Custom scrollbar para entornos oscuros */
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+        th {
+            background-color: #2563eb; /* Azul oscuro para los encabezados */
+            color: white;
+            padding: 12px 10px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #334155;
+            color: #cbd5e1;
+        }
+        tr:nth-child(even) td {
+            background-color: #1e293b; /* Alternancia de filas (Zebra) */
+        }
+        tr:hover td {
+            background-color: #243249; /* Resaltado al pasar el mouse */
+        }
+        .error {
+            color: #fca5a5;
+            background-color: #7f1d1d;
+            border: 1px solid #b91c1c;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Analizador de Distancias y Promedios (KMZ)</h1>
+    <p>Carga tu archivo .KMZ para mapear las longitudes en metros. Cambia el tipo de orden dinámicamente y exporta todo directo a Excel.</p>
+    
+    <div class="error" id="error-message"></div>
+
+    <div class="file-upload-box" onclick="document.getElementById('kmz-file').click()">
+        <label class="upload-label" id="upload-label-text">
+            📥 Haz clic aquí o arrastra tu archivo .KMZ
+        </label>
+        <input type="file" id="kmz-file" accept=".kmz">
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <div class="card-title">Total de Trazas</div>
+            <div id="total-trazas" class="card-value">-</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Distancia Promedio</div>
+            <div id="promedio-distancia" class="card-value">-</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Longitud Acumulada</div>
+            <div id="suma-total" class="card-value">-</div>
+        </div>
+    </div>
+
+    <div class="section-header">
+        <h3>Desglose de Trazas</h3>
+        <div class="controls-right">
+            <select id="select-orden" onchange="cambiarOrdenamiento()">
+                <option value="menor-mayor">Ordenar: Menor a Mayor</option>
+                <option value="mayor-menor">Ordenar: Mayor a Menor</option>
+            </select>
+            
+            <button class="btn-excel" id="btn-exportar" onclick="exportarExcel()">
+                📊 Exportar a Excel
+            </button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 10%;">#</th>
+                    <th style="width: 60%;">Nombre de la Traza / Tramo</th>
+                    <th style="text-align: right; width: 30%;">Longitud (Metros)</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-cuerpo">
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #64748b; padding: 25px;">Carga un archivo para visualizar las distancias procesadas.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let datosTrazasGlobal = []; 
+    let promedioGlobal = 0;
+    let sumaTotalGlobal = 0;
+
+    document.getElementById('kmz-file').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        document.getElementById('upload-label-text').innerText = `📄 Archivo: ${file.name}`;
+        mostrarError(""); 
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const arrayBuffer = event.target.result;
+            
+            JSZip.loadAsync(arrayBuffer).then(function(zip) {
+                const kmlFile = Object.keys(zip.files).find(fileName => fileName.endsWith('.kml'));
+                if (!kmlFile) {
+                    throw new Error("No se encontró ningún archivo KML válido dentro del KMZ.");
+                }
+                return zip.files[kmlFile].async("string");
+            })
+            .then(function(kmlText) {
+                procesarKml(kmlText);
+            })
+            .catch(function(err) {
+                mostrarError("Error al procesar el archivo: " + err.message);
+            });
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function procesarKml(xmlText) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+        const placemarks = xmlDoc.getElementsByTagName("Placemark");
+        
+        datosTrazasGlobal = [];
+        sumaTotalGlobal = 0;
+
+        for (let i = 0; i < placemarks.length; i++) {
+            const placemark = placemarks[i];
+            const lineStrings = placemark.getElementsByTagName("LineString");
+            
+            if (lineStrings.length > 0) {
+                let nombreNode = placemark.getElementsByTagName("name")[0];
+                let nombre = nombreNode ? nombreNode.textContent.trim() : `Traza sin nombre #${datosTrazasGlobal.length + 1}`;
+                
+                let coordNode = lineStrings[0].getElementsByTagName("coordinates")[0];
+                if (coordNode) {
+                    let coordStr = coordNode.textContent.trim();
+                    let distanciaMetros = calcularDistanciaRuta(coordStr);
+                    
+                    if (distanciaMetros > 0) {
+                        datosTrazasGlobal.push({
+                            nombre: nombre,
+                            distancia: parseFloat(distanciaMetros.toFixed(2))
+                        });
+                        sumaTotalGlobal += distanciaMetros;
+                    }
+                }
+            }
+        }
+
+        promedioGlobal = datosTrazasGlobal.length > 0 ? (sumaTotalGlobal / datosTrazasGlobal.length) : 0;
+        
+        ordenarDatos();
+        actualizarInterfaz();
+    }
+
+    function ordenarDatos() {
+        const tipoOrden = document.getElementById('select-orden').value;
+        if (tipoOrden === 'menor-mayor') {
+            datosTrazasGlobal.sort((a, b) => a.distancia - b.distancia);
+        } else {
+            datosTrazasGlobal.sort((a, b) => b.distancia - a.distancia);
+        }
+    }
+
+    function cambiarOrdenamiento() {
+        if (datosTrazasGlobal.length === 0) return;
+        ordenarDatos();
+        actualizarInterfaz();
+    }
+
+    function calcularDistanciaRuta(coordenadasString) {
+        const puntosStr = coordenadasString.split(/[\s\n]+/);
+        let distanciaTotal = 0;
+        let coordenadasLimpias = [];
+
+        for (let i = 0; i < puntosStr.length; i++) {
+            let p = puntosStr[i].trim();
+            if (p) {
+                let partes = p.split(',');
+                if (partes.length >= 2) {
+                    let lng = parseFloat(partes[0]);
+                    let lat = parseFloat(partes[1]);
+                    if (!isNaN(lng) && !isNaN(lat)) {
+                        coordenadasLimpias.push({lat: lat, lng: lng});
+                    }
+                }
+            }
+        }
+
+        for (let i = 0; i < coordenadasLimpias.length - 1; i++) {
+            distanciaTotal += calcularHaversine(coordenadasLimpias[i], coordenadasLimpias[i+1]);
+        }
+        return distanciaTotal;
+    }
+
+    function calcularHaversine(p1, p2) {
+        const R = 6371000; 
+        const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+        const dLng = (p2.lng - p1.lng) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    function actualizarInterfaz() {
+        const total = datosTrazasGlobal.length;
+        
+        document.getElementById('total-trazas').innerText = total;
+        document.getElementById('promedio-distancia').innerText = `${promedioGlobal.toLocaleString('es-AR', {minimumFractionDigits: 1, maximumFractionDigits: 1})} m`;
+        document.getElementById('suma-total').innerText = `${sumaTotalGlobal.toLocaleString('es-AR', {maximumFractionDigits: 0})} m`;
+
+        const tbody = document.getElementById('tabla-cuerpo');
+        tbody.innerHTML = "";
+
+        if (total === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 25px;">No se encontraron trazas lineales válidas en el archivo.</td></tr>`;
+            document.getElementById('btn-exportar').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('btn-exportar').style.display = 'flex';
+
+        datosTrazasGlobal.forEach((traza, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td><strong style="color: #f8fafc;">${traza.nombre}</strong></td>
+                <td style="text-align: right; font-weight: 500; color: #38bdf8;">${traza.distancia.toLocaleString('es-AR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function exportarExcel() {
+        if (datosTrazasGlobal.length === 0) return;
+        
+        const tipoOrden = document.getElementById('select-orden').value;
+        const textoOrden = tipoOrden === 'menor-mayor' ? "MENOR A MAYOR" : "MAYOR A MENOR";
+
+        let filasExcel = [
+            ["REPORTE MASIVO DE TRAZAS Y LONGITUDES"],
+            [],
+            ["Métricas de Resumen"],
+            ["Total de Trazas Evaluadas", datosTrazasGlobal.length],
+            ["Distancia Promedio (Metros)", parseFloat(promedioGlobal.toFixed(2))],
+            ["Longitud Acumulada Total (Metros)", parseFloat(sumaTotalGlobal.toFixed(2))],
+            [],
+            [`Desglose de Trazas Ordenado de ${textoOrden}`],
+            ["Orden de Lista", "Nombre / Identificador de la Traza", "Longitud (Metros)"]
+        ];
+
+        datosTrazasGlobal.forEach((t, i) => {
+            filasExcel.push([i + 1, t.nombre, t.distancia]);
+        });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(filasExcel);
+
+        ws['!cols'] = [{wch: 25}, {wch: 45}, {wch: 20}];
+
+        XLSX.utils.book_append_sheet(wb, ws, "Resumen de Trazas");
+        
+        const nombreArchivo = `Reporte_Trazas_${tipoOrden.replace('-','_')}.xlsx`;
+        XLSX.writeFile(wb, nombreArchivo);
+    }
+
+    function mostrarError(msg) {
+        const errorDiv = document.getElementById('error-message');
+        if (msg) {
+            errorDiv.innerText = msg;
+            errorDiv.style.display = 'block';
+        } else {
+            errorDiv.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
