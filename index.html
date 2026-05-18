@@ -69,13 +69,17 @@
         .badge-promedio { background: var(--tec-color); color: white; font-weight: 800; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; min-width: 45px; text-align: center; }
 
         #loaderGlobal { display: none; position: fixed; top: 10px; right: 10px; z-index: 2000; font-size: 0.7rem; }
+        
+        /* Oculta la app por defecto hasta validar clave */
+        #appWrapper { display: none; }
     </style>
 </head>
 <body>
 
 <div id="loaderGlobal" class="badge bg-warning text-dark p-2 shadow">⌛ Sincronizando...</div>
 
-<div class="wrapper">
+<!-- Contenedor general para controlar el acceso -->
+<div id="appWrapper" class="wrapper">
     <div class="sidebar">
         <h5>PANEL INFRAESTRUCTURA CONNECTTO</h5>
         <div class="clock">
@@ -176,6 +180,9 @@
 </div>
 
 <script>
+    // DEFINE TU CONTRASEÑA AQUÍ
+    const CLAVE_ACCESO = "Javiercito2026";
+
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec";
     const PREV_APP_URL = "https://script.google.com/macros/s/AKfycbw_pbtEwiF-JwWs2qvLfGgu-3DyUenPYXWDnKb9mKDvkkz43Us2lAmgjDEamrCwGg0s/exec";
     
@@ -196,10 +203,21 @@
         return now.toLocaleDateString('es-ES') + ' ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
+    // Ventana de autenticación controlada antes de disparar las llamadas a la base de datos
     window.onload = () => {
-        const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-        document.getElementById('selectorMes').value = meses[new Date().getMonth()];
-        cargarDatos();
+        const passwordInput = prompt("Introduce la contraseña para acceder al Dashboard:");
+        
+        if (passwordInput === CLAVE_ACCESO) {
+            // Si es correcta, quita la restricción visual y arranca el ecosistema
+            document.getElementById('appWrapper').style.display = "flex";
+            
+            const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+            document.getElementById('selectorMes').value = meses[new Date().getMonth()];
+            cargarDatos();
+        } else {
+            alert("Contraseña incorrecta. Acceso denegada.");
+            document.body.innerHTML = `<div style="color: #f1416c; text-align:center; margin-top:20vh; font-family:sans-serif;"><h2>🔒 Acceso No Autorizado</h2><p>Actualiza la página para intentar de nuevo.</p></div>`;
+        }
     };
 
     async function cargarDatos() {
