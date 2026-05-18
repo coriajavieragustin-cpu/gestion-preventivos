@@ -18,7 +18,7 @@
             color: #e2e8f0;
         }
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
             background: #1e293b;
             padding: 25px;
@@ -64,7 +64,6 @@
             font-weight: bold;
             cursor: pointer;
         }
-        /* Módulo de Indicadores Avanzados de Ahorro */
         .dashboard {
             display: flex;
             gap: 15px;
@@ -78,9 +77,13 @@
             text-align: center;
             border: 1px solid #334155;
         }
-        .card.ahorro {
-            border-color: #10b981;
-            background-color: #064e3b;
+        .card.metraje-total {
+            border-color: #38bdf8;
+            background-color: #0c4a6e;
+        }
+        .card.promedio {
+            border-color: #a855f7;
+            background-color: #581c87;
         }
         .card-title {
             font-size: 11px;
@@ -89,16 +92,22 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
-        .card.ahorro .card-title {
-            color: #a7f3d0;
+        .card.metraje-total .card-title {
+            color: #bae6fd;
+        }
+        .card.promedio .card-title {
+            color: #f3e8ff;
         }
         .card-value {
             font-size: 22px;
             font-weight: bold;
+            color: #cbd5e1;
+        }
+        .card.metraje-total .card-value {
             color: #38bdf8;
         }
-        .card.ahorro .card-value {
-            color: #34d399;
+        .card.promedio .card-value {
+            color: #c084fc;
         }
         .section-header {
             display: flex;
@@ -124,18 +133,19 @@
         .btn-excel:hover {
             background-color: #0b592e;
         }
-        /* Tablas */
         .table-container {
             border: 1px solid #334155;
             border-radius: 6px;
             background-color: #0f172a;
             margin-bottom: 20px;
+            overflow-x: auto;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             text-align: left;
             font-size: 13px;
+            min-width: 900px;
         }
         th {
             background-color: #1e293b;
@@ -179,9 +189,9 @@
 <body>
 
 <div class="container">
-    <h1>Planilla Automatizada de Despliegue y Ahorro de Materiales</h1>
+    <h1>Planilla Automatizada RETAZOS</h1>
     <p>Cálculo de trazas con <strong>margen de seguridad de +20 metros</strong>. Filtro automático enfocado en optimización de retazos.</p>
-    
+     
     <div class="grid-carga">
         <div class="file-upload-box" onclick="document.getElementById('file-kmz').click()">
             <span class="upload-label" id="lbl-kmz">📥 Cargar Trazas de Obra (.KMZ)</span>
@@ -198,13 +208,13 @@
             <div class="card-title">Tramos Totales Detectados</div>
             <div id="ind-trazas" class="card-value">-</div>
         </div>
-        <div class="card">
-            <div class="card-title">Bobinas Requeridas para Uso</div>
-            <div id="ind-bobinas-usar" class="card-value">-</div>
+        <div class="card metraje-total">
+            <div class="card-title">Metraje Total de la Traza</div>
+            <div id="ind-metraje-total" class="card-value">-</div>
         </div>
-        <div class="card ahorro">
-            <div class="card-title">Bobinas Completas Ahorradas (Uso de Retazos)</div>
-            <div id="ind-ahorro-retazos" class="card-value">-</div>
+        <div class="card promedio">
+            <div class="card-title">Promedio de Metraje por Tramo</div>
+            <div id="ind-metraje-promedio" class="card-value">-</div>
         </div>
     </div>
 
@@ -221,6 +231,7 @@
                     <th>Longitud Real</th>
                     <th>Con Margen (+20m)</th>
                     <th>Asignar Bobina (inv.Codigo)</th>
+                    <th>SN Artículo (inv.SNArticulo)</th>
                     <th>Metraje Inicial (inv.Cantidad)</th>
                     <th>Sobrante Restante (Scrap)</th>
                     <th>Condición de la Bobina</th>
@@ -228,7 +239,7 @@
             </thead>
             <tbody id="tabla-cruce-cuerpo">
                 <tr>
-                    <td colspan="7" style="text-align: center; color: #64748b; padding: 25px;">Sube los archivos para procesar el despacho de materiales optimizado.</td>
+                    <td colspan="8" style="text-align: center; color: #64748b; padding: 25px;">Sube los archivos para procesar el despacho de materiales optimizado.</td>
                 </tr>
             </tbody>
         </table>
@@ -273,7 +284,7 @@
         reader.readAsArrayBuffer(file);
     });
 
-    // Procesar archivo Excel con Mapeo por Encabezados (inv.Cantidad como Metraje)
+    // Procesar archivo Excel con Mapeo por Encabezados e Inclusión de inv.SNArticulo
     document.getElementById('file-excel').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -296,14 +307,17 @@
             let idxCodigo = encabezados.indexOf("inv.codigo");
             let idxDetalle = encabezados.indexOf("inv.detalle");
             let idxCantidad = encabezados.indexOf("inv.cantidad");
+            let idxSNArticulo = encabezados.indexOf("inv.snarticulo");
 
             if(idxCodigo === -1) idxCodigo = encabezados.indexOf("codigo");
             if(idxDetalle === -1) idxDetalle = encabezados.indexOf("detalle");
             if(idxCantidad === -1) idxCantidad = encabezados.indexOf("cantidad");
+            if(idxSNArticulo === -1) idxSNArticulo = encabezados.indexOf("snarticulo");
 
             if(idxCodigo === -1) idxCodigo = 0;
             if(idxDetalle === -1) idxDetalle = 1;
             if(idxCantidad === -1) idxCantidad = 2;
+            if(idxSNArticulo === -1) idxSNArticulo = 3;
 
             for(let i = 1; i < filas.length; i++) {
                 let fila = filas[i];
@@ -311,9 +325,10 @@
                     let id = fila[idxCodigo] || `Bobina-${i}`;
                     let detalle = fila[idxDetalle] || "Fibra Óptica";
                     let metros = parseFloat(fila[idxCantidad]);
+                    let snArticulo = fila[idxSNArticulo] !== undefined ? fila[idxSNArticulo] : "-";
                     
                     if(!isNaN(metros) && metros > 0) {
-                        datosStock.push({ id: id, tipo: detalle, metros: metros, asignada: false });
+                        datosStock.push({ id: id, tipo: detalle, metros: metros, snArticulo: snArticulo, asignada: false });
                     }
                 }
             }
@@ -322,17 +337,23 @@
         reader.readAsArrayBuffer(file);
     });
 
-    // Algoritmo de Cruce con +20m de Margen de Seguridad
+    // Algoritmo de Cruce y Cálculo de Métricas de Traza
     function ejecutarCruceDeDatos() {
         document.getElementById('ind-trazas').innerText = datosTrazas.length || "-";
         
-        if (datosTrazas.length === 0 || datosStock.length === 0) return;
+        if (datosTrazas.length === 0) return;
+
+        // Calcular Metraje Total y Promedio basados en la longitud real del KMZ
+        let sumaMetrajeReal = datosTrazas.reduce((acc, t) => acc + t.longitud, 0);
+        let promedioMetrajeReal = datosTrazas.length > 0 ? (sumaMetrajeReal / datosTrazas.length).toFixed(1) : 0;
+
+        document.getElementById('ind-metraje-total').innerText = `${sumaMetrajeReal} m`;
+        document.getElementById('ind-metraje-promedio').innerText = `${promedioMetrajeReal} m`;
+
+        if (datosStock.length === 0) return;
 
         datosStock.forEach(b => b.asignada = false);
         resultadosCruce = [];
-        
-        let conteoBobinasUtilizadas = 0;
-        let conteoAhorroRetazos = 0;
 
         // Ordenamos las trazas de mayor a menor longitud requerida
         let trazasOrdenadas = [...datosTrazas].sort((a,b) => b.longitud - a.longitud);
@@ -341,29 +362,22 @@
             const MARGEN_SEGURIDAD = 20; 
             let longitudConMargen = traza.longitud + MARGEN_SEGURIDAD;
 
-            // Filtrar bobinas que tengan suficiente metraje
             let candidatas = datosStock.filter(b => !b.asignada && b.metros >= longitudConMargen);
             
             if(candidatas.length > 0) {
-                // Buscamos la bobina que mejor se ajuste (Best Fit) para evitar desperdicio de bobinas grandes
                 candidatas.sort((a,b) => a.metros - b.metros);
                 let seleccionada = candidatas[0];
                 seleccionada.asignada = true; 
                 
                 let sobrante = seleccionada.metros - longitudConMargen;
-                conteoBobinasUtilizadas++;
-
-                // Si usamos una bobina corta o remanente (ej. menos de 1000m), consideramos que rescatamos un retazo
                 let esRetazoOptimizado = seleccionada.metros < 1200; 
-                if(esRetazoOptimizado) {
-                    conteoAhorroRetazos++;
-                }
 
                 resultadosCruce.push({
                     traza: traza.nombre,
                     longitudReal: traza.longitud,
                     longitudMargen: longitudConMargen,
                     bobinaId: seleccionada.id,
+                    snArticulo: seleccionada.snArticulo,
                     bobinaMetros: seleccionada.metros,
                     sobrante: sobrante,
                     tipoBobina: esRetazoOptimizado ? "Retazo Optimizado" : "Bobina Estándar",
@@ -375,6 +389,7 @@
                     longitudReal: traza.longitud,
                     longitudMargen: longitudConMargen,
                     bobinaId: "FALTA STOCK DE METRAJE",
+                    snArticulo: "-",
                     bobinaMetros: 0,
                     sobrante: 0,
                     tipoBobina: "-",
@@ -382,10 +397,6 @@
                 });
             }
         });
-
-        // Actualizar indicadores visuales enfocados en lo que vas a usar y ahorrar
-        document.getElementById('ind-bobinas-usar').innerText = conteoBobinasUtilizadas;
-        document.getElementById('ind-ahorro-retazos').innerText = conteoAhorroRetazos > 0 ? `${conteoAhorroRetazos} Bobina(s) Nueva(s) Evitada(s)` : "0 (Sin retazos utilizables)";
         
         renderizarTablaCruce();
     }
@@ -399,7 +410,6 @@
             const tr = document.createElement('tr');
             const esOk = r.estado === "Asignada";
             
-            // Estilo para destacar si se usó un retazo y cuánto se guardó de scrap
             let tdCondicion = esOk && r.tipoBobina === "Retazo Optimizado" 
                 ? `<span class="badge-ok" style="background-color: #b45309; color: #fef3c7;">♻️ Uso de Retazo</span>`
                 : (esOk ? `<span class="badge-ok">📦 Estándar</span>` : `<span class="badge-alert">⚠️ Sin Bobina</span>`);
@@ -409,6 +419,7 @@
                 <td>${r.longitudReal} m</td>
                 <td class="txt-marcado">${r.longitudMargen} m</td>
                 <td style="color: ${esOk ? '#38bdf8' : '#fca5a5'}; font-weight: bold;">${r.bobinaId}</td>
+                <td>${r.snArticulo}</td>
                 <td>${r.bobinaMetros > 0 ? r.bobinaMetros + ' m' : '-'}</td>
                 <td style="color: #a7f3d0">${esOk ? r.sobrante + ' m' : '-'}</td>
                 <td>${tdCondicion}</td>
@@ -449,14 +460,14 @@
         let matriz = [
             ["ORDEN DE TRABAJO Y ASIGNACIÓN DE MATERIALES (CON MARGEN +20M)"],
             [],
-            ["Tramo (KMZ)", "Longitud Real (m)", "Longitud con Margen (m)", "Bobina Designada (inv.Codigo)", "Metraje Original (inv.Cantidad)", "Remanente Final / Scrap", "Tipo de Bobina"]
+            ["Tramo (KMZ)", "Longitud Real (m)", "Longitud con Margen (m)", "Bobina Designada (inv.Codigo)", "SN Artículo (inv.SNArticulo)", "Metraje Original (inv.Cantidad)", "Remanente Final / Scrap", "Tipo de Bobina"]
         ];
         resultadosCruce.forEach(r => {
-            matriz.push([r.traza, r.longitudReal, r.longitudMargen, r.bobinaId, r.bobinaMetros || "-", r.bobinaMetros > 0 ? r.sobrante : "-", r.tipoBobina]);
+            matriz.push([r.traza, r.longitudReal, r.longitudMargen, r.bobinaId, r.snArticulo, r.bobinaMetros || "-", r.bobinaMetros > 0 ? r.sobrante : "-", r.tipoBobina]);
         });
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(matriz);
-        ws['!cols'] = [{wch: 35}, {wch: 18}, {wch: 22}, {wch: 38}, {wch: 25}, {wch: 25}, {wch: 22}];
+        ws['!cols'] = [{wch: 35}, {wch: 18}, {wch: 22}, {wch: 38}, {wch: 25}, {wch: 25}, {wch: 25}, {wch: 22}];
         XLSX.utils.book_append_sheet(wb, ws, "Despacho_Optimizado");
         XLSX.writeFile(wb, "Planilla_Despliegue_Con_Margen.xlsx");
     }
