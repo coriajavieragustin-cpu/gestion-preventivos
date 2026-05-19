@@ -149,14 +149,14 @@
         .table-hover tbody tr:hover { 
             background-color: #1f242c !important; 
         }
-        
+         
         .status-ausencia { 
             background-color: #2b230a !important; 
             color: #e3b341 !important; 
         }
         .status-ausencia td { border-bottom: 1px solid #3e3312; }
         .status-ausencia tr:hover { background-color: #332a0c !important; }
-        
+         
         /* Botones de acción */
         .btn-del, .btn-dup { 
             border: none; 
@@ -186,7 +186,7 @@
             border-right: 1px solid var(--border-color);
             border-bottom: 1px solid var(--border-color);
         }
-        
+         
         .chart-container { position: relative; height: 320px; width: 100%; }
         .txt-calculo { 
             font-family: monospace; 
@@ -428,7 +428,7 @@
         const mesNombre = document.getElementById('selectorMes').value;
         const tbody = document.querySelector('#tablaDatos tbody');
         const contenedor = document.getElementById('contenedorPromedios');
-        document.getElementById('barraBusqueda').value = ""; // Resetea el buscador al sincronizar
+        document.getElementById('barraBusqueda').value = "";
         
         try {
             const res = await fetch(`${WEB_APP_URL}?mes=${mesNombre}&nocache=${new Date().getTime()}`);
@@ -518,20 +518,54 @@
     function renderizarGrafico(labels, valores) {
         const ctx = document.getElementById('graficoPromedios').getContext('2d');
         if (miGrafico) miGrafico.destroy();
+        
         miGrafico = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: [{ label: 'Promedio del Mes', data: valores, backgroundColor: '#58a6ff', borderRadius: 5, barThickness: 18 }]
+                datasets: [{ 
+                    label: 'Promedio del Mes', 
+                    data: valores, 
+                    backgroundColor: '#58a6ff', 
+                    borderRadius: 5, 
+                    barThickness: 18 
+                }]
             },
             options: {
-                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                indexAxis: 'y', 
+                responsive: true, 
+                maintainAspectRatio: false,
                 scales: { 
-                    x: { beginAtZero: true, grid: { color: '#30363d' }, ticks: { color: '#8b949e' } }, 
-                    y: { grid: { display: false }, ticks: { color: '#ffffff' } } 
+                    x: { 
+                        beginAtZero: true, 
+                        grid: { display: false }, 
+                        ticks: { display: false } 
+                    }, 
+                    y: { 
+                        grid: { display: false }, 
+                        ticks: { color: '#ffffff' } 
+                    } 
                 },
-                plugins: { legend: { display: false } }
-            }
+                plugins: { 
+                    legend: { display: false } 
+                }
+            },
+            plugins: [{
+                id: 'labelsAlFinal',
+                afterDatasetsDraw(chart) {
+                    const { ctx, data } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 12px Segoe UI';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    chart.getDatasetMeta(0).data.forEach((bar, index) => {
+                        const val = data.datasets[0].data[index].toFixed(2);
+                        ctx.fillText(val, bar.x + 8, bar.y);
+                    });
+                    ctx.restore();
+                }
+            }]
         });
     }
 
