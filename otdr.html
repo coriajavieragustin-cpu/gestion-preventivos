@@ -10,14 +10,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        :root { --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; --accent: #00ff41; --cyan: #00ffff; --crit-color: #ff1744; --cut-color: #7a0000; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding: 6px; box-sizing: border-box; color: var(--text); }
+        :root { 
+            --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; 
+            --accent: #00ff41; --cyan: #00ffff; --crit-color: #ff1744; --cut-color: #7a0000; 
+        }
+        body { 
+            font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--bg); 
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+            padding: 6px; box-sizing: border-box; color: var(--text); 
+        }
         
         .top-bar { display: flex; gap: 10px; align-items: center; background: var(--win); padding: 8px; border: 1px solid var(--border); margin-bottom: 6px; border-radius: 4px; flex-shrink: 0; }
         select { background: #1a1c22; color: var(--accent); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; outline: none; }
 
-        /* Ajuste a 3 columnas para integrar OTDR a la derecha */
-        .top-layout { display: grid; grid-template-columns: 1fr 300px 400px; height: 55vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
+        .top-layout { display: grid; grid-template-columns: 1fr 320px 420px; height: 55vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
         .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; position: relative; }
         .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         
@@ -27,22 +33,22 @@
         .clear-measure { position: absolute; bottom: 10px; left: 10px; z-index: 1000; background: var(--win); color: var(--text); border: 1px solid var(--border); padding: 5px; font-size: 9px; cursor: pointer; border-radius: 3px; text-transform: uppercase; }
 
         .info-content { padding: 8px; overflow-y: auto; background: #08090c; flex-grow: 1; }
-        .info-card { padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); position: relative; }
-        .info-card h4 { margin: 0 0 5px 0; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.2); color: var(--accent); }
+        .info-card { padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); position: relative; background: #111318; }
+        .info-card h4 { margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--accent); padding-bottom: 4px; }
 
         .fiber-visual { 
-            position: absolute; top: 8px; right: 8px; width: 35px; height: 35px; 
+            position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; 
             border-radius: 50%; border: 2px solid #333; display: flex; align-items: center; justify-content: center;
             background: #000; 
         }
         .fiber-core { 
-            width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3);
+            width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3);
             animation: blink-color 1.2s infinite ease-in-out; 
         }
 
         @keyframes blink-color {
-            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 5px currentColor; }
-            50% { opacity: 0.3; transform: scale(0.8); box-shadow: 0 0 0px currentColor; }
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 6px currentColor; }
+            50% { opacity: 0.4; transform: scale(0.85); box-shadow: 0 0 1px currentColor; }
         }
 
         .bottom-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 4px; }
@@ -54,14 +60,13 @@
         
         .row-selected { background: #1c2533 !important; }
         .crit { color: #ffffff !important; font-weight: bold; background: var(--crit-color) !important; }
-        .cut-fiber { color: #ff9999 !important; font-weight: bold; background: var(--cut-color) !important; border: 1px solid red !important; }
+        .cut-fiber { color: #ff9999 !important; font-weight: bold; background: var(--cut-color) !important; }
 
         .map-label { background: rgba(0, 0, 0, 0.85); border: 1px solid var(--accent); color: #fff; font-weight: bold; font-size: 10px; padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
 
-        #loadingOTDR { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 20; color: var(--cyan); font-size: 10px; }
-        .btn-manual { background: #222; color: var(--cyan); border: 1px solid var(--border); font-size: 9px; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
+        #loadingOTDR { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 20; color: var(--cyan); font-size: 11px; font-weight: bold; letter-spacing: 1px; }
+        .btn-manual { background: #222; color: var(--cyan); border: 1px solid var(--border); font-size: 9px; cursor: pointer; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
         
-        /* Botón de Google Sheets personalizado */
         .btn-sheet { background: #107c41; color: #ffffff; border: 1px solid #0d6836; font-size: 10px; font-weight: bold; cursor: pointer; padding: 4px 8px; border-radius: 3px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; margin-left: 10px; transition: background 0.2s; }
         .btn-sheet:hover { background: #0b592e; }
     </style>
@@ -73,9 +78,8 @@
     <select id="sheetPicker" onchange="loadSheet(this.value)">
         <option>Cargando hojas...</option>
     </select>
-    <span style="font-size: 10px; color: #666; margin-left: auto;">Traza y Cajas Activas | Rojo: Crítico | Bordó: Corte (0)</span>
+    <span style="font-size: 10px; color: #666; margin-left: auto;">Corte Crítico: >= 0.50 dB | Pelo Cortado: 0.00 dB</span>
     
-    <!-- Botón directo hacia el Google Sheet -->
     <a href="https://docs.google.com/spreadsheets/d/1DJoUIQBUofmiTiAb_nxBScd3wpuOL1AIeIXYum4HLIk/edit?usp=drive_link" target="_blank" class="btn-sheet">
         📊 VER SPREADSHEET
     </a>
@@ -89,7 +93,7 @@
     </div>
 
     <div class="window">
-        <div class="header">Detalle Técnico</div>
+        <div class="header">Detalle Técnico de la Fibra</div>
         <div class="info-content" id="infoPanel"></div>
     </div>
 
@@ -105,7 +109,7 @@
 </div>
 
 <div class="bottom-section">
-    <div class="header">Base de Datos Técnica (Corte Crítico: 0.5 dB | 0.00: Pelo Cortado)</div>
+    <div class="header">Base de Datos Técnica Activa</div>
     <div class="table-scroll">
         <table id="mainTable">
             <thead id="headRow"></thead>
@@ -116,7 +120,7 @@
 
 <script>
     const KML_URL = "https://coriajavieragustin-cpu.github.io/gestion-preventivos/mapas/Infraestructura.kml";
-    const API_BASE = "https://script.google.com/macros/s/AKfycbxcxP8Nvkd7uYZyyHYxOyx9zQjRr153xAmgMngp3rwQk-pJiRzU-2blQnhfLIo3K71PNw/exec";
+    const API_BASE = "https://script.google.com/macros/s/AKfycby3S3npwNYt4NA8oEk-vHB4jvJuKQkrmgzSL3tq24nhii8YYsGfKEko_HBSiMSscicxzw/exec";
 
     const COLORS = {
         "azul": "#0055ff", "naranja": "#ff8800", "verde": "#00cc00", "marron": "#8b4513",
@@ -127,25 +131,48 @@
     let fullData = [], currentHeaders = [], attenuationCols = [], selectedIndices = [0], map = null, otdrChart = null;
     let measurePoints = [], measureMarkers = [], measureLine = null, kmlLayer = null;
 
-    // --- FUNCIONES OTDR (NUEVAS) ---
-    async function autoLoadOTDR(url) {
+   async function autoLoadOTDR(url) {
         if (!url || !url.includes("http")) return;
         document.getElementById('loadingOTDR').style.display = 'flex';
         try {
-            let fileId = url.match(/[-\w]{25,}/);
-            let downloadUrl = `https://docs.google.com/uc?export=download&id=${fileId}`;
-            const res = await fetch(downloadUrl);
-            const buffer = await res.arrayBuffer();
-            processSor(buffer);
-        } catch (e) { console.error("Error OTDR Drive:", e); }
-        finally { document.getElementById('loadingOTDR').style.display = 'none'; }
+            let fileIdMatch = url.match(/[-\w]{25,}/);
+            if (!fileIdMatch) throw new Error("ID de archivo no válido");
+            let fileId = fileIdMatch[0];
+            
+            // Usamos tu API_BASE como puente seguro para saltar el bloqueo de CORS de Google Drive
+            const proxyUrl = `${API_BASE}?action=getOtdrFile&fileId=${fileId}`;
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error("Error en la respuesta del proxy Apps Script");
+            
+            const json = await res.json();
+            if (!json.success) throw new Error(json.error || "Error al obtener archivo binario");
+            
+            // Convertimos la cadena Base64 que nos devuelve el servidor a un ArrayBuffer
+            const binaryString = atob(json.base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            // Enviamos el buffer limpio a tu lógica original de procesamiento (.SOR)
+            processSor(bytes.buffer);
+        } catch (e) { 
+            console.error("Error en la carga automática del OTDR:", e);
+        } finally { 
+            document.getElementById('loadingOTDR').style.display = 'none'; 
+        }
     }
 
     function cargarArchivoManual(input) {
         const file = input.files[0];
         if (!file) return;
+        document.getElementById('loadingOTDR').style.display = 'flex';
         const reader = new FileReader();
-        reader.onload = (e) => processSor(e.target.result);
+        reader.onload = (e) => {
+            processSor(e.target.result);
+            document.getElementById('loadingOTDR').style.display = 'none';
+        };
         reader.readAsArrayBuffer(file);
     }
 
@@ -180,41 +207,38 @@
         if (otdrChart) otdrChart.destroy();
         otdrChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: lbls, datasets: [{ data: pts, borderColor: '#00ffff', borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0.1 }] },
+            data: { labels: lbls, datasets: [{ data: pts, borderColor: '#00ffff', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.05 }] },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: { 
-                    y: { reverse: true, grid: { color: '#1a1a1a' }, ticks: { color: '#555', font: { size: 9 } } },
-                    x: { ticks: { color: '#555', maxTicksLimit: 8, font: { size: 9 } }, grid: { display: false } }
+                    y: { reverse: true, grid: { color: '#14161d' }, ticks: { color: '#666', font: { size: 9 } } },
+                    x: { ticks: { color: '#666', maxTicksLimit: 10, font: { size: 9 } }, grid: { display: false } }
                 },
                 plugins: { legend: { display: false } }
             }
         });
     }
 
-    // --- LÓGICA ORIGINAL (SIN CAMBIOS) ---
     function initMap() {
         const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
         const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
 
         map = L.map('map', { center: [-27.469, -58.830], zoom: 12, layers: [dark], doubleClickZoom: false });
-
-        const baseMaps = { "Mapa Oscuro": dark, "Mapa Claro": light, "Satélite": satellite };
-        L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+        L.control.layers({ "Mapa Oscuro": dark, "Mapa Claro": light, "Satélite": satellite }, null, { position: 'topright' }).addTo(map);
 
         map.on('click', function(e) {
             const point = e.latlng;
             measurePoints.push(point);
-            const marker = L.circleMarker(point, { radius: 3, color: '#ff1744' }).addTo(map);
+            const marker = L.circleMarker(point, { radius: 4, color: '#ff1744', fillColor: '#fff', fillOpacity: 1 }).addTo(map);
             measureMarkers.push(marker);
 
             if (measurePoints.length > 1) {
                 if (measureLine) map.removeLayer(measureLine);
-                measureLine = L.polyline(measurePoints, {color: '#ff1744', weight: 3, dashArray: '5, 10'}).addTo(map);
+                measureLine = L.polyline(measurePoints, {color: '#ff1744', weight: 3, dashArray: '5, 8'}).addTo(map);
                 let totalDist = 0;
                 for (let i = 0; i < measurePoints.length - 1; i++) totalDist += measurePoints[i].distanceTo(measurePoints[i+1]);
-                L.popup().setLatLng(point).setContent(`<b>Distancia Total:</b> ${totalDist.toFixed(1)} m`).openOn(map);
+                L.popup().setLatLng(point).setContent(`<b>Distancia de Traza:</b> ${totalDist.toFixed(1)} m`).openOn(map);
             }
         });
 
@@ -230,7 +254,9 @@
             }
         });
 
-        omnivore.kml(KML_URL, null, kmlLayer).on('ready', () => map.fitBounds(kmlLayer.getBounds())).addTo(map);
+        omnivore.kml(KML_URL, null, kmlLayer).on('ready', () => {
+            if(kmlLayer.getBounds().isValid()) map.fitBounds(kmlLayer.getBounds());
+        }).addTo(map);
     }
 
     function resetMeasurement() {
@@ -246,7 +272,7 @@
             const sheets = await res.json();
             document.getElementById('sheetPicker').innerHTML = sheets.map(s => `<option value="${s}">${s}</option>`).join('');
             loadSheet(sheets[0]);
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Error al iniciar App:", e); }
     }
 
     async function loadSheet(name) {
@@ -258,7 +284,7 @@
             attenuationCols = currentHeaders.filter(h => h.includes('(') || h.startsWith('FA'));
             buildTableHead();
             render();
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Error al cargar datos de hoja:", e); }
     }
 
     function buildTableHead() {
@@ -279,7 +305,8 @@
             const pKey = (d.PELO || "").toString().toLowerCase().trim();
             let row = document.createElement('tr');
             if(isS) row.className = 'row-selected';
-            let cells = `<td><input type="checkbox" ${isS?'checked':''}></td>`;
+            
+            let cells = `<td><input type="checkbox" ${isS?'checked':''} onclick="event.stopPropagation(); toggle(${i});"></td>`;
             currentHeaders.forEach(h => {
                 let val = d[h];
                 let style = ""; let cls = "";
@@ -290,22 +317,28 @@
                     let num = parseFloat(val);
                     if (val !== "" && val !== null && num === 0) {
                         cls = "cut-fiber"; val = "0.00";
-                    } 
-                    else if(num > 0.5) {
+                    } else if(num > 0.5) {
                         cls = "crit"; val = num.toFixed(2);
-                    } 
-                    else {
+                    } else {
                         val = (isNaN(num) || val === "" || val === null) ? "-" : num.toFixed(2);
                     }
                 }
                 cells += `<td style="${style}" class="${cls}">${val}</td>`;
             });
             row.innerHTML = cells;
-            // Se integra la carga OTDR en el click de fila sin alterar el toggle
-            row.onclick = (e) => { 
-                if(e.target.type !== 'checkbox') {
-                    toggle(i); 
-                    if(d["IMAGEN"]) autoLoadOTDR(d["IMAGEN"]);
+
+            row.onclick = () => { 
+                toggle(i); 
+                
+                // Inspección dinámica buscando la columna con la traza binaria del reflectómetro
+                for (let header of currentHeaders) {
+                    if (header.toUpperCase().includes("OTDR") || header.toUpperCase() === "IMAGEN") {
+                        let linkOTDR = d[header];
+                        if (linkOTDR && linkOTDR.toString().includes("http")) {
+                            autoLoadOTDR(linkOTDR);
+                            break; 
+                        }
+                    }
                 }
             };
             gb.appendChild(row);
@@ -314,7 +347,7 @@
     }
 
     function toggle(idx) {
-        selectedIndices = selectedIndices.includes(idx) ? selectedIndices.filter(i => i !== idx) : [...selectedIndices, idx];
+        selectedIndices = selectedIndices.includes(idx) ? selectedIndices.filter(i => i !== idx) : [idx]; // Single selection para mejor visualización de trazas
         render();
     }
 
@@ -329,7 +362,7 @@
             });
         }
         if (selectedIndices.length === 0) {
-            infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una fila.</div>';
+            infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una fibra para auditar.</div>';
             return;
         }
 
@@ -358,10 +391,10 @@
                     <div class="fiber-visual" style="border-color: ${bufferColor}">
                         <div class="fiber-core" style="background-color: ${peloColor}; color: ${peloColor}"></div>
                     </div>
-                    <h4>PELO ${fullData[idx].PELO}</h4>
-                    <div style="font-size: 10px;">
+                    <h4>PELO ${fullData[idx].PELO} (Tubo ${fullData[idx].BUFFER || 'N/A'})</h4>
+                    <div style="font-size: 11px; line-height: 1.6;">
                         ${currentHeaders.filter(h => !attenuationCols.includes(h) && fullData[idx][h]).map(h => `
-                            <div><b>${h}:</b> ${fullData[idx][h]}</div>
+                            <div><b style="color:#888;">${h}:</b> ${fullData[idx][h]}</div>
                         `).join('')}
                     </div>
                 </div>
