@@ -60,6 +60,10 @@
 
         #loadingOTDR { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 20; color: var(--cyan); font-size: 10px; }
         .btn-manual { background: #222; color: var(--cyan); border: 1px solid var(--border); font-size: 9px; cursor: pointer; padding: 2px 6px; border-radius: 3px; }
+        
+        /* Botón de Google Sheets personalizado */
+        .btn-sheet { background: #107c41; color: #ffffff; border: 1px solid #0d6836; font-size: 10px; font-weight: bold; cursor: pointer; padding: 4px 8px; border-radius: 3px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; margin-left: 10px; transition: background 0.2s; }
+        .btn-sheet:hover { background: #0b592e; }
     </style>
 </head>
 <body>
@@ -70,6 +74,11 @@
         <option>Cargando hojas...</option>
     </select>
     <span style="font-size: 10px; color: #666; margin-left: auto;">Traza y Cajas Activas | Rojo: Crítico | Bordó: Corte (0)</span>
+    
+    <!-- Botón directo hacia el Google Sheet -->
+    <a href="https://docs.google.com/spreadsheets/d/1DJoUIQBUofmiTiAb_nxBScd3wpuOL1AIeIXYum4HLIk/edit?usp=drive_link" target="_blank" class="btn-sheet">
+        📊 VER SPREADSHEET
+    </a>
 </div>
 
 <div class="top-layout">
