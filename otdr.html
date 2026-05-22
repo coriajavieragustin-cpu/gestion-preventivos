@@ -339,14 +339,23 @@
                 let val = d[h]; let style = ""; let cls = "";
                 if(h === "BUFFER") style = `background:${COLORS[(d.BUFFER||"").toLowerCase().trim()] || "#222"}; color:#fff; font-weight:bold`;
                 if(h === "PELO") { const cP = COLORS[pKey] || "#222"; style = `background:${cP}; color:${(pKey === "blanco" || pKey === "amarillo") ? "#000" : "#fff"}; font-weight:bold`; }
+                
                 if(attenuationCols.includes(h)) {
                     let num = parseFloat(val);
-                    if (val !== "" && val !== null && num === 0) { cls = "cut-fiber"; val = "0.00"; } 
-                    else if(num > 0.5) { cls = "crit"; val = num.toFixed(2); } 
-                    else { val = (isNaN(num) || val === "" || val === null) ? "-" : num.toFixed(2); }
+                    if (val !== "" && val !== null && num === 0) { 
+                        cls = "cut-fiber"; val = "FIN"; 
+                    } else if(num > 0.5) { 
+                        cls = "crit"; val = num.toFixed(2); 
+                    } else { 
+                        val = (isNaN(num) || val === "" || val === null) ? "-" : num.toFixed(2); 
+                    }
                 }
-                if ((h.toUpperCase().includes("OTDR") || h.toUpperCase() === "IMAGEN") && val && val.toString().includes("http")) { cells += `<td><a href="${val}" target="_blank" class="btn-dl-otdr" onclick="event.stopPropagation();">📥 .SOR</a></td>`; } 
-                else { cells += `<td style="${style}" class="${cls}">${val}</td>`; }
+                
+                if ((h.toUpperCase().includes("OTDR") || h.toUpperCase() === "IMAGEN") && val && val.toString().includes("http")) { 
+                    cells += `<td><a href="${val}" target="_blank" class="btn-dl-otdr" onclick="event.stopPropagation();">📥 .SOR</a></td>`; 
+                } else { 
+                    cells += `<td style="${style}" class="${cls}">${val}</td>`; 
+                }
             });
             row.innerHTML = cells;
             row.onclick = () => { handleRowSelection(i); };
