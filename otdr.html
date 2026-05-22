@@ -206,27 +206,18 @@
             let fileIdMatch = url.match(/[-\w]{25,}/);
             if (!fileIdMatch) throw new Error("ID de archivo no válido");
             let fileId = fileIdMatch[0];
-            
             const proxyUrl = `${API_BASE}?action=getOtdrFile&fileId=${fileId}`;
             const res = await fetch(proxyUrl);
             if (!res.ok) throw new Error("Error en la respuesta del proxy Apps Script");
-            
             const json = await res.json();
             if (!json.success) throw new Error(json.error || "Error al obtener archivo binario");
-            
             const binaryString = atob(json.base64);
             const len = binaryString.length;
             const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            
+            for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
             processSor(bytes.buffer, rowIndex, labelName);
-        } catch (e) { 
-            console.error("Error en la carga automática del OTDR:", e);
-        } finally { 
-            document.getElementById('loadingOTDR').style.display = 'none'; 
-        }
+        } catch (e) { console.error("Error en la carga automática del OTDR:", e); } 
+        finally { document.getElementById('loadingOTDR').style.display = 'none'; }
     }
 
     function cargarArchivoManual(input) {
@@ -234,10 +225,7 @@
         if (!file) return;
         document.getElementById('loadingOTDR').style.display = 'flex';
         const reader = new FileReader();
-        reader.onload = (e) => {
-            processSor(e.target.result, "manual_" + Date.now(), file.name);
-            document.getElementById('loadingOTDR').style.display = 'none';
-        };
+        reader.onload = (e) => { processSor(e.target.result, "manual_" + Date.now(), file.name); document.getElementById('loadingOTDR').style.display = 'none'; };
         reader.readAsArrayBuffer(file);
     }
 
@@ -247,25 +235,18 @@
         const dataKey = "DataPts";
         const dataPos = content.indexOf(dataKey);
         if (dataPos === -1) return;
-
         const sampDist = 1.02; 
         const numPoints = view.getUint32(dataPos + dataKey.length, true);
         const startOffset = dataPos + dataKey.length + 4;
         const pts = []; const lbls = [];
         const maxLimit = Math.min(numPoints, 12000);
-
         for (let i = 120; i < maxLimit; i++) {
             const bytePos = startOffset + (i * 2);
             if (bytePos + 2 <= buffer.byteLength) {
                 let db = view.getUint16(bytePos, true) / 1000;
-                
-                if (db > 0.5 && db < 55) {
-                    pts.push(db);
-                    lbls.push(((i * sampDist) / 1000).toFixed(3));
-                }
+                if (db > 0.5 && db < 55) { pts.push(db); lbls.push(((i * sampDist) / 1000).toFixed(3)); }
             }
         }
-        
         loadedTraces[rowIndex] = { pts: pts, lbls: lbls, label: labelName };
         renderMultiOTDR();
     }
@@ -274,94 +255,37 @@
         const ctx = document.getElementById('otdrCanvas').getContext('2d');
         if (otdrChart) otdrChart.destroy();
         document.getElementById('resetZoomBtn').style.display = 'none';
-
         let longestLabels = [];
-        selectedIndices.forEach(idx => {
-            if (loadedTraces[idx] && loadedTraces[idx].lbls.length > longestLabels.length) {
-                longestLabels = loadedTraces[idx].lbls;
-            }
-        });
-
-        let datasets = [];
-        let colorIdx = 0;
-
+        selectedIndices.forEach(idx => { if (loadedTraces[idx] && loadedTraces[idx].lbls.length > longestLabels.length) longestLabels = loadedTraces[idx].lbls; });
+        let datasets = []; let colorIdx = 0;
         selectedIndices.forEach(idx => {
             if (loadedTraces[idx]) {
                 let color = CHART_LINE_COLORS[colorIdx % CHART_LINE_COLORS.length];
-                datasets.push({
-                    label: loadedTraces[idx].label,
-                    data: loadedTraces[idx].pts,
-                    borderColor: color,
-                    borderWidth: 1.5,
-                    pointRadius: 0,
-                    fill: false,
-                    tension: 0.05
-                });
+                datasets.push({ label: loadedTraces[idx].label, data: loadedTraces[idx].pts, borderColor: color, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.05 });
                 colorIdx++;
             }
         });
-
         if (datasets.length === 0) return;
-
         otdrChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: longestLabels, datasets: datasets },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    y: { reverse: true, grid: { color: '#14161d' }, ticks: { color: '#666', font: { size: 9 } } },
-                    x: { ticks: { color: '#666', maxTicksLimit: 10, font: { size: 9 } }, grid: { display: false } }
-                },
-                plugins: { 
-                    legend: { 
-                        display: true, 
-                        labels: { color: '#d1d1d1', font: { size: 9 }, boxWidth: 12 } 
-                    },
-                    zoom: {
-                        zoom: {
-                            wheel: { enabled: true, speed: 0.08 },
-                            pinch: { enabled: true },
-                            mode: 'xy',
-                            onZoomComplete: function() {
-                                document.getElementById('resetZoomBtn').style.display = 'inline-block';
-                            }
-                        },
-                        pan: {
-                            enabled: true,
-                            mode: 'xy',
-                            threshold: 10,
-                            modifierKey: null, // Permite arrastrar libremente con clic izquierdo sin requerir Ctrl/Shift
-                            onPanComplete: function() {
-                                document.getElementById('resetZoomBtn').style.display = 'inline-block';
-                            }
-                        }
-                    }
-                }
+            type: 'line', data: { labels: longestLabels, datasets: datasets },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { reverse: true, grid: { color: '#14161d' }, ticks: { color: '#666', font: { size: 9 } } }, x: { ticks: { color: '#666', maxTicksLimit: 10, font: { size: 9 } }, grid: { display: false } } },
+                plugins: { legend: { display: true, labels: { color: '#d1d1d1', font: { size: 9 }, boxWidth: 12 } }, zoom: { zoom: { wheel: { enabled: true, speed: 0.08 }, pinch: { enabled: true }, mode: 'xy', onZoomComplete: function() { document.getElementById('resetZoomBtn').style.display = 'inline-block'; } }, pan: { enabled: true, mode: 'xy', threshold: 10, onPanComplete: function() { document.getElementById('resetZoomBtn').style.display = 'inline-block'; } } } }
             }
         });
     }
 
-    function resetOtdrZoom() {
-        if (otdrChart) {
-            otdrChart.resetZoom();
-            document.getElementById('resetZoomBtn').style.display = 'none';
-        }
-    }
+    function resetOtdrZoom() { if (otdrChart) { otdrChart.resetZoom(); document.getElementById('resetZoomBtn').style.display = 'none'; } }
 
     function initMap() {
         const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
-        const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
-
         map = L.map('map', { center: [-27.469, -58.830], zoom: 12, layers: [satellite], doubleClickZoom: false });
-        L.control.layers({ "Satélite": satellite, "Mapa Oscuro": dark, "Mapa Claro": light }, null, { position: 'topright' }).addTo(map);
-
+        L.control.layers({ "Satélite": satellite, "Mapa Oscuro": dark }, null, { position: 'topright' }).addTo(map);
         map.on('click', function(e) {
             const point = e.latlng;
             measurePoints.push(point);
             const marker = L.circleMarker(point, { radius: 4, color: '#ff1744', fillColor: '#fff', fillOpacity: 1 }).addTo(map);
             measureMarkers.push(marker);
-
             if (measurePoints.length > 1) {
                 if (measureLine) map.removeLayer(measureLine);
                 measureLine = L.polyline(measurePoints, {color: '#ff1744', weight: 3, dashArray: '5, 8'}).addTo(map);
@@ -370,29 +294,11 @@
                 L.popup().setLatLng(point).setContent(`<b>Distancia de Traza:</b> ${totalDist.toFixed(1)} m`).openOn(map);
             }
         });
-
-        kmlLayer = L.geoJson(null, {
-            style: () => ({ color: '#00ffff', weight: 4, opacity: 0.6 }),
-            pointToLayer: (feature, latlng) => L.circleMarker(latlng, { radius: 7, fillColor: "#00ff41", color: "#000", weight: 1, fillOpacity: 0.9 }),
-            onEachFeature: (feature, layer) => {
-                if (feature.properties) {
-                    const nombre = feature.properties.name || "";
-                    const desc = (feature.properties.description || "").replace(/<[^>]*>/g, '');
-                    layer.bindTooltip(`<b>${nombre}</b>${desc ? '<br>'+desc : ''}`, { direction: 'top', className: 'map-label', offset: [0, -5] });
-                }
-            }
-        });
-
-        omnivore.kml(KML_URL, null, kmlLayer).on('ready', () => {
-            if(kmlLayer.getBounds().isValid()) map.fitBounds(kmlLayer.getBounds());
-        }).addTo(map);
+        kmlLayer = L.geoJson(null, { style: () => ({ color: '#00ffff', weight: 4, opacity: 0.6 }), pointToLayer: (feature, latlng) => L.circleMarker(latlng, { radius: 7, fillColor: "#00ff41", color: "#000", weight: 1, fillOpacity: 0.9 }), onEachFeature: (feature, layer) => { if (feature.properties) { const nombre = feature.properties.name || ""; const desc = (feature.properties.description || "").replace(/<[^>]*>/g, ''); layer.bindTooltip(`<b>${nombre}</b>${desc ? '<br>'+desc : ''}`, { direction: 'top', className: 'map-label', offset: [0, -5] }); } } });
+        omnivore.kml(KML_URL, null, kmlLayer).on('ready', () => { if(kmlLayer.getBounds().isValid()) map.fitBounds(kmlLayer.getBounds()); }).addTo(map);
     }
 
-    function resetMeasurement() {
-        if (measureLine) map.removeLayer(measureLine);
-        measureMarkers.forEach(m => map.removeLayer(m));
-        measurePoints = []; measureMarkers = []; map.closePopup();
-    }
+    function resetMeasurement() { if (measureLine) map.removeLayer(measureLine); measureMarkers.forEach(m => map.removeLayer(m)); measurePoints = []; measureMarkers = []; map.closePopup(); }
 
     async function init() {
         initMap();
@@ -408,108 +314,62 @@
         try {
             const res = await fetch(`${API_BASE}?sheet=${encodeURIComponent(name)}`);
             const json = await res.json();
-            fullData = json.data;
-            currentHeaders = json.headers;
+            fullData = json.data; currentHeaders = json.headers;
             attenuationCols = currentHeaders.filter(h => h.includes('(') || h.startsWith('FA'));
-            buildTableHead();
-            
-            selectedIndices = [0];
-            loadedTraces = {};
-            
-            render();
-            triggerOtdrLoad(0);
+            buildTableHead(); selectedIndices = [0]; loadedTraces = {}; render(); triggerOtdrLoad(0);
         } catch(e) { console.error("Error al cargar datos de hoja:", e); }
     }
 
     function buildTableHead() {
         const hr = document.getElementById('headRow');
         let html = `<th style="width: 30px;">✔</th>`;
-        currentHeaders.forEach(h => {
-            const dist = h.match(/\(([^)]+)\)/);
-            html += `<th>${h.replace(/\s*\(.*\)/, "")}${dist ? `<br><small style="color:var(--accent)">${dist[1]}m</small>` : ''}</th>`;
-        });
+        currentHeaders.forEach(h => { const dist = h.match(/\(([^)]+)\)/); html += `<th>${h.replace(/\s*\(.*\)/, "")}${dist ? `<br><small style="color:var(--accent)">${dist[1]}m</small>` : ''}</th>`; });
         hr.innerHTML = html;
     }
 
     function render() {
-        const gb = document.getElementById('gridBody');
-        gb.innerHTML = '';
+        const gb = document.getElementById('gridBody'); gb.innerHTML = '';
         fullData.forEach((d, i) => {
             const isS = selectedIndices.includes(i);
             const pKey = (d.PELO || "").toString().toLowerCase().trim();
             let row = document.createElement('tr');
             if(isS) row.className = 'row-selected';
-            
-            let cells = `<td>
-                <div class="custom-checkbox ${isS ? 'checked' : ''}" onclick="event.stopPropagation(); handleRowSelection(${i});">
-                    <svg viewBox="0 0 24 24">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                </div>
-            </td>`;
-
+            let cells = `<td><div class="custom-checkbox ${isS ? 'checked' : ''}" onclick="event.stopPropagation(); handleRowSelection(${i});"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div></td>`;
             currentHeaders.forEach(h => {
-                let val = d[h];
-                let style = ""; let cls = "";
+                let val = d[h]; let style = ""; let cls = "";
                 if(h === "BUFFER") style = `background:${COLORS[(d.BUFFER||"").toLowerCase().trim()] || "#222"}; color:#fff; font-weight:bold`;
-                if(h === "PELO") style = `color:${COLORS[pKey] || "#555"}; font-weight:bold`;
-                
+                if(h === "PELO") { const cP = COLORS[pKey] || "#222"; style = `background:${cP}; color:${(pKey === "blanco" || pKey === "amarillo") ? "#000" : "#fff"}; font-weight:bold`; }
                 if(attenuationCols.includes(h)) {
                     let num = parseFloat(val);
-                    if (val !== "" && val !== null && num === 0) {
-                        cls = "cut-fiber"; val = "0.00";
-                    } else if(num > 0.5) {
-                        cls = "crit"; val = num.toFixed(2);
-                    } else {
-                        val = (isNaN(num) || val === "" || val === null) ? "-" : num.toFixed(2);
-                    }
+                    if (val !== "" && val !== null && num === 0) { cls = "cut-fiber"; val = "0.00"; } 
+                    else if(num > 0.5) { cls = "crit"; val = num.toFixed(2); } 
+                    else { val = (isNaN(num) || val === "" || val === null) ? "-" : num.toFixed(2); }
                 }
-
-                if ((h.toUpperCase().includes("OTDR") || h.toUpperCase() === "IMAGEN") && val && val.toString().includes("http")) {
-                    cells += `<td>
-                        <a href="${val}" target="_blank" class="btn-dl-otdr" onclick="event.stopPropagation();">
-                            📥 .SOR
-                        </a>
-                    </td>`;
-                } else {
-                    cells += `<td style="${style}" class="${cls}">${val}</td>`;
-                }
+                if ((h.toUpperCase().includes("OTDR") || h.toUpperCase() === "IMAGEN") && val && val.toString().includes("http")) { cells += `<td><a href="${val}" target="_blank" class="btn-dl-otdr" onclick="event.stopPropagation();">📥 .SOR</a></td>`; } 
+                else { cells += `<td style="${style}" class="${cls}">${val}</td>`; }
             });
             row.innerHTML = cells;
-
-            row.onclick = () => { 
-                handleRowSelection(i);
-            };
+            row.onclick = () => { handleRowSelection(i); };
             gb.appendChild(row);
         });
         updateDashboard();
     }
 
     function handleRowSelection(idx) {
-        if (selectedIndices.includes(idx)) {
-            selectedIndices = selectedIndices.filter(i => i !== idx);
-        } else {
-            selectedIndices.push(idx);
-        }
+        if (selectedIndices.includes(idx)) selectedIndices = selectedIndices.filter(i => i !== idx);
+        else selectedIndices.push(idx);
         render();
-        
-        if (selectedIndices.includes(idx) && !loadedTraces[idx]) {
-            triggerOtdrLoad(idx);
-        } else {
-            renderMultiOTDR();
-        }
+        if (selectedIndices.includes(idx) && !loadedTraces[idx]) triggerOtdrLoad(idx);
+        else renderMultiOTDR();
     }
 
     function triggerOtdrLoad(idx) {
-        let d = fullData[idx];
-        if (!d) return;
+        let d = fullData[idx]; if (!d) return;
         for (let header of currentHeaders) {
             if (header.toUpperCase().includes("OTDR") || header.toUpperCase() === "IMAGEN") {
                 let linkOTDR = d[header];
                 if (linkOTDR && linkOTDR.toString().includes("http")) {
-                    let labelName = `Pelo ${d.PELO} (${d.BUFFER || 'Tubo'})`;
-                    autoLoadOTDR(linkOTDR, idx, labelName);
-                    break; 
+                    autoLoadOTDR(linkOTDR, idx, `Pelo ${d.PELO} (${d.BUFFER || 'Tubo'})`); break; 
                 }
             }
         }
@@ -517,20 +377,8 @@
 
     function updateDashboard() {
         const infoPanel = document.getElementById('infoPanel');
-        if (kmlLayer) {
-            kmlLayer.eachLayer(l => { 
-                if(l.setStyle) {
-                    if (l instanceof L.CircleMarker) l.setStyle({ fillColor: "#00ff41", color: "#000", weight: 1 });
-                    else l.setStyle({ color: '#00ffff', weight: 4, opacity: 0.6 });
-                }
-            });
-        }
-        if (selectedIndices.length === 0) {
-            infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una o más fibras para auditar.</div>';
-            if (otdrChart) { otdrChart.destroy(); otdrChart = null; }
-            return;
-        }
-
+        if (kmlLayer) { kmlLayer.eachLayer(l => { if(l.setStyle) { if (l instanceof L.CircleMarker) l.setStyle({ fillColor: "#00ff41", color: "#000", weight: 1 }); else l.setStyle({ color: '#00ffff', weight: 4, opacity: 0.6 }); } }); }
+        if (selectedIndices.length === 0) { infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una o más fibras para auditar.</div>'; if (otdrChart) { otdrChart.destroy(); otdrChart = null; } return; }
         selectedIndices.forEach(idx => {
             attenuationCols.forEach(col => {
                 let num = parseFloat(fullData[idx][col]);
@@ -538,32 +386,15 @@
                     const idBuscado = col.replace(/\s*\(.*\)/, "").trim().toUpperCase();
                     kmlLayer.eachLayer(l => {
                         const nombreYDesc = ( (l.feature.properties.name || "") + " " + (l.feature.properties.description || "") ).toUpperCase();
-                        if (nombreYDesc.includes(idBuscado)) { 
-                            l.setStyle({ fillColor: "#ff1744", color: "#fff", weight: 3 }); 
-                            l.openTooltip(); 
-                        }
+                        if (nombreYDesc.includes(idBuscado)) { l.setStyle({ fillColor: "#ff1744", color: "#fff", weight: 3 }); l.openTooltip(); }
                     });
                 }
             });
         });
-
         infoPanel.innerHTML = selectedIndices.map(idx => {
-            const bufferColor = COLORS[(fullData[idx].BUFFER || "").toLowerCase().trim()] || "#333";
-            const peloColor = COLORS[(fullData[idx].PELO || "").toLowerCase().trim()] || "#555";
-            
-            return `
-                <div class="info-card">
-                    <div class="fiber-visual" style="border-color: ${bufferColor}">
-                        <div class="fiber-core" style="background-color: ${peloColor}; color: ${peloColor}"></div>
-                    </div>
-                    <h4>PELO ${fullData[idx].PELO} (Tubo ${fullData[idx].BUFFER || 'N/A'})</h4>
-                    <div style="font-size: 11px; line-height: 1.6;">
-                        ${currentHeaders.filter(h => !attenuationCols.includes(h) && fullData[idx][h]).map(h => `
-                            <div><b style="color:#888;">${h}:</b> ${fullData[idx][h]}</div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+            const bC = COLORS[(fullData[idx].BUFFER || "").toLowerCase().trim()] || "#333";
+            const pC = COLORS[(fullData[idx].PELO || "").toLowerCase().trim()] || "#555";
+            return `<div class="info-card"><div class="fiber-visual" style="border-color: ${bC}"><div class="fiber-core" style="background-color: ${pC}; color: ${pC}"></div></div><h4>PELO ${fullData[idx].PELO} (Tubo ${fullData[idx].BUFFER || 'N/A'})</h4><div style="font-size: 11px; line-height: 1.6;">${currentHeaders.filter(h => !attenuationCols.includes(h) && fullData[idx][h]).map(h => `<div><b style="color:#888;">${h}:</b> ${fullData[idx][h]}</div>`).join('')}</div></div>`;
         }).join('');
     }
     window.onload = init;
