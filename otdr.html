@@ -23,8 +23,8 @@
         .top-bar { display: flex; gap: 10px; align-items: center; background: var(--win); padding: 8px; border: 1px solid var(--border); margin-bottom: 6px; border-radius: 4px; flex-shrink: 0; }
         select { background: #1c202b; color: var(--accent); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; outline: none; }
 
-        /* Ajuste de altura para dar más espacio a la tabla de abajo */
-        .top-layout { display: grid; grid-template-columns: 1fr 320px 420px; height: 50vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
+        /* MODIFICADO: Se redujo la proporción del mapa (0.8fr) y se amplió el gráfico OTDR (1.2fr) */
+        .top-layout { display: grid; grid-template-columns: 0.8fr 340px 1.2fr; height: 50vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
         .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; position: relative; }
         .header { background: #1c202b; padding: 8px 12px; font-size: 11px; color: #8e96a3; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
         
@@ -318,8 +318,10 @@
         const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
 
-        // Modificado: Ahora se inicializa con la capa 'satellite' en lugar de 'dark'
+        // MODIFICADO: Se configuró 'satellite' como primera capa del mapa
         map = L.map('map', { center: [-27.469, -58.830], zoom: 12, layers: [satellite], doubleClickZoom: false });
+        
+        // MODIFICADO: Se ordenó el menú del selector para que "Satélite" figure arriba del todo
         L.control.layers({ "Satélite": satellite, "Mapa Oscuro": dark, "Mapa Claro": light }, null, { position: 'topright' }).addTo(map);
 
         map.on('click', function(e) {
