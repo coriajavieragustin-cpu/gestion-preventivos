@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-omnivore/0.3.4/leaflet-omnivore.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
     
     <style>
@@ -272,7 +273,7 @@
     function renderMultiOTDR() {
         const ctx = document.getElementById('otdrCanvas').getContext('2d');
         if (otdrChart) otdrChart.destroy();
-        document.getElementById('resetZoomBtn').style.display = 'none'; // Ocultar reset al renderizar uno nuevo
+        document.getElementById('resetZoomBtn').style.display = 'none';
 
         let longestLabels = [];
         selectedIndices.forEach(idx => {
@@ -316,7 +317,6 @@
                         display: true, 
                         labels: { color: '#d1d1d1', font: { size: 9 }, boxWidth: 12 } 
                     },
-                    // MODIFICADO: Bloque de configuración para Zoom & Pan en ambos ejes
                     zoom: {
                         zoom: {
                             wheel: { enabled: true, speed: 0.08 },
@@ -330,6 +330,7 @@
                             enabled: true,
                             mode: 'xy',
                             threshold: 10,
+                            modifierKey: null, // Permite arrastrar libremente con clic izquierdo sin requerir Ctrl/Shift
                             onPanComplete: function() {
                                 document.getElementById('resetZoomBtn').style.display = 'inline-block';
                             }
@@ -340,7 +341,6 @@
         });
     }
 
-    // Agregado: Función para resetear el zoom de la gráfica de reflectometría
     function resetOtdrZoom() {
         if (otdrChart) {
             otdrChart.resetZoom();
