@@ -247,11 +247,14 @@
         const pts = []; const lbls = [];
         const maxLimit = Math.min(numPoints, 12000);
 
-        for (let i = 25; i < maxLimit; i++) {
+        // Se aumentó el índice inicial de 25 a 120 para saltar la zona muerta/pico vertical del inicio
+        for (let i = 120; i < maxLimit; i++) {
             const bytePos = startOffset + (i * 2);
             if (bytePos + 2 <= buffer.byteLength) {
                 let db = view.getUint16(bytePos, true) / 1000;
-                if (db < 65) {
+                
+                // Filtra valores que se vayan a cero de golpe o picos de ruido de fondo al final de la fibra
+                if (db > 0.5 && db < 55) {
                     pts.push(db);
                     lbls.push(((i * sampDist) / 1000).toFixed(3));
                 }
