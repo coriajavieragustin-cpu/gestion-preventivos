@@ -54,13 +54,70 @@
         .bottom-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 4px; }
         .table-scroll { overflow: auto; flex-grow: 1; background: #08090c; }
 
+        .table-scroll::-webkit-scrollbar, .info-content::-webkit-scrollbar { width: 8px; height: 8px; }
+        .table-scroll::-webkit-scrollbar-track, .info-content::-webkit-scrollbar-track { background: #08090c; }
+        .table-scroll::-webkit-scrollbar-thumb, .info-content::-webkit-scrollbar-thumb { background: #22252c; border-radius: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb:hover, .info-content::-webkit-scrollbar-thumb:hover { background: #3a3f4b; }
+
         table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th { background: #15171d; color: #777; padding: 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
-        td { padding: 8px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; }
+        th { background: #15171d; color: #777; padding: 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; font-weight: 600; text-transform: uppercase; font-size: 10px; }
+        td { padding: 8px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; white-space: nowrap; }
+        tr:hover { background: rgba(255, 255, 255, 0.02); }
         
         .row-selected { background: #1c2533 !important; }
         .crit { color: #ffffff !important; font-weight: bold; background: var(--crit-color) !important; }
         .cut-fiber { color: #ff9999 !important; font-weight: bold; background: var(--cut-color) !important; }
+
+        .custom-checkbox {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            border: 1px solid #555;
+            background: #111318;
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .custom-checkbox.checked {
+            background: #232d3f;
+            border-color: var(--cyan);
+        }
+        .custom-checkbox svg {
+            width: 10px;
+            height: 10px;
+            fill: none;
+            stroke: var(--cyan);
+            stroke-width: 3;
+            display: none;
+        }
+        .custom-checkbox.checked svg {
+            display: block;
+        }
+
+        .btn-dl-otdr {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #1c1f26;
+            color: #a3aab6;
+            border: 1px solid #2d3139;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        .btn-dl-otdr:hover {
+            background: #252932;
+            color: var(--cyan);
+            border-color: var(--cyan);
+        }
 
         .map-label { background: rgba(0, 0, 0, 0.85); border: 1px solid var(--accent); color: #fff; font-weight: bold; font-size: 10px; padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
 
@@ -128,10 +185,16 @@
         "amarillo": "#ffff00", "violeta": "#9900ff", "rosa": "#ff66cc", "celeste": "#00ffff"
     };
 
+    // Paleta de colores para diferenciar las múltiples curvas en el gráfico
+    const CHART_LINE_COLORS = ["#00ffff", "#ff00ff", "#ffff00", "#00ff41", "#ff4500", "#8a2be2", "#ff1493", "#00bfff"];
+
     let fullData = [], currentHeaders = [], attenuationCols = [], selectedIndices = [0], map = null, otdrChart = null;
     let measurePoints = [], measureMarkers = [], measureLine = null, kmlLayer = null;
+    
+    // Almacén dinámico para guardar los datos cargados de cada curva activa
+    let loadedTraces = {}; 
 
-   async function autoLoadOTDR(url) {
+    async function autoLoadOTDR(url, rowIndex, labelName) {
         if (!url || !url.includes("http")) return;
         document.getElementById('loadingOTDR').style.display = 'flex';
         try {
@@ -139,7 +202,6 @@
             if (!fileIdMatch) throw new Error("ID de archivo no válido");
             let fileId = fileIdMatch[0];
             
-            // Usamos tu API_BASE como puente seguro para saltar el bloqueo de CORS de Google Drive
             const proxyUrl = `${API_BASE}?action=getOtdrFile&fileId=${fileId}`;
             const res = await fetch(proxyUrl);
             if (!res.ok) throw new Error("Error en la respuesta del proxy Apps Script");
@@ -147,7 +209,6 @@
             const json = await res.json();
             if (!json.success) throw new Error(json.error || "Error al obtener archivo binario");
             
-            // Convertimos la cadena Base64 que nos devuelve el servidor a un ArrayBuffer
             const binaryString = atob(json.base64);
             const len = binaryString.length;
             const bytes = new Uint8Array(len);
@@ -155,8 +216,7 @@
                 bytes[i] = binaryString.charCodeAt(i);
             }
             
-            // Enviamos el buffer limpio a tu lógica original de procesamiento (.SOR)
-            processSor(bytes.buffer);
+            processSor(bytes.buffer, rowIndex, labelName);
         } catch (e) { 
             console.error("Error en la carga automática del OTDR:", e);
         } finally { 
@@ -170,13 +230,13 @@
         document.getElementById('loadingOTDR').style.display = 'flex';
         const reader = new FileReader();
         reader.onload = (e) => {
-            processSor(e.target.result);
+            processSor(e.target.result, "manual_" + Date.now(), file.name);
             document.getElementById('loadingOTDR').style.display = 'none';
         };
         reader.readAsArrayBuffer(file);
     }
 
-    function processSor(buffer) {
+    function processSor(buffer, rowIndex, labelName) {
         const view = new DataView(buffer);
         const content = new TextDecoder('ascii').decode(buffer);
         const dataKey = "DataPts";
@@ -199,22 +259,61 @@
                 }
             }
         }
-        renderOTDR(pts, lbls);
+        
+        // Guardamos los puntos procesados indexados por su fila
+        loadedTraces[rowIndex] = { pts: pts, lbls: lbls, label: labelName };
+        renderMultiOTDR();
     }
 
-    function renderOTDR(pts, lbls) {
+    function renderMultiOTDR() {
         const ctx = document.getElementById('otdrCanvas').getContext('2d');
         if (otdrChart) otdrChart.destroy();
+
+        // Buscamos cuál traza activa tiene más puntos para usar sus etiquetas en el eje X
+        let longestLabels = [];
+        selectedIndices.forEach(idx => {
+            if (loadedTraces[idx] && loadedTraces[idx].lbls.length > longestLabels.length) {
+                longestLabels = loadedTraces[idx].lbls;
+            }
+        });
+
+        // Construimos la lista de datasets (una curva por cada archivo cargado/seleccionado)
+        let datasets = [];
+        let colorIdx = 0;
+
+        selectedIndices.forEach(idx => {
+            if (loadedTraces[idx]) {
+                let color = CHART_LINE_COLORS[colorIdx % CHART_LINE_COLORS.length];
+                datasets.push({
+                    label: loadedTraces[idx].label,
+                    data: loadedTraces[idx].pts,
+                    borderColor: color,
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0.05
+                });
+                colorIdx++;
+            }
+        });
+
+        if (datasets.length === 0) return;
+
         otdrChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: lbls, datasets: [{ data: pts, borderColor: '#00ffff', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.05 }] },
+            data: { labels: longestLabels, datasets: datasets },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: { 
                     y: { reverse: true, grid: { color: '#14161d' }, ticks: { color: '#666', font: { size: 9 } } },
                     x: { ticks: { color: '#666', maxTicksLimit: 10, font: { size: 9 } }, grid: { display: false } }
                 },
-                plugins: { legend: { display: false } }
+                plugins: { 
+                    legend: { 
+                        display: true, 
+                        labels: { color: '#d1d1d1', font: { size: 9 }, boxWidth: 12 } 
+                    } 
+                }
             }
         });
     }
@@ -283,13 +382,19 @@
             currentHeaders = json.headers;
             attenuationCols = currentHeaders.filter(h => h.includes('(') || h.startsWith('FA'));
             buildTableHead();
+            
+            // Al cambiar de hoja, reiniciamos selecciones y trazas cargadas
+            selectedIndices = [0];
+            loadedTraces = {};
+            
             render();
+            triggerOtdrLoad(0); // Forzar carga inicial de la primera fila
         } catch(e) { console.error("Error al cargar datos de hoja:", e); }
     }
 
     function buildTableHead() {
         const hr = document.getElementById('headRow');
-        let html = `<th>✔</th>`;
+        let html = `<th style="width: 30px;">✔</th>`;
         currentHeaders.forEach(h => {
             const dist = h.match(/\(([^)]+)\)/);
             html += `<th>${h.replace(/\s*\(.*\)/, "")}${dist ? `<br><small style="color:var(--accent)">${dist[1]}m</small>` : ''}</th>`;
@@ -306,7 +411,14 @@
             let row = document.createElement('tr');
             if(isS) row.className = 'row-selected';
             
-            let cells = `<td><input type="checkbox" ${isS?'checked':''} onclick="event.stopPropagation(); toggle(${i});"></td>`;
+            let cells = `<td>
+                <div class="custom-checkbox ${isS ? 'checked' : ''}" onclick="event.stopPropagation(); handleRowSelection(${i});">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+            </td>`;
+
             currentHeaders.forEach(h => {
                 let val = d[h];
                 let style = ""; let cls = "";
@@ -323,32 +435,57 @@
                         val = (isNaN(num) || val === "" || val === null) ? "-" : num.toFixed(2);
                     }
                 }
-                cells += `<td style="${style}" class="${cls}">${val}</td>`;
+
+                if ((h.toUpperCase().includes("OTDR") || h.toUpperCase() === "IMAGEN") && val && val.toString().includes("http")) {
+                    cells += `<td>
+                        <a href="${val}" target="_blank" class="btn-dl-otdr" onclick="event.stopPropagation();">
+                            📥 .SOR
+                        </a>
+                    </td>`;
+                } else {
+                    cells += `<td style="${style}" class="${cls}">${val}</td>`;
+                }
             });
             row.innerHTML = cells;
 
             row.onclick = () => { 
-                toggle(i); 
-                
-                // Inspección dinámica buscando la columna con la traza binaria del reflectómetro
-                for (let header of currentHeaders) {
-                    if (header.toUpperCase().includes("OTDR") || header.toUpperCase() === "IMAGEN") {
-                        let linkOTDR = d[header];
-                        if (linkOTDR && linkOTDR.toString().includes("http")) {
-                            autoLoadOTDR(linkOTDR);
-                            break; 
-                        }
-                    }
-                }
+                handleRowSelection(i);
             };
             gb.appendChild(row);
         });
         updateDashboard();
     }
 
-    function toggle(idx) {
-        selectedIndices = selectedIndices.includes(idx) ? selectedIndices.filter(i => i !== idx) : [idx]; // Single selection para mejor visualización de trazas
+    // Nueva gestión para permitir seleccionar múltiples filas a la vez
+    function handleRowSelection(idx) {
+        if (selectedIndices.includes(idx)) {
+            selectedIndices = selectedIndices.filter(i => i !== idx);
+        } else {
+            selectedIndices.push(idx);
+        }
         render();
+        
+        // Si se acaba de activar una fila y no tenemos su traza binaria en memoria, la descargamos
+        if (selectedIndices.includes(idx) && !loadedTraces[idx]) {
+            triggerOtdrLoad(idx);
+        } else {
+            renderMultiOTDR(); // Si ya existía o se desmarcó, refrescamos el gráfico directamente
+        }
+    }
+
+    function triggerOtdrLoad(idx) {
+        let d = fullData[idx];
+        if (!d) return;
+        for (let header of currentHeaders) {
+            if (header.toUpperCase().includes("OTDR") || header.toUpperCase() === "IMAGEN") {
+                let linkOTDR = d[header];
+                if (linkOTDR && linkOTDR.toString().includes("http")) {
+                    let labelName = `Pelo ${d.PELO} (${d.BUFFER || 'Tubo'})`;
+                    autoLoadOTDR(linkOTDR, idx, labelName);
+                    break; 
+                }
+            }
+        }
     }
 
     function updateDashboard() {
@@ -362,7 +499,8 @@
             });
         }
         if (selectedIndices.length === 0) {
-            infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una fibra para auditar.</div>';
+            infoPanel.innerHTML = '<div style="color:#666; font-size:11px; padding:10px;">Seleccione una o más fibras para auditar.</div>';
+            if (otdrChart) { otdrChart.destroy(); otdrChart = null; }
             return;
         }
 
