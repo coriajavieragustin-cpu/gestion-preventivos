@@ -11,30 +11,31 @@
     
     <style>
         :root { 
-            --bg: #050608; --win: #111318; --border: #2a2d35; --text: #d1d1d1; 
+            --bg: #0b0d12; --win: #141720; --border: #262b36; --text: #d1d6e0; 
             --accent: #00ff41; --cyan: #00ffff; --crit-color: #ff1744; --cut-color: #7a0000; 
         }
         body { 
-            font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--bg); 
+            font-family: 'Segoe UI', -apple-system, sans-serif; margin: 0; background-color: var(--bg); 
             height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
             padding: 6px; box-sizing: border-box; color: var(--text); 
         }
         
         .top-bar { display: flex; gap: 10px; align-items: center; background: var(--win); padding: 8px; border: 1px solid var(--border); margin-bottom: 6px; border-radius: 4px; flex-shrink: 0; }
-        select { background: #1a1c22; color: var(--accent); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; outline: none; }
+        select { background: #1c202b; color: var(--accent); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; outline: none; }
 
-        .top-layout { display: grid; grid-template-columns: 1fr 320px 420px; height: 55vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
+        /* Ajuste de altura para dar más espacio a la tabla de abajo */
+        .top-layout { display: grid; grid-template-columns: 1fr 320px 420px; height: 50vh; gap: 6px; margin-bottom: 6px; flex-shrink: 0; }
         .window { background: var(--win); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; position: relative; }
-        .header { background: #1a1c22; padding: 6px 12px; font-size: 10px; color: #888; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .header { background: #1c202b; padding: 8px 12px; font-size: 11px; color: #8e96a3; border-bottom: 1px solid var(--border); text-transform: uppercase; font-weight: bold; display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
         
         #map { background: #000; flex-grow: 1; cursor: crosshair; }
         #otdrCanvas { background: #000; flex-grow: 1; width: 100% !important; }
         
         .clear-measure { position: absolute; bottom: 10px; left: 10px; z-index: 1000; background: var(--win); color: var(--text); border: 1px solid var(--border); padding: 5px; font-size: 9px; cursor: pointer; border-radius: 3px; text-transform: uppercase; }
 
-        .info-content { padding: 8px; overflow-y: auto; background: #08090c; flex-grow: 1; }
-        .info-card { padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); position: relative; background: #111318; }
-        .info-card h4 { margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--accent); padding-bottom: 4px; }
+        .info-content { padding: 8px; overflow-y: auto; background: #0c0e14; flex-grow: 1; }
+        .info-card { padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); position: relative; background: var(--win); }
+        .info-card h4 { margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--accent); padding-bottom: 4px; }
 
         .fiber-visual { 
             position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; 
@@ -52,21 +53,21 @@
         }
 
         .bottom-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 4px; }
-        .table-scroll { overflow: auto; flex-grow: 1; background: #08090c; }
+        .table-scroll { overflow: auto; flex-grow: 1; background: #0c0e14; }
 
         .table-scroll::-webkit-scrollbar, .info-content::-webkit-scrollbar { width: 8px; height: 8px; }
-        .table-scroll::-webkit-scrollbar-track, .info-content::-webkit-scrollbar-track { background: #08090c; }
-        .table-scroll::-webkit-scrollbar-thumb, .info-content::-webkit-scrollbar-thumb { background: #22252c; border-radius: 4px; }
-        .table-scroll::-webkit-scrollbar-thumb:hover, .info-content::-webkit-scrollbar-thumb:hover { background: #3a3f4b; }
+        .table-scroll::-webkit-scrollbar-track, .info-content::-webkit-scrollbar-track { background: #0c0e14; }
+        .table-scroll::-webkit-scrollbar-thumb, .info-content::-webkit-scrollbar-thumb { background: #2c3242; border-radius: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb:hover, .info-content::-webkit-scrollbar-thumb:hover { background: #3f475e; }
 
-        table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th { background: #15171d; color: #777; padding: 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; font-weight: 600; text-transform: uppercase; font-size: 10px; }
-        td { padding: 8px; border-bottom: 1px solid #14151a; text-align: center; border-right: 1px solid #14151a; white-space: nowrap; }
-        tr:hover { background: rgba(255, 255, 255, 0.02); }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; }
+        th { background: #181b24; color: #8e96a3; padding: 10px 8px; border-bottom: 1px solid var(--border); border-right: 1px solid #222630; position: sticky; top: 0; z-index: 10; font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+        td { padding: 8px; border-bottom: 1px solid #191c24; text-align: center; border-right: 1px solid #191c24; white-space: nowrap; transition: background 0.2s; }
+        tr:hover td { background: rgba(255, 255, 255, 0.03); }
         
-        .row-selected { background: #1c2533 !important; }
-        .crit { color: #ffffff !important; font-weight: bold; background: var(--crit-color) !important; }
-        .cut-fiber { color: #ff9999 !important; font-weight: bold; background: var(--cut-color) !important; }
+        .row-selected td { background: #17263d !important; border-bottom: 1px solid #243b5e; }
+        .crit { color: #ffffff !important; font-weight: bold; background: var(--crit-color) !important; box-shadow: inset 0 0 4px rgba(0,0,0,0.4); }
+        .cut-fiber { color: #ff9999 !important; font-weight: bold; background: var(--cut-color) !important; box-shadow: inset 0 0 4px rgba(0,0,0,0.4); }
 
         .custom-checkbox {
             display: inline-flex;
@@ -74,15 +75,15 @@
             justify-content: center;
             width: 14px;
             height: 14px;
-            border: 1px solid #555;
-            background: #111318;
-            border-radius: 2px;
+            border: 1px solid #4f5769;
+            background: #141720;
+            border-radius: 3px;
             cursor: pointer;
             position: relative;
             transition: all 0.2s;
         }
         .custom-checkbox.checked {
-            background: #232d3f;
+            background: #1e3d59;
             border-color: var(--cyan);
         }
         .custom-checkbox svg {
@@ -101,9 +102,9 @@
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            background: #1c1f26;
+            background: #1c202b;
             color: #a3aab6;
-            border: 1px solid #2d3139;
+            border: 1px solid var(--border);
             padding: 3px 8px;
             border-radius: 3px;
             font-size: 9px;
@@ -114,7 +115,7 @@
             text-transform: uppercase;
         }
         .btn-dl-otdr:hover {
-            background: #252932;
+            background: #252b3a;
             color: var(--cyan);
             border-color: var(--cyan);
         }
@@ -185,13 +186,10 @@
         "amarillo": "#ffff00", "violeta": "#9900ff", "rosa": "#ff66cc", "celeste": "#00ffff"
     };
 
-    // Paleta de colores para diferenciar las múltiples curvas en el gráfico
     const CHART_LINE_COLORS = ["#00ffff", "#ff00ff", "#ffff00", "#00ff41", "#ff4500", "#8a2be2", "#ff1493", "#00bfff"];
 
     let fullData = [], currentHeaders = [], attenuationCols = [], selectedIndices = [0], map = null, otdrChart = null;
     let measurePoints = [], measureMarkers = [], measureLine = null, kmlLayer = null;
-    
-    // Almacén dinámico para guardar los datos cargados de cada curva activa
     let loadedTraces = {}; 
 
     async function autoLoadOTDR(url, rowIndex, labelName) {
@@ -260,7 +258,6 @@
             }
         }
         
-        // Guardamos los puntos procesados indexados por su fila
         loadedTraces[rowIndex] = { pts: pts, lbls: lbls, label: labelName };
         renderMultiOTDR();
     }
@@ -269,7 +266,6 @@
         const ctx = document.getElementById('otdrCanvas').getContext('2d');
         if (otdrChart) otdrChart.destroy();
 
-        // Buscamos cuál traza activa tiene más puntos para usar sus etiquetas en el eje X
         let longestLabels = [];
         selectedIndices.forEach(idx => {
             if (loadedTraces[idx] && loadedTraces[idx].lbls.length > longestLabels.length) {
@@ -277,7 +273,6 @@
             }
         });
 
-        // Construimos la lista de datasets (una curva por cada archivo cargado/seleccionado)
         let datasets = [];
         let colorIdx = 0;
 
@@ -323,8 +318,9 @@
         const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
         const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
 
-        map = L.map('map', { center: [-27.469, -58.830], zoom: 12, layers: [dark], doubleClickZoom: false });
-        L.control.layers({ "Mapa Oscuro": dark, "Mapa Claro": light, "Satélite": satellite }, null, { position: 'topright' }).addTo(map);
+        // Modificado: Ahora se inicializa con la capa 'satellite' en lugar de 'dark'
+        map = L.map('map', { center: [-27.469, -58.830], zoom: 12, layers: [satellite], doubleClickZoom: false });
+        L.control.layers({ "Satélite": satellite, "Mapa Oscuro": dark, "Mapa Claro": light }, null, { position: 'topright' }).addTo(map);
 
         map.on('click', function(e) {
             const point = e.latlng;
@@ -383,12 +379,11 @@
             attenuationCols = currentHeaders.filter(h => h.includes('(') || h.startsWith('FA'));
             buildTableHead();
             
-            // Al cambiar de hoja, reiniciamos selecciones y trazas cargadas
             selectedIndices = [0];
             loadedTraces = {};
             
             render();
-            triggerOtdrLoad(0); // Forzar carga inicial de la primera fila
+            triggerOtdrLoad(0);
         } catch(e) { console.error("Error al cargar datos de hoja:", e); }
     }
 
@@ -456,7 +451,6 @@
         updateDashboard();
     }
 
-    // Nueva gestión para permitir seleccionar múltiples filas a la vez
     function handleRowSelection(idx) {
         if (selectedIndices.includes(idx)) {
             selectedIndices = selectedIndices.filter(i => i !== idx);
@@ -465,11 +459,10 @@
         }
         render();
         
-        // Si se acaba de activar una fila y no tenemos su traza binaria en memoria, la descargamos
         if (selectedIndices.includes(idx) && !loadedTraces[idx]) {
             triggerOtdrLoad(idx);
         } else {
-            renderMultiOTDR(); // Si ya existía o se desmarcó, refrescamos el gráfico directamente
+            renderMultiOTDR();
         }
     }
 
