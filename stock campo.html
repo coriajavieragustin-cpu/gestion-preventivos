@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Stock</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #e2e8f0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+        .main-layout { display: flex; gap: 20px; }
+        #formulario { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155; }
+        input { padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px; }
+        .btn-group { grid-column: 1 / -1; display: flex; gap: 10px; justify-content: center; }
+        .table-container { flex: 3; background: var(--card); padding: 15px; border-radius: 12px; overflow-x: auto; border: 1px solid #334155; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #475569; padding: 10px; text-align: center; font-size: 13px; }
+        th { background: #334155; color: var(--accent); }
+        #resumen { flex: 1; background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--accent); height: fit-content; }
+    </style>
+</head>
+<body>
+    <h2>Control de Stock Connecto</h2>
+    <div id="formulario">
+        <input type="date" id="c0"> <input type="number" id="c1" placeholder="Tiket">
+        <input type="text" id="c2" placeholder="Delegado"> <input type="number" id="c3" placeholder="M Oval">
+        <input type="number" id="c4" placeholder="M ADSS"> <input type="number" id="c5" placeholder="Ret. OV">
+        <input type="number" id="c6" placeholder="Cadenas"> <input type="number" id="c7" placeholder="Supas">
+        <input type="number" id="c8" placeholder="Ganchos"> <input type="number" id="c9" placeholder="Feleje">
+        <input type="number" id="c10" placeholder="Evillas"> <input type="number" id="c11" placeholder="Torn. N7">
+        <input type="number" id="c12" placeholder="Morc. 3B"> <input type="number" id="c13" placeholder="Morc. 2B">
+        <input type="number" id="c14" placeholder="Cable"> <input type="number" id="c15" placeholder="Ret. 1-10">
+        <input type="number" id="c16" placeholder="Crucetas">
+        <div class="btn-group">
+            <button onclick="enviar('guardar')">Guardar Nuevo</button>
+            <button onclick="enviar('actualizar')">Actualizar Fila</button>
+            <button onclick="limpiar()" style="background:#64748b">Limpiar / Nuevo</button>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Día</th><th>Tiket</th><th>Del.</th><th>Oval</th><th>ADSS</th><th>Ret.</th><th>Cad.</th><th>Sup.</th><th>Gan.</th><th>Fel.</th><th>Evi.</th><th>Torn.</th><th>M.3B</th><th>M.2B</th><th>Cab.</th><th>Ret.</th><th>Cruc.</th><th>Acción</th></tr></thead>
+                <tbody id="cuerpo"></tbody>
+            </table>
+        </div>
+        <div id="resumen"><h3>Totales</h3><div id="totales"></div></div>
+    </div>
+
+    <script>
+        const URL = "https://script.google.com/macros/s/AKfycbwYTtsxSyojw38m3g7BH-j5fwKLs5LpDb1kZSeRV72dIqu_EMqwE8LMloD5o4lC0BL-/exec";
+        let dataGlobal = [];
+
+        function cargar() {
+            fetch(URL).then(r => r.json()).then(data => {
+                dataGlobal = data;
+                let tbody = document.getElementById('cuerpo');
+                let tot = new Array(17).fill(0);
+                tbody.innerHTML = "";
+                data.slice(1).forEach((row, idx) => {
+                    let tr = document.createElement('tr');
+                    let d = new Date(row[0]);
+                    tr.innerHTML = `<td onclick="cargarForm(${idx+1})" style="cursor:pointer; color:var(--accent)">${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}</td>`;
+                    for(let i=1; i<17; i++) {
+                        tr.innerHTML += `<td>${row[i] || 0}</td>`;
+                        tot[i] += Number(row[i] || 0);
+                    }
+                    tr.innerHTML += `<td><button onclick="enviar('eliminar','${row[1]}')">X</button></td>`;
+                    tbody.appendChild(tr);
+                });
+                // Mostrar totales vinculados a títulos
+                let ths = document.querySelectorAll('th');
+                document.getElementById('totales').innerHTML = tot.map((v,i) => i >= 3 ? `<div>${ths[i].innerText}: <b>${v}</b></div>` : '').join('');
+            });
+        }
+
+        function limpiar() { for(let i=0; i<17; i++) document.getElementById('c'+i).value = ""; }
+        function cargarForm(idx) { 
+            let row = dataGlobal[idx]; 
+            for(let i=0; i<17; i++) document.getElementById('c'+i).value = row[i]; 
+        }
+
+        function enviar(accion, tiket = "") {
+            let datos = { accion: accion, tiket: tiket || document.getElementById('c1').value };
+            if(accion !== "eliminar") {
+                let vals = [];
+                for(let i=0; i<17; i++) vals.push(document.getElementById('c'+i).value);
+                datos.valores = vals;
+            }
+            fetch(URL, { method: "POST", mode: "no-cors", body: JSON.stringify(datos) })
+            .then(() => setTimeout(cargar, 1500));
+        }
+        cargar();
+    </script>
+</body>
+</html>
