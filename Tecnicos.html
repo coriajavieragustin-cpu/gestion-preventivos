@@ -24,7 +24,6 @@
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; 
         }
 
-        /* Custom Scrollbars */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -115,7 +114,6 @@
             border-bottom: 1px solid var(--border-color);
         }
 
-        /* Tabla Estilizada */
         .table-responsive-custom { 
             max-height: 55vh; 
             overflow-y: auto; 
@@ -157,7 +155,6 @@
         .status-ausencia td { border-bottom: 1px solid #3e3312; }
         .status-ausencia tr:hover { background-color: #332a0c !important; }
          
-        /* Botones de acción */
         .btn-del, .btn-dup { 
             border: none; 
             background: #21262d; 
@@ -213,14 +210,17 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark-custom shadow-sm mb-0">
     <div class="container-fluid">
         <a class="navbar-brand fw-bold" href="#" style="color: var(--tec-color)">📊 Panel de tareas Tecnicos <span class="fw-light small" style="color: var(--text-muted)">v1.8</span></a>
-        <select id="selectorMes" class="form-select form-select-sm w-auto me-2" onchange="cargarDatosNube()">
-            <option value="Enero">Enero</option><option value="Febrero">Febrero</option>
-            <option value="Marzo">Marzo</option><option value="Abril">Abril</option>
-            <option value="Mayo">Mayo</option><option value="Junio">Junio</option>
-            <option value="Julio">Julio</option><option value="Agosto">Agosto</option>
-            <option value="Septiembre">Septiembre</option><option value="Octubre">Octubre</option>
-            <option value="Noviembre">Noviembre</option><option value="Diciembre">Diciembre</option>
-        </select>
+        <div class="d-flex align-items-center">
+            <a id="btnLinkSheet" href="https://docs.google.com/spreadsheets/d/116SNyBZPR791BrK9RrkEKAgywyiZAzv4jwqnfGwrvSE/edit?usp=drive_link" target="_blank" class="btn btn-sm btn-outline-secondary me-3" style="font-size: 0.75rem;">🔗 Abrir Google Sheet</a>
+            <select id="selectorMes" class="form-select form-select-sm w-auto" onchange="cargarDatosNube()">
+                <option value="Enero">Enero</option><option value="Febrero">Febrero</option>
+                <option value="Marzo">Marzo</option><option value="Abril">Abril</option>
+                <option value="Mayo">Mayo</option><option value="Junio">Junio</option>
+                <option value="Julio">Julio</option><option value="Agosto">Agosto</option>
+                <option value="Septiembre">Septiembre</option><option value="Octubre">Octubre</option>
+                <option value="Noviembre">Noviembre</option><option value="Diciembre">Diciembre</option>
+            </select>
+        </div>
     </div>
 </nav>
 
