@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Stock</title>
+    <title>Panel de Stock - Completo</title>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #e2e8f0; --highlight: #50cd89; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
@@ -16,9 +16,9 @@
         th { background: #334155; color: var(--accent); }
         
         .val-high { color: var(--highlight); font-weight: bold; }
-        #resumen { flex: 1; background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--accent); height: fit-content; }
-        .total-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #334155; font-size: 0.9rem; }
-        .total-item b { color: var(--accent); }
+        #resumen { flex: 1; background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; height: fit-content; }
+        .total-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #334155; font-size: 0.85rem; }
+        .total-item b { color: var(--highlight); }
     </style>
 </head>
 <body>
@@ -37,7 +37,7 @@
         <input type="number" id="c16" placeholder="Crucetas">
         <div class="btn-group">
             <button onclick="enviar('guardar')">Guardar Nuevo</button>
-            <button onclick="enviar('actualizar')">Actualizar Fila</button>
+            <button onclick="enviar('actualizar')" style="background:#3b82f6">Actualizar Fila</button>
             <button onclick="limpiar()" style="background:#64748b">Limpiar / Nuevo</button>
         </div>
     </div>
@@ -54,6 +54,14 @@
 
     <script>
         const URL = "https://script.google.com/macros/s/AKfycbwYTtsxSyojw38m3g7BH-j5fwKLs5LpDb1kZSeRV72dIqu_EMqwE8LMloD5o4lC0BL-/exec";
+        
+        // Diccionario con nombres ajustados: "Metros" y "Supas"
+        const nombresCompletos = [
+            "", "", "", "Metros Oval", "Metros ADSS", "Retencion OV", "Cadenas", 
+            "Supas", "Ganchos", "Feleje", "Evillas", "Tornillo N7", "Mordaza 3B", 
+            "Mordaza 2B", "Cable", "Retencion 1-10", "Crucetas"
+        ];
+
         let dataGlobal = [];
 
         function cargar() {
@@ -62,37 +70,36 @@
                 let tbody = document.getElementById('cuerpo');
                 let tot = new Array(17).fill(0);
                 tbody.innerHTML = "";
+                
                 data.slice(1).forEach((row, idx) => {
                     let tr = document.createElement('tr');
                     let d = new Date(row[0]);
-                    tr.innerHTML = `<td onclick="cargarForm(${idx+1})" style="cursor:pointer; color:var(--accent)">${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}</td>`;
+                    tr.innerHTML = `<td onclick="cargarForm(${idx+1})" style="cursor:pointer; color:var(--accent); text-decoration:underline">${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}</td>`;
                     
-                    // Lógica de columnas (columna 2 es Delegado, por eso empieza a contar desde 3 para resaltar números)
                     for(let i=1; i<17; i++) {
                         let val = row[i] || 0;
-                        let esNumero = !isNaN(val) && i > 2;
+                        let esNumerico = i > 2;
                         let numVal = Number(val);
-                        
-                        let displayVal = val;
-                        let clase = (esNumero && numVal > 0) ? 'class="val-high"' : '';
-                        
-                        tr.innerHTML += `<td ${clase}>${displayVal}</td>`;
-                        if(esNumero) tot[i] += numVal;
+                        let clase = (esNumerico && numVal > 0) ? 'class="val-high"' : '';
+                        tr.innerHTML += `<td ${clase}>${val}</td>`;
+                        if(esNumerico) tot[i] += numVal;
                     }
                     tr.innerHTML += `<td><button onclick="enviar('eliminar','${row[1]}')">X</button></td>`;
                     tbody.appendChild(tr);
                 });
                 
-                let ths = document.querySelectorAll('th');
                 document.getElementById('totales').innerHTML = tot.map((v,i) => i >= 3 ? 
-                    `<div class="total-item">${ths[i].innerText}: <b>${v}</b></div>` : '').join('');
+                    `<div class="total-item"><span>${nombresCompletos[i]}:</span> <b>${v}</b></div>` : '').join('');
             });
         }
 
         function limpiar() { for(let i=0; i<17; i++) document.getElementById('c'+i).value = ""; }
+        
         function cargarForm(idx) { 
             let row = dataGlobal[idx]; 
-            for(let i=0; i<17; i++) document.getElementById('c'+i).value = row[i]; 
+            let d = new Date(row[0]);
+            document.getElementById('c0').value = d.toISOString().split('T')[0];
+            for(let i=1; i<17; i++) document.getElementById('c'+i).value = row[i]; 
         }
 
         function enviar(accion, tiket = "") {
@@ -103,7 +110,7 @@
                 datos.valores = vals;
             }
             fetch(URL, { method: "POST", mode: "no-cors", body: JSON.stringify(datos) })
-            .then(() => setTimeout(cargar, 1500));
+            .then(() => { setTimeout(cargar, 1500); });
         }
         cargar();
     </script>
