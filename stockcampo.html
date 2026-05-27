@@ -15,7 +15,6 @@
         th, td { border: 1px solid #475569; padding: 10px; text-align: center; font-size: 13px; }
         th { background: #334155; color: var(--accent); }
         
-        /* Estilos nuevos para resaltar */
         .val-high { color: var(--highlight); font-weight: bold; }
         #resumen { flex: 1; background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--accent); height: fit-content; }
         .total-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #334155; font-size: 0.9rem; }
@@ -25,8 +24,10 @@
 <body>
     <h2>Control de Stock Connecto</h2>
     <div id="formulario">
-        <input type="date" id="c0"> <input type="number" id="c1" placeholder="Tiket">
-        <input type="text" id="c2" placeholder="Delegado"> <input type="number" id="c3" placeholder="M Oval">
+        <input type="date" id="c0"> 
+        <input type="number" id="c1" placeholder="Tiket">
+        <input type="text" id="c2" placeholder="Delegado"> 
+        <input type="number" id="c3" placeholder="M Oval">
         <input type="number" id="c4" placeholder="M ADSS"> <input type="number" id="c5" placeholder="Ret. OV">
         <input type="number" id="c6" placeholder="Cadenas"> <input type="number" id="c7" placeholder="Supas">
         <input type="number" id="c8" placeholder="Ganchos"> <input type="number" id="c9" placeholder="Feleje">
@@ -65,11 +66,18 @@
                     let tr = document.createElement('tr');
                     let d = new Date(row[0]);
                     tr.innerHTML = `<td onclick="cargarForm(${idx+1})" style="cursor:pointer; color:var(--accent)">${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}</td>`;
+                    
+                    // Lógica de columnas (columna 2 es Delegado, por eso empieza a contar desde 3 para resaltar números)
                     for(let i=1; i<17; i++) {
-                        let val = Number(row[i] || 0);
-                        let clase = val > 0 ? 'class="val-high"' : '';
-                        tr.innerHTML += `<td ${clase}>${val}</td>`;
-                        tot[i] += val;
+                        let val = row[i] || 0;
+                        let esNumero = !isNaN(val) && i > 2;
+                        let numVal = Number(val);
+                        
+                        let displayVal = val;
+                        let clase = (esNumero && numVal > 0) ? 'class="val-high"' : '';
+                        
+                        tr.innerHTML += `<td ${clase}>${displayVal}</td>`;
+                        if(esNumero) tot[i] += numVal;
                     }
                     tr.innerHTML += `<td><button onclick="enviar('eliminar','${row[1]}')">X</button></td>`;
                     tbody.appendChild(tr);
