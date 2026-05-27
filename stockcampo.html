@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Panel de Stock</title>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #e2e8f0; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #e2e8f0; --highlight: #50cd89; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
         .main-layout { display: flex; gap: 20px; }
         #formulario { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155; }
@@ -14,7 +14,12 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #475569; padding: 10px; text-align: center; font-size: 13px; }
         th { background: #334155; color: var(--accent); }
+        
+        /* Estilos nuevos para resaltar */
+        .val-high { color: var(--highlight); font-weight: bold; }
         #resumen { flex: 1; background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--accent); height: fit-content; }
+        .total-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #334155; font-size: 0.9rem; }
+        .total-item b { color: var(--accent); }
     </style>
 </head>
 <body>
@@ -61,15 +66,18 @@
                     let d = new Date(row[0]);
                     tr.innerHTML = `<td onclick="cargarForm(${idx+1})" style="cursor:pointer; color:var(--accent)">${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}</td>`;
                     for(let i=1; i<17; i++) {
-                        tr.innerHTML += `<td>${row[i] || 0}</td>`;
-                        tot[i] += Number(row[i] || 0);
+                        let val = Number(row[i] || 0);
+                        let clase = val > 0 ? 'class="val-high"' : '';
+                        tr.innerHTML += `<td ${clase}>${val}</td>`;
+                        tot[i] += val;
                     }
                     tr.innerHTML += `<td><button onclick="enviar('eliminar','${row[1]}')">X</button></td>`;
                     tbody.appendChild(tr);
                 });
-                // Mostrar totales vinculados a títulos
+                
                 let ths = document.querySelectorAll('th');
-                document.getElementById('totales').innerHTML = tot.map((v,i) => i >= 3 ? `<div>${ths[i].innerText}: <b>${v}</b></div>` : '').join('');
+                document.getElementById('totales').innerHTML = tot.map((v,i) => i >= 3 ? 
+                    `<div class="total-item">${ths[i].innerText}: <b>${v}</b></div>` : '').join('');
             });
         }
 
