@@ -78,7 +78,6 @@
 
 <div id="loaderGlobal" class="badge bg-warning text-dark p-2 shadow">⌛ Sincronizando...</div>
 
-<!-- Contenedor general para controlar el acceso -->
 <div id="appWrapper" class="wrapper">
     <div class="sidebar">
         <h5>PANEL INFRAESTRUCTURA CONNECTTO</h5>
@@ -91,6 +90,7 @@
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Preventivos.html" target="_blank" class="btn-nav">🛠️ Preventivos</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/otdr.html" target="_blank" class="btn-nav">📉 OTDR</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/promedios%20cab.html" target="_blank" class="btn-nav">📐 Calculo de cables</a>
+            <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/stockcampo.html" target="_blank" class="btn-nav">📦 Materiales en Campo</a>
         </nav>
 
         <div class="sync-section">
@@ -392,9 +392,9 @@
                     legend: { display: false },
                     title: { display: true, text: 'TOP 6 PROMEDIOS', color: '#fff', font: { size: 10, weight: 'bold' } }
                 },
-                scales: {
-                    x: { ticks: { display: false }, grid: { display: false } },
-                    y: { ticks: { color: '#fff', font: { size: 8 } }, grid: { display: false } }
+                scales: { 
+                    x: { ticks: { display: false }, grid: { display: false } }, 
+                    y: { ticks: { color: '#fff', font: { size: 8 } }, grid: { display: false } } 
                 }
             }
         });
