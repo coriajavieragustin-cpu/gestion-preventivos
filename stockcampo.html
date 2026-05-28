@@ -28,9 +28,33 @@
         input { padding: 12px; background: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; }
         input:focus { outline: none; border-color: var(--accent); }
         
-        .btn-group { grid-column: 1 / -1; display: flex; gap: 15px; justify-content: flex-end; margin-top: 10px; }
-        button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; color: white; transition: 0.2s; }
-        button:hover { transform: translateY(-2px); }
+        .btn-group { 
+    grid-column: 1 / -1; 
+    display: flex; 
+    gap: 15px; 
+    justify-content: flex-end; 
+    margin-top: 10px; 
+}
+
+button { 
+    padding: 10px 20px; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    transition: 0.2s; 
+    color: #000; /* Texto negro para mejor contraste */
+}
+
+button:hover { 
+    transform: translateY(-2px); 
+    filter: brightness(1.1); /* Ligero brillo al pasar el mouse */
+}
+
+/* Colores */
+.btn-guardar { background-color: #22c55e; }    /* Verde */
+.btn-actualizar { background-color: #eab308; } /* Amarillo */
+.btn-limpiar { background-color: #ef4444; }    /* Rojo */
         
         .main-layout { display: flex; gap: 25px; align-items: flex-start; }
         .table-container { flex: 3; background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); overflow-x: auto; }
@@ -63,25 +87,25 @@
         <input type="number" id="c6" placeholder="Cadenas"> 
         <input type="number" id="c7" placeholder="Supas">
         <input type="number" id="c8" placeholder="Ganchos"> 
-        <input type="number" id="c9" placeholder="Feleje">
+        <input type="number" id="c9" placeholder="fleje">
         <input type="number" id="c10" placeholder="Evillas"> 
         <input type="number" id="c11" placeholder="Tornillo N7">
         <input type="number" id="c12" placeholder="Mordaza 3B"> 
         <input type="number" id="c13" placeholder="Mordaza 2B">
-        <input type="number" id="c14" placeholder="Cable"> 
+        <input type="number" id="c14" placeholder=" Cable A"> 
         <input type="number" id="c15" placeholder="Retencion 1-10">
         <input type="number" id="c16" placeholder="Crucetas">
         <div class="btn-group">
-            <button onclick="enviar('guardar')" style="background:var(--highlight)">Guardar Nuevo</button>
-            <button onclick="enviar('actualizar')" style="background:var(--accent); color: #000;">Actualizar Fila</button>
-            <button onclick="limpiar()" style="background:#64748b">Limpiar</button>
+    <button class="btn-guardar" onclick="enviar('guardar')">Guardar Nuevo</button>
+    <button class="btn-actualizar" onclick="enviar('actualizar')">Actualizar Fila</button>
+    <button class="btn-limpiar" onclick="limpiar()">Limpiar</button>
         </div>
     </div>
 
     <div class="main-layout">
         <div class="table-container">
             <table>
-                <thead><tr><th>Día</th><th>Tiket</th><th>Del.</th><th>Oval</th><th>ADSS</th><th>Ret.</th><th>Cad.</th><th>Sup.</th><th>Gan.</th><th>Fel.</th><th>Evi.</th><th>Torn.</th><th>M.3B</th><th>M.2B</th><th>Cab.</th><th>Ret.</th><th>Cruc.</th><th>Acción</th></tr></thead>
+                <thead><tr><th>Día</th><th>Tiket</th><th>Delegado.</th><th>Oval</th><th>ADSS</th><th>Retenciones</th><th>Cadenas</th><th>Supas</th><th>Ganchos</th><th>Fleje</th><th>Evillas</th><th>Tornillo N7</th><th>Mordaza 3B</th><th>Mordaza 2B</th><th>Cable A</th><th>Retencion 1-10</th><th>Crucetas</th><th>Acn</th></tr></thead>
                 <tbody id="cuerpo"></tbody>
             </table>
         </div>
@@ -93,7 +117,7 @@
 
     <script>
         const URL = "https://script.google.com/macros/s/AKfycbwYTtsxSyojw38m3g7BH-j5fwKLs5LpDb1kZSeRV72dIqu_EMqwE8LMloD5o4lC0BL-/exec";
-        const nombresCompletos = ["", "", "", "Metros Oval", "Metros ADSS", "Retencion OV", "Cadenas", "Supas", "Ganchos", "Feleje", "Evillas", "Tornillo N7", "Mordaza 3B", "Mordaza 2B", "Cable", "Retencion 1-10", "Crucetas"];
+        const nombresCompletos = ["", "", "", "Metros Oval", "Metros ADSS", "Retencion OV", "Cadenas", "Supas", "Ganchos", "Fleje", "Evillas", "Tornillo N7", "Mordaza 3B", "Mordaza 2B", "Cable A", "Retencion 1-10", "Crucetas"];
         const reglas = {
             3: { u: "Bobinas", f: 1000 },
             4: { u: "Bobinas", f: 4000 },
