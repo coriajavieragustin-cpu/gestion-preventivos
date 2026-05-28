@@ -10,11 +10,9 @@
         }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 30px; }
         
-        /* Contenedor para título y botón */
         .header-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         h2 { color: var(--accent); border-left: 4px solid var(--accent); padding-left: 15px; margin: 0; }
         
-        /* Estilo del botón de Sheet */
         .link-sheet {
             background: #10b981; color: white; padding: 10px 20px; 
             border-radius: 8px; text-decoration: none; font-size: 0.9rem; 
@@ -52,7 +50,7 @@
 
     <div class="header-wrapper">
         <h2>Control de Stock Connecto</h2>
-        <a href="https://docs.google.com/spreadsheets/d/1WHqJvetykqGbxQmkod6FX83W9fHhhu3W77i-9QxEmwc/edit?usp=drive_link" target="_blank" class="link-sheet">Abrir Google Sheets</a>
+        <a href="URL_DE_TU_GOOGLE_SHEET_AQUI" target="_blank" class="link-sheet">Abrir Google Sheets</a>
     </div>
 
     <div id="formulario">
@@ -107,14 +105,24 @@
 
         function cargar() {
             fetch(URL).then(r => r.json()).then(data => {
-                dataGlobal = data;
+                // Separamos la cabecera del cuerpo
+                let cabecera = data[0];
+                let filas = data.slice(1);
+                
+                // Ordenamos las filas por fecha descendente (más nueva primero)
+                filas.sort((a, b) => new Date(b[0]) - new Date(a[0]));
+                
+                // Unimos de nuevo para procesar
+                dataGlobal = [cabecera, ...filas];
+                
                 let tbody = document.getElementById('cuerpo');
                 let tot = new Array(17).fill(0);
                 tbody.innerHTML = "";
-                data.slice(1).forEach((row, idx) => {
+                
+                filas.forEach((row, idx) => {
                     let tr = document.createElement('tr');
                     let d = new Date(row[0]);
-                    tr.innerHTML = `<td onclick="cargarForm(${idx+1})" style="cursor:pointer; color:var(--accent); text-decoration:underline">${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}</td>`;
+                    tr.innerHTML = `<td onclick="cargarForm('${row[1]}')" style="cursor:pointer; color:var(--accent); text-decoration:underline">${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}</td>`;
                     for(let i=1; i<17; i++) {
                         let val = row[i] || 0;
                         let esNumerico = i > 2;
@@ -127,6 +135,7 @@
                     tbody.appendChild(tr);
                 });
                 document.getElementById('totales').innerHTML = tot.map((v,i) => i >= 3 ? `<div class="total-item"><span>${nombresCompletos[i]}:</span> <b>${v}</b></div>` : '').join('');
+                
                 let convHtml = "";
                 for (let i in reglas) {
                     let total = tot[i];
@@ -138,13 +147,15 @@
             });
         }
 
-        function limpiar() { for(let i=0; i<17; i++) document.getElementById('c'+i).value = ""; }
-        function cargarForm(idx) { 
-            let row = dataGlobal[idx]; 
+        // Ajuste en cargarForm para buscar por Tiket en vez de índice numérico
+        function cargarForm(tiket) { 
+            let row = dataGlobal.find(r => r[1] == tiket);
             let d = new Date(row[0]);
             document.getElementById('c0').value = d.toISOString().split('T')[0];
             for(let i=1; i<17; i++) document.getElementById('c'+i).value = row[i]; 
         }
+
+        function limpiar() { for(let i=0; i<17; i++) document.getElementById('c'+i).value = ""; }
         function enviar(accion, tiket = "") {
             let datos = { accion: accion, tiket: tiket || document.getElementById('c1').value };
             if(accion !== "eliminar") {
