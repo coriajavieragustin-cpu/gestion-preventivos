@@ -24,25 +24,12 @@
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; 
         }
 
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0d1117;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #30363d;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #8b949e;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0d1117; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
 
-        .navbar-dark.bg-dark-custom { 
-            background-color: #161b22; 
-            border-bottom: 1px solid var(--border-color);
-        }
+        .navbar-dark.bg-dark-custom { background-color: #161b22; border-bottom: 1px solid var(--border-color); }
 
         .card { 
             background-color: var(--card-bg); 
@@ -76,17 +63,8 @@
             max-height: 140px;
             overflow-y: auto;
         }
-        .tecnicos-selector-box .form-check {
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .tecnicos-selector-box .form-check-label {
-            font-size: 0.85rem;
-            cursor: pointer;
-            padding-top: 2px;
-        }
+        .tecnicos-selector-box .form-check { margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+        .tecnicos-selector-box .form-check-label { font-size: 0.85rem; cursor: pointer; padding-top: 2px; }
 
         .btn-sync { 
             background-color: var(--accent); 
@@ -114,18 +92,8 @@
             border-bottom: 1px solid var(--border-color);
         }
 
-        .table-responsive-custom { 
-            max-height: 55vh; 
-            overflow-y: auto; 
-            background: var(--card-bg); 
-            border-radius: 8px; 
-        }
-        .table { 
-            color: var(--text-main); 
-            margin-bottom: 0; 
-            border-collapse: separate;
-            border-spacing: 0;
-        }
+        .table-responsive-custom { max-height: 55vh; overflow-y: auto; background: var(--card-bg); border-radius: 8px; }
+        .table { color: var(--text-main); margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
         .table th {
             background-color: #21262d !important;
             color: #f0f6fc !important;
@@ -139,22 +107,13 @@
             top: 0;
             z-index: 10;
         }
-        .table td {
-            padding: 8px 8px !important;
-            vertical-align: middle;
-            border-bottom: 1px solid #21262d;
-        }
-        .table-hover tbody tr:hover { 
-            background-color: #1f242c !important; 
-        }
-         
-        .status-ausencia { 
-            background-color: #2b230a !important; 
-            color: #e3b341 !important; 
-        }
+        .table td { padding: 8px 8px !important; vertical-align: middle; border-bottom: 1px solid #21262d; }
+        .table-hover tbody tr:hover { background-color: #1f242c !important; }
+        
+        .status-ausencia { background-color: #2b230a !important; color: #e3b341 !important; }
         .status-ausencia td { border-bottom: 1px solid #3e3312; }
         .status-ausencia tr:hover { background-color: #332a0c !important; }
-         
+        
         .btn-del, .btn-dup { 
             border: none; 
             background: #21262d; 
@@ -183,7 +142,7 @@
             border-right: 1px solid var(--border-color);
             border-bottom: 1px solid var(--border-color);
         }
-         
+        
         .chart-container { position: relative; height: 320px; width: 100%; }
         .txt-calculo { 
             font-family: monospace; 
@@ -518,6 +477,19 @@
     function renderizarGrafico(labels, valores) {
         const ctx = document.getElementById('graficoPromedios').getContext('2d');
         if (miGrafico) miGrafico.destroy();
+
+        // Mapeo de colores específicos por técnico
+        const coloresTecnicos = {
+            "Vicens Cristian": "#58a6ff",
+            "Alegre Maximiliano": "#238636",
+            "Altamirano Cesar": "#d29922",
+            "Emma Calvo": "#f78166",
+            "Gonzalez Fernando": "#a371f7",
+            "Rodriguez Gabriel": "#f85149"
+        };
+
+        // Asignar color según el nombre del técnico, o un gris por defecto
+        const coloresAsignados = labels.map(nombre => coloresTecnicos[nombre] || '#8b949e');
         
         miGrafico = new Chart(ctx, {
             type: 'bar',
@@ -526,7 +498,7 @@
                 datasets: [{ 
                     label: 'Promedio del Mes', 
                     data: valores, 
-                    backgroundColor: '#58a6ff', 
+                    backgroundColor: coloresAsignados, 
                     borderRadius: 5, 
                     barThickness: 18 
                 }]
@@ -536,19 +508,10 @@
                 responsive: true, 
                 maintainAspectRatio: false,
                 scales: { 
-                    x: { 
-                        beginAtZero: true, 
-                        grid: { display: false }, 
-                        ticks: { display: false } 
-                    }, 
-                    y: { 
-                        grid: { display: false }, 
-                        ticks: { color: '#ffffff' } 
-                    } 
+                    x: { beginAtZero: true, grid: { display: false }, ticks: { display: false } }, 
+                    y: { grid: { display: false }, ticks: { color: '#ffffff' } } 
                 },
-                plugins: { 
-                    legend: { display: false } 
-                }
+                plugins: { legend: { display: false } }
             },
             plugins: [{
                 id: 'labelsAlFinal',
