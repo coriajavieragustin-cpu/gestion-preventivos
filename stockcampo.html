@@ -9,8 +9,19 @@
             --text: #f1f5f9; --highlight: #22c55e; --border: #334155;
         }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 30px; }
-        h2 { margin-bottom: 25px; color: var(--accent); border-left: 4px solid var(--accent); padding-left: 15px; }
         
+        /* Contenedor para título y botón */
+        .header-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        h2 { color: var(--accent); border-left: 4px solid var(--accent); padding-left: 15px; margin: 0; }
+        
+        /* Estilo del botón de Sheet */
+        .link-sheet {
+            background: #10b981; color: white; padding: 10px 20px; 
+            border-radius: 8px; text-decoration: none; font-size: 0.9rem; 
+            font-weight: 600; transition: background 0.3s;
+        }
+        .link-sheet:hover { background: #059669; }
+
         #formulario { 
             display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
             gap: 15px; background: var(--card); padding: 25px; border-radius: 16px; 
@@ -35,11 +46,15 @@
         .panel { background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); }
         .total-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; font-size: 0.85rem; }
         .total-item b { color: var(--highlight); }
-        .conv-label { font-size: 0.75rem; color: #94a3b8; display: block; }
     </style>
 </head>
 <body>
-    <h2>Control de Stock Connecto</h2>
+
+    <div class="header-wrapper">
+        <h2>Control de Stock Connecto</h2>
+        <a href="https://docs.google.com/spreadsheets/d/1WHqJvetykqGbxQmkod6FX83W9fHhhu3W77i-9QxEmwc/edit?usp=drive_link" target="_blank" class="link-sheet">Abrir Google Sheets</a>
+    </div>
+
     <div id="formulario">
         <input type="date" id="c0"> 
         <input type="number" id="c1" placeholder="Tiket">
@@ -81,8 +96,6 @@
     <script>
         const URL = "https://script.google.com/macros/s/AKfycbwYTtsxSyojw38m3g7BH-j5fwKLs5LpDb1kZSeRV72dIqu_EMqwE8LMloD5o4lC0BL-/exec";
         const nombresCompletos = ["", "", "", "Metros Oval", "Metros ADSS", "Retencion OV", "Cadenas", "Supas", "Ganchos", "Feleje", "Evillas", "Tornillo N7", "Mordaza 3B", "Mordaza 2B", "Cable", "Retencion 1-10", "Crucetas"];
-        
-        // Reglas de conversión (Índice del array: {unidad, factor})
         const reglas = {
             3: { u: "Bobinas", f: 1000 },
             4: { u: "Bobinas", f: 4000 },
@@ -90,7 +103,6 @@
             6: { u: "Bolsas", f: 50 },
             10: { u: "Bolsas", f: 100 }
         };
-
         let dataGlobal = [];
 
         function cargar() {
@@ -99,7 +111,6 @@
                 let tbody = document.getElementById('cuerpo');
                 let tot = new Array(17).fill(0);
                 tbody.innerHTML = "";
-                
                 data.slice(1).forEach((row, idx) => {
                     let tr = document.createElement('tr');
                     let d = new Date(row[0]);
@@ -115,20 +126,13 @@
                     tr.innerHTML += `<td><button onclick="enviar('eliminar','${row[1]}')" style="background:transparent; color:#ef4444; font-size:16px;">✕</button></td>`;
                     tbody.appendChild(tr);
                 });
-
-                // Render Totales
                 document.getElementById('totales').innerHTML = tot.map((v,i) => i >= 3 ? `<div class="total-item"><span>${nombresCompletos[i]}:</span> <b>${v}</b></div>` : '').join('');
-                
-                // Render Conversiones
                 let convHtml = "";
                 for (let i in reglas) {
                     let total = tot[i];
                     let cantidad = Math.floor(total / reglas[i].f);
                     let resto = total % reglas[i].f;
-                    convHtml += `<div class="total-item">
-                        <span>${nombresCompletos[i]}:</span> 
-                        <b>${cantidad > 0 ? cantidad + " " + reglas[i].u : ""} ${resto > 0 ? "+ " + resto : (cantidad === 0 ? "0" : "")}</b>
-                    </div>`;
+                    convHtml += `<div class="total-item"><span>${nombresCompletos[i]}:</span> <b>${cantidad > 0 ? cantidad + " " + reglas[i].u : ""} ${resto > 0 ? "+ " + resto : (cantidad === 0 ? "0" : "")}</b></div>`;
                 }
                 document.getElementById('conversiones').innerHTML = convHtml;
             });
