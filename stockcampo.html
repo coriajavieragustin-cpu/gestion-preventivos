@@ -28,33 +28,13 @@
         input { padding: 12px; background: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; }
         input:focus { outline: none; border-color: var(--accent); }
         
-        .btn-group { 
-    grid-column: 1 / -1; 
-    display: flex; 
-    gap: 15px; 
-    justify-content: flex-end; 
-    margin-top: 10px; 
-}
+        .btn-group { grid-column: 1 / -1; display: flex; gap: 15px; justify-content: flex-end; margin-top: 10px; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; color: #000; }
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
-button { 
-    padding: 10px 20px; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-weight: 600; 
-    transition: 0.2s; 
-    color: #000; /* Texto negro para mejor contraste */
-}
-
-button:hover { 
-    transform: translateY(-2px); 
-    filter: brightness(1.1); /* Ligero brillo al pasar el mouse */
-}
-
-/* Colores */
-.btn-guardar { background-color: #22c55e; }    /* Verde */
-.btn-actualizar { background-color: #eab308; } /* Amarillo */
-.btn-limpiar { background-color: #ef4444; }    /* Rojo */
+        .btn-guardar { background-color: #22c55e; }
+        .btn-actualizar { background-color: #eab308; }
+        .btn-limpiar { background-color: #ef4444; }
         
         .main-layout { display: flex; gap: 25px; align-items: flex-start; }
         .table-container { flex: 3; background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); overflow-x: auto; }
@@ -87,25 +67,28 @@ button:hover {
         <input type="number" id="c6" placeholder="Cadenas"> 
         <input type="number" id="c7" placeholder="Supas">
         <input type="number" id="c8" placeholder="Ganchos"> 
-        <input type="number" id="c9" placeholder="fleje">
+        <input type="number" id="c9" placeholder="Fleje">
         <input type="number" id="c10" placeholder="Evillas"> 
         <input type="number" id="c11" placeholder="Tornillo N7">
         <input type="number" id="c12" placeholder="Mordaza 3B"> 
         <input type="number" id="c13" placeholder="Mordaza 2B">
-        <input type="number" id="c14" placeholder=" Cable A"> 
+        <input type="number" id="c14" placeholder="Cable A"> 
         <input type="number" id="c15" placeholder="Retencion 1-10">
         <input type="number" id="c16" placeholder="Crucetas">
+        <input type="number" id="c17" placeholder="Mensula TU">
+        <input type="number" id="c18" placeholder="Retenciones 9-10">
+        
         <div class="btn-group">
-    <button class="btn-guardar" onclick="enviar('guardar')">Guardar Nuevo</button>
-    <button class="btn-actualizar" onclick="enviar('actualizar')">Actualizar Fila</button>
-    <button class="btn-limpiar" onclick="limpiar()">Limpiar</button>
+            <button class="btn-guardar" onclick="enviar('guardar')">Guardar Nuevo</button>
+            <button class="btn-actualizar" onclick="enviar('actualizar')">Actualizar Fila</button>
+            <button class="btn-limpiar" onclick="limpiar()">Limpiar</button>
         </div>
     </div>
 
     <div class="main-layout">
         <div class="table-container">
             <table>
-                <thead><tr><th>Día</th><th>Tiket</th><th>Delegado.</th><th>Oval</th><th>ADSS</th><th>Retenciones</th><th>Cadenas</th><th>Supas</th><th>Ganchos</th><th>Fleje</th><th>Evillas</th><th>Tornillo N7</th><th>Mordaza 3B</th><th>Mordaza 2B</th><th>Cable A</th><th>Retencion 1-10</th><th>Crucetas</th><th>Acn</th></tr></thead>
+                <thead><tr><th>Día</th><th>Tiket</th><th>Delegado</th><th>Oval</th><th>ADSS</th><th>Ret. OV</th><th>Cadenas</th><th>Supas</th><th>Ganchos</th><th>Fleje</th><th>Evillas</th><th>N7</th><th>M.3B</th><th>M.2B</th><th>C.A</th><th>Ret.1-10</th><th>Crucetas</th><th>M.TU</th><th>Ret.9-10</th><th>Acción</th></tr></thead>
                 <tbody id="cuerpo"></tbody>
             </table>
         </div>
@@ -117,37 +100,30 @@ button:hover {
 
     <script>
         const URL = "https://script.google.com/macros/s/AKfycbwYTtsxSyojw38m3g7BH-j5fwKLs5LpDb1kZSeRV72dIqu_EMqwE8LMloD5o4lC0BL-/exec";
-        const nombresCompletos = ["", "", "", "Metros Oval", "Metros ADSS", "Retencion OV", "Cadenas", "Supas", "Ganchos", "Fleje", "Evillas", "Tornillo N7", "Mordaza 3B", "Mordaza 2B", "Cable A", "Retencion 1-10", "Crucetas"];
+        // Actualiza el array con los nuevos nombres
+        const nombresCompletos = ["", "", "", "Metros Oval", "Metros ADSS", "Retencion OV", "Cadenas", "Supas", "Ganchos", "Fleje", "Evillas", "Tornillo N7", "Mordaza 3B", "Mordaza 2B", "Cable A", "Retencion 1-10", "Crucetas", "Mensula TU", "Retenciones 9-10"];
         const reglas = {
-            3: { u: "Bobinas", f: 1000 },
-            4: { u: "Bobinas", f: 4000 },
-            5: { u: "Bolsas", f: 10 },
-            6: { u: "Bolsas", f: 50 },
-            10: { u: "Bolsas", f: 100 }
+            3: { u: "Bobinas", f: 1000 }, 4: { u: "Bobinas", f: 4000 }, 5: { u: "Bolsas", f: 10 },
+            6: { u: "Bolsas", f: 50 }, 10: { u: "Bolsas", f: 100 }
         };
         let dataGlobal = [];
 
         function cargar() {
             fetch(URL).then(r => r.json()).then(data => {
-                // Separamos la cabecera del cuerpo
                 let cabecera = data[0];
                 let filas = data.slice(1);
-                
-                // Ordenamos las filas por fecha descendente (más nueva primero)
                 filas.sort((a, b) => new Date(b[0]) - new Date(a[0]));
-                
-                // Unimos de nuevo para procesar
                 dataGlobal = [cabecera, ...filas];
                 
                 let tbody = document.getElementById('cuerpo');
-                let tot = new Array(17).fill(0);
+                let tot = new Array(19).fill(0); // Aumentado a 19
                 tbody.innerHTML = "";
                 
-                filas.forEach((row, idx) => {
+                filas.forEach((row) => {
                     let tr = document.createElement('tr');
                     let d = new Date(row[0]);
                     tr.innerHTML = `<td onclick="cargarForm('${row[1]}')" style="cursor:pointer; color:var(--accent); text-decoration:underline">${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}</td>`;
-                    for(let i=1; i<17; i++) {
+                    for(let i=1; i<19; i++) { // Bucle hasta 19
                         let val = row[i] || 0;
                         let esNumerico = i > 2;
                         let numVal = Number(val);
@@ -171,20 +147,20 @@ button:hover {
             });
         }
 
-        // Ajuste en cargarForm para buscar por Tiket en vez de índice numérico
         function cargarForm(tiket) { 
             let row = dataGlobal.find(r => r[1] == tiket);
             let d = new Date(row[0]);
             document.getElementById('c0').value = d.toISOString().split('T')[0];
-            for(let i=1; i<17; i++) document.getElementById('c'+i).value = row[i]; 
+            for(let i=1; i<19; i++) document.getElementById('c'+i).value = row[i]; 
         }
 
-        function limpiar() { for(let i=0; i<17; i++) document.getElementById('c'+i).value = ""; }
+        function limpiar() { for(let i=0; i<19; i++) document.getElementById('c'+i).value = ""; }
+
         function enviar(accion, tiket = "") {
             let datos = { accion: accion, tiket: tiket || document.getElementById('c1').value };
             if(accion !== "eliminar") {
                 let vals = [];
-                for(let i=0; i<17; i++) vals.push(document.getElementById('c'+i).value);
+                for(let i=0; i<19; i++) vals.push(document.getElementById('c'+i).value);
                 datos.valores = vals;
             }
             fetch(URL, { method: "POST", mode: "no-cors", body: JSON.stringify(datos) })
