@@ -4,65 +4,124 @@
     <meta charset="UTF-8">
     <title>Inventario - Panel Principal</title>
     <style>
+        /* Base Styles */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background-color: #1a1c23; color: #e0e0e0; }
         h1 { color: #ffffff; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+
+        /* Containers */
+        .form-container { background: #252830; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 20px; border: 1px solid #333; }
         .panel-busqueda { background: #252830; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; display: flex; gap: 10px; }
+
+        /* Inputs & Buttons */
         #inputBusqueda { flex-grow: 1; padding: 10px; background: #1a1c23; color: white; border: 1px solid #444; border-radius: 4px; }
         .btn-desfasados { background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .form-container { background: #252830; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 20px; border: 1px solid #333; }
+
+        /* Table Styles */
         #tabla-contenedor { width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; background: #252830; }
         td, th { border: 1px solid #333; padding: 10px; text-align: center; color: #ccc; }
         th { background-color: #34495e !important; color: #ffffff !important; border-bottom: 3px solid #3498db !important; text-transform: uppercase; }
-        tr:hover { background-color: #30343f; }
+        tr:hover { background-color: #30343f; cursor: pointer; }
         .color-verde { background-color: #008000 !important; color: #fff !important; }
         .color-rojo { background-color: #b30000 !important; color: #fff !important; }
+
+        /* Grid Editor Styles */
+        .detalle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .item-detalle { background: #1a1c23; padding: 10px; border-radius: 4px; text-align: center; border: 1px solid #444; }
+        .item-detalle label { display: block; font-size: 0.75em; color: #888; margin-bottom: 4px; text-transform: uppercase; }
+        .item-detalle span { font-size: 1.1em; color: #fff; font-weight: bold; }
     </style>
 </head>
 <body>
+
     <h1>Stock Cuadrilla FO1 FO2 FO3</h1>
+
     <div class="panel-busqueda">
         <input type="text" id="inputBusqueda" placeholder="🔍 Buscar por Nombre de Artículo o IDArt..." onkeyup="filtrarTabla()">
         <button class="btn-desfasados" onclick="mostrarDesfasados()">🔍 Ver Desfasados</button>
     </div>
+
+    <div id="editor-registro" class="form-container" style="display:none; border: 2px solid #3498db;">
+        <h3 style="color: #3498db; margin-top:0;">Detalle del Registro</h3>
+        <div class="detalle-grid">
+            <div class="item-detalle"><label>Nombre</label><span id="det-nombre">-</span></div>
+            <div class="item-detalle"><label>ID Art</label><span id="det-id">-</span></div>
+            <div class="item-detalle"><label>D FO1</label><span id="det-fo1">-</span></div>
+            <div class="item-detalle"><label>D FO2</label><span id="det-fo2">-</span></div>
+            <div class="item-detalle"><label>D FO3</label><span id="det-fo3">-</span></div>
+        </div>
+        <button onclick="document.getElementById('editor-registro').style.display='none'" style="background:#e74c3c; color:white; border:none; padding:8px 15px; cursor:pointer; border-radius:4px;">Cerrar</button>
+    </div>
+
     <div class="form-container">
         <h3 style="color: #3498db;">Cargar nueva tanda de columnas:</h3>
         <textarea id="bloqueDatos" placeholder="Pega aquí los datos..." style="width:100%; height:80px; background:#1a1c23; color:#fff; border:1px solid #444; border-radius:4px;"></textarea>
         <button onclick="enviarTanda()" style="margin-top:10px; padding:10px 20px; cursor:pointer; background:#3498db; color:white; border:none; border-radius:4px;">Añadir Nueva Tanda</button>
     </div>
+
     <div id="tabla-contenedor">
         <table id="tabla">
             <thead id="tabla-head"></thead>
             <tbody id="tabla-body"></tbody>
         </table>
     </div>
+
     <script>
         const URL_API = "https://script.google.com/macros/s/AKfycbwRxSzmgNC1IyLF_sZsHwah8gK2N5sLeMyF5SBNZBNnG2HPpJeiqNEfhVHz_KTzPY7TuA/exec";
-        let datosGlobales = []; let colNombre = 1, colID = 2;
+        let datosGlobales = []; 
+        let colNombre = 1, colID = 2;
 
         function cargarTabla() {
-            fetch(URL_API).then(res => res.json()).then(datos => {
-                datosGlobales = datos;
-                const cabeceras = datos[0];
-                cabeceras.forEach((c, i) => {
-                    if (c.toString().trim() === "Nombre del Artículo") colNombre = i;
-                    if (c.toString().trim() === "IDArt") colID = i;
+            fetch(URL_API)
+                .then(res => res.json())
+                .then(datos => {
+                    datosGlobales = datos;
+                    const cabeceras = datos[0];
+                    cabeceras.forEach((c, i) => {
+                        if (c.toString().trim() === "Nombre del Artículo") colNombre = i;
+                        if (c.toString().trim() === "IDArt") colID = i;
+                    });
+                    renderizarTabla(datos);
                 });
-                renderizarTabla(datos);
-            });
         }
 
         function renderizarTabla(datos) {
-            const head = document.getElementById('tabla-head'), body = document.getElementById('tabla-body');
-            head.innerHTML = ""; body.innerHTML = "";
+            const head = document.getElementById('tabla-head');
+            const body = document.getElementById('tabla-body');
+            head.innerHTML = ""; 
+            body.innerHTML = "";
+            
             if (datos.length === 0) return;
+            
             const encabezados = datos[0];
-            const indicesObjetivo = encabezados.map((n, i) => (n === "D FO1" || n === "D FO2" || n === "D FO3") ? i : -1).filter(i => i !== -1);
+            const indicesFO = {
+                fo1: encabezados.indexOf("D FO1"),
+                fo2: encabezados.indexOf("D FO2"),
+                fo3: encabezados.indexOf("D FO3")
+            };
+            const indicesObjetivo = [indicesFO.fo1, indicesFO.fo2, indicesFO.fo3];
+            
+            // Render Header
             const trHead = document.createElement('tr');
-            encabezados.forEach(txt => { const th = document.createElement('th'); th.textContent = txt; trHead.appendChild(th); });
+            encabezados.forEach(txt => { 
+                const th = document.createElement('th'); 
+                th.textContent = txt; 
+                trHead.appendChild(th); 
+            });
             head.appendChild(trHead);
+
+            // Render Body
             datos.slice(1).forEach((fila) => {
                 const tr = document.createElement('tr');
+                tr.onclick = function() {
+                    document.getElementById('det-nombre').textContent = fila[colNombre];
+                    document.getElementById('det-id').textContent = fila[colID];
+                    document.getElementById('det-fo1').textContent = fila[indicesFO.fo1];
+                    document.getElementById('det-fo2').textContent = fila[indicesFO.fo2];
+                    document.getElementById('det-fo3').textContent = fila[indicesFO.fo3];
+                    document.getElementById('editor-registro').style.display = 'block';
+                };
+                
                 fila.forEach((celda, i) => {
                     const td = document.createElement('td');
                     if (typeof celda === 'string' && celda.includes('T') && celda.includes(':')) {
@@ -84,8 +143,13 @@
         function enviarTanda() {
             const texto = document.getElementById('bloqueDatos').value;
             fetch(URL_API, { method: 'POST', body: JSON.stringify(texto.split('\n')) })
-            .then(() => { alert("Columna añadida correctamente"); document.getElementById('bloqueDatos').value = ""; cargarTabla(); });
+                .then(() => { 
+                    alert("Columna añadida correctamente"); 
+                    document.getElementById('bloqueDatos').value = ""; 
+                    cargarTabla(); 
+                });
         }
+
         cargarTabla();
     </script>
 </body>
