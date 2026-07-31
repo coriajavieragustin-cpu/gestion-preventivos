@@ -13,8 +13,10 @@
             --card-bg: #161b22;
             --tec-color: #009ef7;
             --prev-color: #50cd89;
+            --tk-color: #00f2fe;
             --text-muted: #8b949e;
             --border-color: #30363d;
+            --danger-color: #f1416c;
         }
         body { background-color: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
         .wrapper { display: flex; height: 100vh; }
@@ -25,58 +27,167 @@
         #digitalClock { font-size: 0.85rem; color: var(--text-muted); }
         .btn-nav { width: 100%; text-align: left; background: transparent; color: #a1a5b7; border: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-decoration: none; display: block; transition: 0.2s; margin-bottom: 5px; }
         .btn-nav:hover { background: #2b2b40; color: white; }
-        
+
         .sync-section { margin-top: auto; padding-top: 15px; border-top: 1px solid #2b2b40; }
-        .btn-sync { width: 100%; font-size: 0.7rem; padding: 8px; margin-top: 10px; margin-bottom: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: #21262d; color: white; transition: 0.3s; cursor: pointer; }
+        .btn-sync { width: 100%; font-size: 0.7rem; padding: 8px; margin-top: 6px; margin-bottom: 4px; border-radius: 6px; border: 1px solid var(--border-color); background: #21262d; color: white; transition: 0.3s; cursor: pointer; }
         .btn-sync:hover { background: #30363d; }
         .btn-sync.tec:hover { border-color: var(--tec-color); }
         .btn-sync.prev:hover { border-color: var(--prev-color); }
-        .sync-time { font-size: 0.6rem; color: var(--text-muted); display: block; text-align: center; margin-bottom: 15px; font-family: monospace; }
+        .btn-sync.tk:hover { border-color: var(--tk-color); }
+        .sync-time { font-size: 0.6rem; color: var(--text-muted); display: block; text-align: center; margin-bottom: 10px; font-family: monospace; }
 
-        .main-content { display: flex; flex-grow: 1; overflow: hidden; }
-        .panel { flex: 1; padding: 20px; overflow-y: auto; border-right: 1px solid var(--border-color); }
-        .panel-prev { background-color: #0d1117; border-right: none; }
-        
+        .main-content { display: flex; flex-grow: 1; overflow-x: auto; overflow-y: hidden; }
+        .panel { flex: 1; min-width: 360px; padding: 20px; overflow-y: auto; border-right: 1px solid var(--border-color); }
+        .panel-prev { background-color: #0d1117; }
+        .panel-tk { background-color: #0b0e14; border-right: none; }
+
         .header-mini { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .header-mini h6 { margin: 0; font-weight: 700; letter-spacing: 1px; }
-        
+
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .mini-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; }
         .mini-card .label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
         .mini-card .value { font-size: 1.2rem; font-weight: 800; display: block; }
-        
+
         .chart-grid-tec { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; margin-bottom: 15px; }
-        .chart-container-tec { background: var(--card-bg); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color); height: 280px; } 
-        
+        .chart-container-tec { background: var(--card-bg); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color); height: 280px; }
+
         .chart-container-full { background: var(--card-bg); border-radius: 8px; padding: 15px; border: 1px solid var(--border-color); height: 180px; margin-bottom: 15px; }
         select.form-select-sm { font-size: 0.75rem; background: #21262d; color: white; border-color: var(--border-color); width: auto; }
 
         .resumen-container { background: var(--card-bg); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color); margin-top: 10px; }
         .resumen-header { font-weight: 800; font-size: 0.75rem; color: var(--tec-color); letter-spacing: 1px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
         .calculo-info { font-size: 0.6rem; color: var(--text-muted); font-weight: normal; font-family: monospace; text-transform: none; }
-        
-        .tec-list { 
+
+        .tec-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 10px;
-            max-height: 400px; 
-            overflow-y: auto; 
-            padding-right: 5px; 
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
         }
         .tec-card { border-left: 3px solid var(--tec-color); background: #1c2128; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border: 1px solid transparent; }
         .tec-info .nombre { font-weight: 700; font-size: 0.75rem; display: block; color: #f0f6fc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .tec-info .detalle { font-size: 0.6rem; color: var(--text-muted); font-family: monospace; }
         .badge-promedio { background: var(--tec-color); color: white; font-weight: 800; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; min-width: 45px; text-align: center; }
 
+        /* Estilos específicos Módulo TK */
+        .tk-table-container { max-height: 480px; overflow-y: auto; }
+        .tk-table-container::-webkit-scrollbar { width: 6px; }
+        .tk-table-container::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
         #loaderGlobal { display: none; position: fixed; top: 10px; right: 10px; z-index: 2000; font-size: 0.7rem; }
         #appWrapper { display: none; }
+
+        /* ---------- PANTALLA DE LOGIN ---------- */
+        #loginOverlay {
+            position: fixed; inset: 0; z-index: 3000;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle at 50% 20%, #182031 0%, #0f111a 65%);
+        }
+        .login-card {
+            width: 320px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 32px 28px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .login-icon {
+            width: 54px; height: 54px; margin: 0 auto 14px auto;
+            border-radius: 50%;
+            background: rgba(0,158,247,0.12);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            color: var(--tec-color);
+            border: 1px solid rgba(0,158,247,0.35);
+        }
+        .login-card h4 {
+            font-size: 0.95rem; font-weight: 800; letter-spacing: 0.5px;
+            color: #f0f6fc; margin-bottom: 4px;
+        }
+        .login-card p.subtitle {
+            font-size: 0.7rem; color: var(--text-muted); margin-bottom: 22px;
+        }
+        .login-input-group {
+            position: relative; margin-bottom: 14px;
+        }
+        #inputPassword {
+            width: 100%;
+            background: #0d1117;
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 8px;
+            padding: 10px 40px 10px 14px;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #inputPassword:focus {
+            border-color: var(--tec-color);
+            box-shadow: 0 0 0 3px rgba(0,158,247,0.15);
+        }
+        #togglePassword {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; font-size: 0.9rem; padding: 2px 4px;
+        }
+        #togglePassword:hover { color: white; }
+        #btnLogin {
+            width: 100%;
+            background: var(--tec-color);
+            border: none;
+            color: white;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #btnLogin:hover { background: #0087d1; }
+        #loginError {
+            color: var(--danger-color);
+            font-size: 0.7rem;
+            margin-top: 12px;
+            min-height: 14px;
+            font-weight: 600;
+        }
+        .login-card.shake {
+            animation: shakeAnim 0.4s;
+        }
+        @keyframes shakeAnim {
+            10%, 90% { transform: translateX(-2px); }
+            20%, 80% { transform: translateX(4px); }
+            30%, 50%, 70% { transform: translateX(-8px); }
+            40%, 60% { transform: translateX(8px); }
+        }
     </style>
 </head>
 <body>
 
 <div id="loaderGlobal" class="badge bg-warning text-dark p-2 shadow">⌛ Sincronizando...</div>
 
+<!-- PANTALLA DE LOGIN -->
+<div id="loginOverlay">
+    <div class="login-card" id="loginCard">
+        <div class="login-icon">🔒</div>
+        <h4>PANEL INFRAESTRUCTURA CONNECTTO</h4>
+        <p class="subtitle">Ingresá la contraseña para continuar</p>
+        <div class="login-input-group">
+            <input type="password" id="inputPassword" placeholder="Contraseña" autocomplete="off">
+            <button type="button" id="togglePassword" onclick="togglePasswordVisibility()">👁</button>
+        </div>
+        <button id="btnLogin" onclick="verificarClave()">Ingresar</button>
+        <div id="loginError"></div>
+    </div>
+</div>
+
 <div id="appWrapper" class="wrapper">
+    <!-- BARRA LATERAL -->
     <div class="sidebar">
         <h5>PANEL INFRAESTRUCTURA CONNECTTO</h5>
         <div class="clock">
@@ -87,25 +198,28 @@
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Tecnicos.html" target="_blank" class="btn-nav">👷 Técnicos</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/Preventivos.html" target="_blank" class="btn-nav">🛠️ Preventivos</a>
             <a href="https://script.google.com/macros/s/AKfycbxLRFO6l9I3dFf8YtrvSLdWRYNz4IY9bdX6ck2SfagDkgZhGgqGo509PV4JEC8PSe0/exec" target="_blank" class="btn-nav">⚡ Monitoreo Mantenimientos</a>
-            <a href="https://www.appsheet.com/start/ff4a94aa-10ab-44fe-a613-496f37d92514?platform=desktop#appName=Hojadecálculosintítulo-127601600&vss=H4sIAAAAAAAAA6WRPW_CMBCG_wq6OQurNwgtRAgqQcUSI3SQi2Rq4iix-VDk_94zAdGhS8Jmn_W8el5fA2dFl7XFww-ItHnd5nQDAY2E71tJEoSE2BS2MlpCJGGJp3Y4M0ccDCV48FFfejchi0rfQ7bRM8RSDaLpYiDe0Y9AZVRYlSuqQlLgOOFB8XNgeNAS3BZOzuJe012VCc-j7oV7O__J6Kb-AP9pACtzaR2-PpM4WY4YnVbGlWOepbyZtans8zyhHJ22G9QuLCrd-vABuTm4mrINV-pbpU6Kj2uJRbYwGVvlqGvyv9ThnmynAgAA&row=OFICINA&view=Hoja%201_Detail" target="_blank" class="btn-nav">🚗 vehiculos</a>
+            <a href="https://www.appsheet.com/start/ff4a94aa-10ab-44fe-a613-496f37d92514?platform=desktop#appName=Hojadecálculosintítulo-127601600&vss=H4sIAAAAAAAAA6WRPW_CMBCG_wq6OQurNwgtRAgqQcUSI3SQi2Rq4iix-VDk_94zAdGhS8Jmn_W8el5fA2dFl7XFww-ItHnd5nQDAY2E71tJEoSE2BS2MlpCJGGJp3Y4M0ccDCV48FFfejchi0rfQ7bRM8RSDaLpYiDe0Y9AZVRYlSuqQlLgOOFB8XNgeNAS3BZOzuJe012VCc-j7oV7O__J6Kb-AP9pACtzaR2-PpM4WY4YnVbGlWOepbyZtans8zyhHJ22G9QuLCrd-vABuTm4mrINV-pbpU6Kj2uJRbYwGVvlqGvyv9ThnmynAgAA&row=OFICINA&view=Hoja%201_Detail" target="_blank" class="btn-nav">🚗 Vehículos</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/otdr.html" target="_blank" class="btn-nav">📉 OTDR</a>
             <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/stockcampo.html" target="_blank" class="btn-nav">📦 Materiales Utilizados</a>
-          <!--<a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/stockcuadrillas.html" target="_blank" class="btn-nav">📊 Stock Cuadrillas</a>-->
-           <!-- <a href="https://coriajavieragustin-cpu.github.io/gestion-preventivos/promedios%20cab.html" target="_blank" class="btn-nav">📐 Calculo de cables</a> -->
-           <!-- <a href="https://docs.google.com/spreadsheets/d/1zeWvyKYqxZdzBtIfCm_ZdO0oTG-UWNJiGqQTCJioNLw/edit?usp=drive_link" target="_blank" class="btn-nav">📄 ST FO 01-02-03-DH </a>-->
             <a href="https://www.appsheet.com/start/8b6106f7-2bf0-4a94-be13-05bdf29bd1d0?platform=desktop#appName=CertificacionChiquita-127601600&vss=H4sIAAAAAAAAA6WOwQ7CIBBE_2XOfAFX48EYvWi8iAcsS0JsoSlUbQj_7lI1nhuP-zZvZjLujh6HpJsb5Dn_ri1NkMgKx6knBamwCj4NoVUQCnvdvaHRKUSFgnIRXzlRhMwLXPlHr4Az5JOzjoYaVDUO-Ej8rgqDWUAR6Makry3NO1kohZkNzRjJnHjE0vK48etnr73ZBcN5VreRygtHQ0xDVgEAAA==&view=datos" target="_blank" class="btn-nav">📋 Cer B.Chiquita</a>
-            
         </nav>
 
         <div class="sync-section">
             <button onclick="syncManual('tec')" class="btn-sync tec">🔄 Sync Técnicos</button>
             <span class="sync-time" id="timeTec">Nunca</span>
+
             <button onclick="syncManual('prev')" class="btn-sync prev">🔄 Sync Preventivos</button>
             <span class="sync-time" id="timePrev">Nunca</span>
+
+            <button onclick="syncManual('tk')" class="btn-sync tk">🔄 Sync TK</button>
+            <span class="sync-time" id="timeTk">Nunca</span>
         </div>
     </div>
 
+    <!-- CONTENIDO PRINCIPAL -->
     <div class="main-content">
+
+        <!-- 1. MODULO TÉCNICOS -->
         <div class="panel">
             <div class="header-mini">
                 <h6 style="color: var(--tec-color)">MODULO TÉCNICOS</h6>
@@ -148,6 +262,7 @@
             </div>
         </div>
 
+        <!-- 2. MODULO PREVENTIVOS -->
         <div class="panel panel-prev">
             <div class="header-mini">
                 <h6 style="color: var(--prev-color)">MODULO PREVENTIVOS</h6>
@@ -180,6 +295,60 @@
                 <canvas id="chartPrevCat"></canvas>
             </div>
         </div>
+
+        <!-- 3. MODULO TK -->
+        <div class="panel panel-tk">
+            <div class="header-mini">
+                <h6 style="color: var(--tk-color)">MÓDULO TK</h6>
+                <div class="d-flex gap-1">
+                    <select id="selectorAnioTk" class="form-select form-select-sm" onchange="cargarTK()">
+                        <option value="2026">2026</option>
+                        <option value="2025">2025</option>
+                    </select>
+                    <select id="selectorMesTk" class="form-select form-select-sm" onchange="cargarTK()">
+                        <option value="Ene">Ene</option><option value="Feb">Feb</option>
+                        <option value="Mar">Mar</option><option value="Abr">Abr</option>
+                        <option value="May">May</option><option value="Jun">Jun</option>
+                        <option value="Jul">Jul</option><option value="Ago">Ago</option>
+                        <option value="Sep">Sep</option><option value="Oct">Oct</option>
+                        <option value="Nov">Nov</option><option value="Dic">Dic</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-2">
+                <!-- Gráfico Mensual TK -->
+                <div class="col-12 col-xl-7">
+                    <div class="mini-card" style="height: 520px; display: flex; flex-direction: column;">
+                        <span class="label text-white fw-bold mb-3 d-block" style="font-size: 0.9rem;">Gráfico Mensual</span>
+                        <div style="flex-grow: 1; position: relative;">
+                            <canvas id="chartTkBar"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalle del Mes TK -->
+                <div class="col-12 col-xl-5">
+                    <div class="mini-card" style="height: 520px; display: flex; flex-direction: column;">
+                        <span class="label text-white fw-bold mb-3 d-block" style="font-size: 0.9rem;">Detalle del Mes</span>
+                        <div class="tk-table-container" style="flex-grow: 1;">
+                            <table class="table table-dark table-borderless table-hover align-middle mb-0" style="font-size: 0.75rem;">
+                                <thead>
+                                    <tr class="border-bottom border-secondary text-info">
+                                        <th>Categoría</th>
+                                        <th class="text-end">Casos del Mes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaDetalleTk">
+                                    <tr><td colspan="2" class="text-center text-muted py-3">Cargando datos...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -187,16 +356,24 @@
     const CLAVE_ACCESO = "Javiercito2026";
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec";
     const PREV_APP_URL = "https://script.google.com/macros/s/AKfycbw_pbtEwiF-JwWs2qvLfGgu-3DyUenPYXWDnKb9mKDvkkz43Us2lAmgjDEamrCwGg0s/exec";
-    
+    const TK_APP_URL   = "https://script.google.com/macros/s/AKfycbwsbqn-wPMT0VxzexA6Lz0gVxorje0epsKbjMEcL_sJJ8tXzCF3pZ1vrN8oUCul1OUy/exec";
+
     let miGraficoCat = null;
     let miGraficoRank = null;
     let chartZona = null;
     let chartCat = null;
+    let chartTkBar = null;
+
+    let cacheDatosTK = null;
 
     function updateClock() {
-        const now = new Date();
-        document.getElementById('digitalDate').innerText = now.toLocaleDateString('es-ES');
-        document.getElementById('digitalClock').innerText = now.toLocaleTimeString();
+        const dateEl = document.getElementById('digitalDate');
+        const clockEl = document.getElementById('digitalClock');
+        if (dateEl && clockEl) {
+            const now = new Date();
+            dateEl.innerText = now.toLocaleDateString('es-ES');
+            clockEl.innerText = now.toLocaleTimeString();
+        }
     }
     setInterval(updateClock, 1000); updateClock();
 
@@ -205,25 +382,62 @@
         return now.toLocaleDateString('es-ES') + ' ' + now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
-    window.onload = () => {
-        const passwordInput = prompt("Introduce la contraseña para acceder al Dashboard:");
-        
-        if (passwordInput === CLAVE_ACCESO) {
-            document.getElementById('appWrapper').style.display = "flex";
-            const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-            document.getElementById('selectorMes').value = meses[new Date().getMonth()];
-            cargarDatos();
+    // ---------- LOGIN ----------
+    function togglePasswordVisibility() {
+        const input = document.getElementById('inputPassword');
+        const btn = document.getElementById('togglePassword');
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.innerText = '🙈';
         } else {
-            alert("Contraseña incorrecta. Acceso denegado.");
-            document.body.innerHTML = `<div style="color: #f1416c; text-align:center; margin-top:20vh; font-family:sans-serif;"><h2>🔒 Acceso No Autorizado</h2><p>Actualiza la página para intentar de nuevo.</p></div>`;
+            input.type = 'password';
+            btn.innerText = '👁';
         }
+    }
+
+    function verificarClave() {
+        const input = document.getElementById('inputPassword');
+        const errorEl = document.getElementById('loginError');
+        const card = document.getElementById('loginCard');
+
+        if (input.value === CLAVE_ACCESO) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('appWrapper').style.display = 'flex';
+            iniciarDashboard();
+        } else {
+            errorEl.innerText = 'Contraseña incorrecta. Intentá de nuevo.';
+            card.classList.remove('shake');
+            void card.offsetWidth; // reinicia la animación
+            card.classList.add('shake');
+            input.value = '';
+            input.focus();
+        }
+    }
+
+    window.onload = () => {
+        const input = document.getElementById('inputPassword');
+        input.focus();
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') verificarClave();
+        });
     };
+
+    function iniciarDashboard() {
+        const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const mesesCortos = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+        const mesActualIdx = new Date().getMonth();
+        document.getElementById('selectorMes').value = meses[mesActualIdx];
+        document.getElementById('selectorMesTk').value = mesesCortos[mesActualIdx];
+
+        cargarDatos();
+    }
 
     async function cargarDatos() {
         document.getElementById('loaderGlobal').style.display = "block";
         const mes = document.getElementById('selectorMes').value;
         try {
-            await Promise.all([cargarTecnicos(mes), cargarPreventivos()]);
+            await Promise.all([cargarTecnicos(mes), cargarPreventivos(), cargarTK()]);
         } catch (e) { console.error(e); }
         finally { document.getElementById('loaderGlobal').style.display = "none"; }
     }
@@ -234,42 +448,23 @@
         try {
             if (tipo === 'tec') await cargarTecnicos(mes);
             if (tipo === 'prev') await cargarPreventivos();
+            if (tipo === 'tk') {
+                cacheDatosTK = null;
+                await cargarTK();
+            }
         } catch (e) { console.error(e); }
         finally { document.getElementById('loaderGlobal').style.display = "none"; }
     }
 
+    // --- LÓGICA TÉCNICOS ---
     async function cargarTecnicos(mes) {
         try {
             const res = await fetch(`${WEB_APP_URL}?mes=${mes}&nocache=${Date.now()}`);
             const filas = await res.json();
-            if (filas.length > 1) { 
-                procesarLogicaTecnicos(filas.slice(1), mes); 
+            if (filas.length > 1) {
+                procesarLogicaTecnicos(filas.slice(1), mes);
                 document.getElementById('timeTec').innerText = obtenerFechaHoraActual();
             }
-        } catch (e) { console.error(e); }
-    }
-
-    async function cargarPreventivos() {
-        try {
-            const res = await fetch(`${PREV_APP_URL}?nocache=${Date.now()}`);
-            const data = await res.json();
-            let stats = { tot: data.length, fin: 0, pen: 0, proc: 0 };
-            let zonas = {}, cats = {};
-            data.forEach(d => {
-                const est = (d.ESTADO || "").toString().toLowerCase();
-                if(est.includes("finalizado") || est.includes("fin")) stats.fin++;
-                else if(est.includes("proceso") || est.includes("proc")) stats.proc++;
-                else stats.pen++;
-                const z = d.ZONA || "S/Z"; const c = d.CATEGORIA || "S/C";
-                zonas[z] = (zonas[z] || 0) + 1; cats[c] = (cats[c] || 0) + 1;
-            });
-            document.getElementById('prevTotal').innerText = stats.tot;
-            document.getElementById('prevFinalizadas').innerText = stats.fin;
-            document.getElementById('prevPendientes').innerText = stats.pen;
-            document.getElementById('prevProceso').innerText = stats.proc;
-            renderBarChart('chartPrevZona', zonas, chartZona, (c) => chartZona = c, "TAREAS POR ZONA");
-            renderBarChart('chartPrevCat', cats, chartCat, (c) => chartCat = c, "TAREAS POR CATEGORÍA");
-            document.getElementById('timePrev').innerText = obtenerFechaHoraActual();
         } catch (e) { console.error(e); }
     }
 
@@ -279,7 +474,7 @@
         let domingos = 0;
         for(let i=1; i<=diasDelMes; i++) { if(new Date(2026, mesesRef[textMes], i).getDay() === 0) domingos++; }
         document.getElementById('valInfoDias').innerText = `${diasDelMes}d / ${domingos} dom`;
-        
+
         let tecnicos = {};
         let categoriesCount = {};
         let totalVal = 0;
@@ -288,10 +483,10 @@
             if(!f[4]) return;
             const t = f[4].toString().trim();
             const cat = f[2] ? f[2].toString().trim() : "Otros";
-            
+
             if(!tecnicos[t]) tecnicos[t] = { pts: 0, aus: 0, sab: 0 };
             tecnicos[t].pts += parseFloat(f[5]) || 0;
-            
+
             if(cat.toUpperCase().includes("AUSENCIA")) {
                 tecnicos[t].aus += 1;
             } else {
@@ -326,17 +521,17 @@
         });
 
         document.getElementById('valPromMesTec').innerText = cantTec > 0 ? (sumaPromedios / cantTec).toFixed(2) : "0.00";
-        
+
         renderTorta(categoriesCount, totalVal);
-        renderMiniRank(ranking.slice(0, 6)); 
+        renderMiniRank(ranking.slice(0, 6));
     }
 
     function renderTorta(data, total) {
         const ctx = document.getElementById('chartCatTec').getContext('2d');
         if (miGraficoCat) miGraficoCat.destroy();
-        
+
         const labels = Object.keys(data).map(k => {
-            const p = ((data[k]/total)*100).toFixed(1);
+            const p = total > 0 ? ((data[k]/total)*100).toFixed(1) : "0.0";
             return `${k} (${p}%)`;
         });
 
@@ -358,10 +553,10 @@
                         position: 'right',
                         labels: { color: '#8b949e', font: { size: 7 }, boxWidth: 8, padding: 6 }
                     },
-                    title: { 
-                        display: true, 
-                        text: '% POR CATEGORÍA', 
-                        color: '#fff', 
+                    title: {
+                        display: true,
+                        text: '% POR CATEGORÍA',
+                        color: '#fff',
                         font: { size: 10, weight: 'bold' },
                         align: 'start',
                         padding: { bottom: 10 }
@@ -377,26 +572,51 @@
         miGraficoRank = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: top6.map(r => r.nombre.split(' ')[0]), 
-                datasets: [{ 
-                    data: top6.map(r => r.promedio), 
-                    backgroundColor: '#009ef7', 
+                labels: top6.map(r => r.nombre.split(' ')[0]),
+                datasets: [{
+                    data: top6.map(r => r.promedio),
+                    backgroundColor: '#009ef7',
                     borderRadius: 3,
-                    barPercentage: 0.65 
+                    barPercentage: 0.65
                 }]
             },
             options: {
                 indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                plugins: { 
+                plugins: {
                     legend: { display: false },
                     title: { display: true, text: 'TOP 6 PROMEDIOS', color: '#fff', font: { size: 10, weight: 'bold' } }
                 },
-                scales: { 
-                    x: { ticks: { display: false }, grid: { display: false } }, 
-                    y: { ticks: { color: '#fff', font: { size: 8 } }, grid: { display: false } } 
+                scales: {
+                    x: { ticks: { display: false }, grid: { display: false } },
+                    y: { ticks: { color: '#fff', font: { size: 8 } }, grid: { display: false } }
                 }
             }
         });
+    }
+
+    // --- LÓGICA PREVENTIVOS ---
+    async function cargarPreventivos() {
+        try {
+            const res = await fetch(`${PREV_APP_URL}?nocache=${Date.now()}`);
+            const data = await res.json();
+            let stats = { tot: data.length, fin: 0, pen: 0, proc: 0 };
+            let zonas = {}, cats = {};
+            data.forEach(d => {
+                const est = (d.ESTADO || "").toString().toLowerCase();
+                if(est.includes("finalizado") || est.includes("fin")) stats.fin++;
+                else if(est.includes("proceso") || est.includes("proc")) stats.proc++;
+                else stats.pen++;
+                const z = d.ZONA || "S/Z"; const c = d.CATEGORIA || "S/C";
+                zonas[z] = (zonas[z] || 0) + 1; cats[c] = (cats[c] || 0) + 1;
+            });
+            document.getElementById('prevTotal').innerText = stats.tot;
+            document.getElementById('prevFinalizadas').innerText = stats.fin;
+            document.getElementById('prevPendientes').innerText = stats.pen;
+            document.getElementById('prevProceso').innerText = stats.proc;
+            renderBarChart('chartPrevZona', zonas, chartZona, (c) => chartZona = c, "TAREAS POR ZONA");
+            renderBarChart('chartPrevCat', cats, chartCat, (c) => chartCat = c, "TAREAS POR CATEGORÍA");
+            document.getElementById('timePrev').innerText = obtenerFechaHoraActual();
+        } catch (e) { console.error(e); }
     }
 
     function renderBarChart(id, data, inst, cb, title) {
@@ -405,23 +625,159 @@
         const colores = ['#50cd89', '#009ef7', '#f1416c', '#ffc700', '#7239ea', '#00ffa3'];
         cb(new Chart(ctx, {
             type: 'bar',
-            data: { 
-                labels: Object.keys(data), 
-                datasets: [{ data: Object.values(data), backgroundColor: colores, borderRadius: 4, barThickness: 12 }] 
+            data: {
+                labels: Object.keys(data),
+                datasets: [{ data: Object.values(data), backgroundColor: colores, borderRadius: 4, barThickness: 12 }]
             },
-            options: { 
+            options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { 
+                plugins: {
                     legend: { display: false },
                     title: { display: true, text: title, color: '#8b949e', font: { size: 10, weight: 'bold' } }
                 },
-                scales: { 
-                    x: { grid: { color: '#2b2b40' }, ticks: { color: '#fff', font: { size: 8 } } }, 
-                    y: { grid: { display: false }, ticks: { color: '#8b949e', font: { size: 8 } } } 
+                scales: {
+                    x: { grid: { color: '#2b2b40' }, ticks: { color: '#fff', font: { size: 8 } } },
+                    y: { grid: { display: false }, ticks: { color: '#8b949e', font: { size: 8 } } }
                 }
             }
         }));
     }
+
+    // --- LÓGICA MÓDULO TK (CORREGIDA Y FILTRADA) ---
+    async function cargarTK() {
+        const selAnio = parseInt(document.getElementById('selectorAnioTk').value, 10);
+        const selMesStr = document.getElementById('selectorMesTk').value;
+
+        const mapMeses = { "Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6, "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dic": 12 };
+        const selMes = mapMeses[selMesStr] || parseInt(selMesStr, 10);
+
+        try {
+            if (!cacheDatosTK) {
+                const res = await fetch(`${TK_APP_URL}?nocache=${Date.now()}`);
+                const data = await res.json();
+
+                if (Array.isArray(data)) {
+                    cacheDatosTK = data;
+                } else if (data && Array.isArray(data.datos)) {
+                    cacheDatosTK = data.datos;
+                } else {
+                    cacheDatosTK = [];
+                }
+            }
+
+            if (cacheDatosTK && cacheDatosTK.length > 0) {
+                const datosFiltrados = cacheDatosTK.filter(item => {
+                    const iAnio = parseInt(item.anio, 10);
+                    const iMes  = parseInt(item.mes, 10);
+                    return iAnio === selAnio && iMes === selMes;
+                });
+                procesarDatosTK(datosFiltrados);
+            } else {
+                renderDatosTKDemo(selMes, selAnio);
+            }
+            document.getElementById('timeTk').innerText = obtenerFechaHoraActual();
+        } catch (e) {
+            console.warn("No se pudo conectar con la URL de TK, cargando datos dinámicos de demostración:", e);
+            renderDatosTKDemo(selMes, selAnio);
+            document.getElementById('timeTk').innerText = obtenerFechaHoraActual();
+        }
+    }
+
+    function procesarDatosTK(filas) {
+        let conteo = {};
+
+        filas.forEach(f => {
+            let cat = "Sin Categoría";
+            if (typeof f === 'object' && f !== null) {
+                cat = f.categoria || f.CATEGORIA || f[2] || "Sin Categoría";
+            } else if (Array.isArray(f)) {
+                cat = f[2] || f[0] || "Sin Categoría";
+            }
+            if (cat.trim() !== "") {
+                conteo[cat] = (conteo[cat] || 0) + 1;
+            }
+        });
+
+        const ordenado = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+        renderGraficoTK(ordenado);
+        renderTablaTK(ordenado);
+    }
+
+    function renderDatosTKDemo(mesNum, anioNum) {
+        const factor = (mesNum % 4 + 1) * 0.75;
+        const demo = [
+            ["Caja distribucion sin señal", Math.round(42 * factor)],
+            ["Mantenimiento Troncal", Math.round(15 * factor)],
+            ["Caja distribucion señal alta", Math.round(11 * factor)],
+            ["Poste", Math.round(9 * factor)],
+            ["Splitter dañado", Math.round(8 * factor)],
+            ["Cableado bajo", Math.round(7 * factor)],
+            ["HERRAJES", Math.round(6 * factor)],
+            ["Cajas Caidas", Math.round(4 * factor)],
+            ["Mantenimiento Distribución", Math.round(4 * factor)],
+            ["Caja dañada", Math.round(3 * factor)],
+            ["CLIENTES ESPECIALES", Math.round(3 * factor)],
+            ["Caja con señal alta", Math.round(2 * factor)]
+        ].filter(i => i[1] > 0);
+
+        renderGraficoTK(demo);
+        renderTablaTK(demo);
+    }
+
+    function renderGraficoTK(listaCategorias) {
+        const ctx = document.getElementById('chartTkBar').getContext('2d');
+        if (chartTkBar) chartTkBar.destroy();
+
+        const labels = listaCategorias.map(item => item[0]);
+        const valores = listaCategorias.map(item => item[1]);
+
+        chartTkBar = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Casos',
+                    data: valores,
+                    backgroundColor: '#00f2fe',
+                    borderRadius: 4,
+                    barThickness: 12
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'CASOS POR CATEGORÍA', color: '#00f2fe', font: { size: 10, weight: 'bold' } }
+                },
+                scales: {
+                    x: { grid: { color: '#2b2b40' }, ticks: { color: '#8b949e', font: { size: 9 } } },
+                    y: { grid: { display: false }, ticks: { color: '#ffffff', font: { size: 9 } } }
+                }
+            }
+        });
+    }
+
+    function renderTablaTK(listaCategorias) {
+        const tbody = document.getElementById('tablaDetalleTk');
+        if (!listaCategorias || listaCategorias.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">Sin registros para el período seleccionado</td></tr>`;
+            return;
+        }
+
+        let html = '';
+        listaCategorias.forEach(([cat, cant]) => {
+            html += `
+                <tr>
+                    <td class="text-white fw-semibold">${cat}</td>
+                    <td class="text-end text-info fw-bold">${cant}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
 </script>
+
 </body>
 </html>
