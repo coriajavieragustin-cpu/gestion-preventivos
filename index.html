@@ -8,30 +8,31 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-dark: #0f111a;
-            --sidebar-bg: #1e1e2d;
-            --card-bg: #161b22;
-            --tec-color: #009ef7;
-            --prev-color: #50cd89;
+            --bg-dark: #121317;
+            --sidebar-bg: #131418;
+            --card-bg: #1b1c22;
+            --tec-color: #c084fc;
+            --prev-color: #10b981;
             --tk-color: #00f2fe;
-            --bat-color: #ff9f43;
-            --text-muted: #8b949e;
-            --border-color: #30363d;
-            --danger-color: #f1416c;
+            --bat-color: #f59e0b;
+            --text-muted: #8a94a6;
+            --border-color: #2d303a;
+            --danger-color: #ef4444;
+            --accent-blue: #0284c7;
         }
-        body { background-color: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
+        body { background-color: var(--bg-dark); color: #e2e8f0; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; }
         .wrapper { display: flex; height: 100vh; }
-        .sidebar { width: 150px; background: var(--sidebar-bg); padding: 12px; border-right: 1px solid #2b2b40; flex-shrink: 0; display: flex; flex-direction: column; }
+        .sidebar { width: 150px; background: var(--sidebar-bg); padding: 12px; border-right: 1px solid var(--border-color); flex-shrink: 0; display: flex; flex-direction: column; }
         .sidebar h5 { font-size: 0.78rem; color: var(--tec-color); margin-bottom: 8px; text-align: center; font-weight: 800; line-height: 1.2; }
-        .clock { font-family: monospace; text-align: center; margin-bottom: 12px; border-bottom: 1px solid #2b2b40; padding-bottom: 8px; }
-        #digitalDate { font-size: 0.68rem; color: var(--tec-color); margin-bottom: 2px; }
+        .clock { font-family: monospace; text-align: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        #digitalDate { font-size: 0.68rem; color: var(--tk-color); margin-bottom: 2px; }
         #digitalClock { font-size: 0.8rem; color: var(--text-muted); }
         .btn-nav { width: 100%; text-align: left; background: transparent; color: #a1a5b7; border: none; padding: 7px 8px; border-radius: 8px; font-size: 0.78rem; text-decoration: none; display: block; transition: 0.2s; margin-bottom: 2px; }
-        .btn-nav:hover { background: #2b2b40; color: white; }
+        .btn-nav:hover { background: #24262e; color: white; }
 
-        .sync-section { margin-top: auto; padding-top: 10px; border-top: 1px solid #2b2b40; }
-        .btn-sync { width: 100%; font-size: 0.65rem; padding: 6px; margin-top: 4px; margin-bottom: 2px; border-radius: 6px; border: 1px solid var(--border-color); background: #21262d; color: white; transition: 0.3s; cursor: pointer; }
-        .btn-sync:hover { background: #30363d; }
+        .sync-section { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border-color); }
+        .btn-sync { width: 100%; font-size: 0.65rem; padding: 6px; margin-top: 4px; margin-bottom: 2px; border-radius: 6px; border: 1px solid var(--border-color); background: #24262e; color: white; transition: 0.3s; cursor: pointer; }
+        .btn-sync:hover { background: #2d303a; }
         .btn-sync.tec:hover { border-color: var(--tec-color); }
         .btn-sync.prev:hover { border-color: var(--prev-color); }
         .btn-sync.tk:hover { border-color: var(--tk-color); }
@@ -39,10 +40,10 @@
         .sync-time { font-size: 0.58rem; color: var(--text-muted); display: block; text-align: center; margin-bottom: 6px; font-family: monospace; }
 
         .main-content { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); flex-grow: 1; overflow: auto; }
-        .panel { min-width: 0; padding: 14px; overflow-y: auto; overflow-x: hidden; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%; grid-column: 1; grid-row: 1 / span 2; }
-        .panel-prev { background-color: #0d1117; grid-column: 2; grid-row: 1 / span 2; }
-        .panel-tk { background-color: #0b0e14; grid-column: 3; grid-row: 1; border-right: none; border-bottom: 1px solid var(--border-color); }
-        .panel-bat { background-color: #080a0f; border-right: none; grid-column: 3; grid-row: 2; }
+        .panel { min-width: 0; padding: 14px; overflow-y: auto; overflow-x: hidden; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%; grid-column: 1; grid-row: 1 / span 2; background-color: var(--bg-dark); }
+        .panel-prev { background-color: var(--bg-dark); grid-column: 2; grid-row: 1 / span 2; }
+        .panel-tk { background-color: var(--bg-dark); grid-column: 3; grid-row: 1; border-right: none; border-bottom: 1px solid var(--border-color); }
+        .panel-bat { background-color: var(--bg-dark); border-right: none; grid-column: 3; grid-row: 2; }
 
         .header-mini { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
         .header-mini h6 { margin: 0; font-weight: 700; letter-spacing: 1px; }
@@ -50,14 +51,14 @@
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
         .mini-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 9px 10px; }
         .mini-card .label { font-size: 0.63rem; color: var(--text-muted); text-transform: uppercase; }
-        .mini-card .value { font-size: 1.1rem; font-weight: 800; display: block; }
+        .mini-card .value { font-size: 1.1rem; font-weight: 800; display: block; color: #ffffff; }
 
         .chart-grid-tec { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 8px; margin-bottom: 10px; flex-shrink: 0; height: 340px; }
         .chart-container-tec { background: var(--card-bg); border-radius: 8px; padding: 8px; border: 1px solid var(--border-color); height: 100%; }
 
         .chart-container-full { background: var(--card-bg); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color); flex: 1 1 0; min-height: 120px; margin-bottom: 10px; }
         .chart-container-full:last-child { margin-bottom: 0; }
-        select.form-select-sm { font-size: 0.75rem; background: #21262d; color: white; border-color: var(--border-color); width: auto; }
+        select.form-select-sm { font-size: 0.75rem; background: #24262e; color: white; border-color: var(--border-color); width: auto; }
 
         .resumen-container { background: var(--card-bg); border-radius: 12px; padding: 12px; border: 1px solid var(--border-color); margin-top: 0; flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
         .resumen-header { font-weight: 800; font-size: 0.75rem; color: var(--tec-color); letter-spacing: 1px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
@@ -75,28 +76,28 @@
             overflow-y: auto;
             padding-right: 5px;
         }
-        .tec-card { border-left: 3px solid var(--tec-color); background: #1c2128; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border: 1px solid transparent; }
+        .tec-card { border-left: 3px solid var(--tec-color); background: #24262e; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border: 1px solid var(--border-color); }
         .tec-info .nombre { font-weight: 700; font-size: 0.75rem; display: block; color: #f0f6fc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .tec-info .detalle { font-size: 0.6rem; color: var(--text-muted); font-family: monospace; }
-        .badge-promedio { background: var(--tec-color); color: white; font-weight: 800; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; min-width: 45px; text-align: center; }
+        .badge-promedio { background: var(--tec-color); color: #121317; font-weight: 800; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; min-width: 45px; text-align: center; }
 
         /* Estilos Módulo TK */
         .row.g-2.flex-fill-row { flex: 1 1 auto; min-height: 0; margin: 0 -4px; }
         .row.g-2.flex-fill-row > [class^="col-"] { height: 100%; padding: 0 4px; }
         .tk-table-container { overflow-y: auto; overflow-x: auto; }
         .tk-table-container::-webkit-scrollbar { width: 6px; }
-        .tk-table-container::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        .tk-table-container::-webkit-scrollbar-thumb { background: #2d303a; border-radius: 4px; }
 
         /* Estilos Módulo Baterías */
         .bat-table-container { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); }
         .bat-table-container::-webkit-scrollbar { width: 6px; }
-        .bat-table-container::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
-        .search-bat { background: #0d1117; border: 1px solid var(--border-color); color: white; border-radius: 6px; padding: 6px 12px; font-size: 0.75rem; width: 100%; margin-bottom: 10px; flex-shrink: 0; }
+        .bat-table-container::-webkit-scrollbar-thumb { background: #2d303a; border-radius: 4px; }
+        .search-bat { background: #131418; border: 1px solid var(--border-color); color: white; border-radius: 6px; padding: 6px 12px; font-size: 0.75rem; width: 100%; margin-bottom: 10px; flex-shrink: 0; }
         .search-bat:focus { outline: none; border-color: var(--bat-color); }
         .badge-status { font-size: 0.65rem; padding: 4px 8px; border-radius: 12px; font-weight: 600; display: inline-block; }
-        .badge-vencida { background: rgba(241, 65, 108, 0.2); color: #f1416c; border: 1px solid #f1416c; }
-        .badge-alerta { background: rgba(255, 159, 67, 0.2); color: #ff9f43; border: 1px solid #ff9f43; }
-        .badge-ok { background: rgba(80, 205, 137, 0.2); color: #50cd89; border: 1px solid #50cd89; }
+        .badge-vencida { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+        .badge-alerta { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+        .badge-ok { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
 
         #loaderGlobal { display: none; position: fixed; top: 10px; right: 10px; z-index: 2000; font-size: 0.7rem; }
         #appWrapper { display: none; }
@@ -105,35 +106,35 @@
         #loginOverlay {
             position: fixed; inset: 0; z-index: 3000;
             display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle at 50% 20%, #182031 0%, #0f111a 65%);
+            background: radial-gradient(circle at 50% 20%, #1b1c22 0%, #121317 65%);
         }
         .login-card {
             width: 320px; background: var(--card-bg); border: 1px solid var(--border-color);
-            border-radius: 14px; padding: 32px 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); text-align: center;
+            border-radius: 14px; padding: 32px 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.7); text-align: center;
         }
         .login-icon {
             width: 54px; height: 54px; margin: 0 auto 14px auto; border-radius: 50%;
-            background: rgba(0,158,247,0.12); display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; color: var(--tec-color); border: 1px solid rgba(0,158,247,0.35);
+            background: rgba(192, 132, 252, 0.12); display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: var(--tec-color); border: 1px solid rgba(192, 132, 252, 0.35);
         }
         .login-card h4 { font-size: 0.95rem; font-weight: 800; letter-spacing: 0.5px; color: #f0f6fc; margin-bottom: 4px; }
         .login-card p.subtitle { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 22px; }
         .login-input-group { position: relative; margin-bottom: 14px; }
         #inputPassword {
-            width: 100%; background: #0d1117; border: 1px solid var(--border-color); color: white;
+            width: 100%; background: #131418; border: 1px solid var(--border-color); color: white;
             border-radius: 8px; padding: 10px 40px 10px 14px; font-size: 0.85rem; outline: none; transition: 0.2s;
         }
-        #inputPassword:focus { border-color: var(--tec-color); box-shadow: 0 0 0 3px rgba(0,158,247,0.15); }
+        #inputPassword:focus { border-color: var(--tec-color); box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.15); }
         #togglePassword {
             position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
             background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 4px;
         }
         #togglePassword:hover { color: white; }
         #btnLogin {
-            width: 100%; background: var(--tec-color); border: none; color: white; font-weight: 700;
+            width: 100%; background: var(--tec-color); border: none; color: #121317; font-weight: 700;
             font-size: 0.8rem; letter-spacing: 0.5px; padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s;
         }
-        #btnLogin:hover { background: #0087d1; }
+        #btnLogin:hover { background: #a855f7; color: white; }
         #loginError { color: var(--danger-color); font-size: 0.7rem; margin-top: 12px; min-height: 14px; font-weight: 600; }
         .login-card.shake { animation: shakeAnim 0.4s; }
         @keyframes shakeAnim {
@@ -359,7 +360,7 @@
 
 <script>
     const CLAVE_ACCESO = "Javiercito2026";
-    const WEB_APP_URL  = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec";
+    const WEB_APP_URL   = "https://script.google.com/macros/s/AKfycbxeZ_pOpH98ZufyGNCq_6BQx0H_F2cS6HUBaiq_QgKvl1TwUAO4dhmso0B498hFa22gDA/exec";
     const PREV_APP_URL = "https://script.google.com/macros/s/AKfycbw_pbtEwiF-JwWs2qvLfGgu-3DyUenPYXWDnKb9mKDvkkz43Us2lAmgjDEamrCwGg0s/exec";
     const TK_APP_URL   = "https://script.google.com/macros/s/AKfycbwsbqn-wPMT0VxzexA6Lz0gVxorje0epsKbjMEcL_sJJ8tXzCF3pZ1vrN8oUCul1OUy/exec";
     const BAT_APP_URL  = "https://script.google.com/macros/s/AKfycbxyxgHUoViaze-YefxFpydJJ1YWo3XdOINrIuwTDEH_4i3HLt7KFHWnH28YoQfCY9d9/exec";
@@ -561,7 +562,7 @@
                 labels: labels,
                 datasets: [{
                     data: Object.values(data),
-                    backgroundColor: ['#009ef7', '#50cd89', '#f1416c', '#ffc700', '#7239ea', '#00ffa3'],
+                    backgroundColor: ['#00f2fe', '#c084fc', '#f59e0b', '#10b981', '#0284c7', '#ef4444'],
                     borderWidth: 0
                 }]
             },
@@ -571,7 +572,7 @@
                 plugins: {
                     legend: {
                         position: 'right',
-                        labels: { color: '#8b949e', font: { size: 7 }, boxWidth: 8, padding: 6 }
+                        labels: { color: '#8a94a6', font: { size: 7 }, boxWidth: 8, padding: 6 }
                     },
                     title: {
                         display: true, text: '% POR CATEGORÍA', color: '#fff',
@@ -796,170 +797,164 @@
         tbody.innerHTML = html;
     }
 
-        // --- VARIABLES GLOBALES DEL MÓDULO ---
-async function cargarBaterias() {
-    try {
-        if (!cacheDatosBAT) {
-            // Se solicita explícitamente action=getDatos para que el Apps Script devuelva JSON
-            const res = await fetch(`${BAT_APP_URL}?action=getDatos&nocache=${Date.now()}`, {
-                method: 'GET',
-                redirect: 'follow'
-            });
+    // --- LÓGICA MÓDULO BATERÍAS ---
+    async function cargarBaterias() {
+        try {
+            if (!cacheDatosBAT) {
+                const res = await fetch(`${BAT_APP_URL}?action=getDatos&nocache=${Date.now()}`, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
 
-            if (!res.ok) {
-                throw new Error(`HTTP Status: ${res.status}`);
-            }
-
-            const data = await res.json();
-
-            if (Array.isArray(data)) {
-                cacheDatosBAT = data;
-            } else if (data && Array.isArray(data.datos)) {
-                cacheDatosBAT = data.datos;
-            } else if (data && Array.isArray(data.data)) {
-                cacheDatosBAT = data.data;
-            } else if (data && typeof data === 'object') {
-                cacheDatosBAT = Object.values(data);
-            } else {
-                cacheDatosBAT = [];
-            }
-        }
-
-        if (cacheDatosBAT && cacheDatosBAT.length > 0) {
-            procesarLogicaBaterias(cacheDatosBAT);
-        } else {
-            document.getElementById('tablaBaterias').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">No hay datos disponibles en Baterías</td></tr>`;
-        }
-        document.getElementById('timeBat').innerText = obtenerFechaHoraActual();
-    } catch (e) {
-        console.error("Error al conectar con la URL de Baterías:", e);
-        document.getElementById('tablaBaterias').innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">Error de conexión al cargar Baterías: ${e.message}</td></tr>`;
-        document.getElementById('timeBat').innerText = obtenerFechaHoraActual();
-    }
-}
-
-function parsearFecha(fechaStr) {
-    if (!fechaStr) return null;
-    if (typeof fechaStr === 'string' && fechaStr.includes('T')) {
-        const dIso = new Date(fechaStr);
-        // Si la ISO incluye desfase UTC, ajustamos a fecha local limpia
-        return isNaN(dIso.getTime()) ? null : new Date(dIso.getUTCFullYear(), dIso.getUTCMonth(), dIso.getUTCDate());
-    }
-    const partes = fechaStr.toString().split(/[\/\-]/);
-    if (partes.length === 3) {
-        let dia = parseInt(partes[0], 10);
-        let mes = parseInt(partes[1], 10) - 1;
-        let anio = parseInt(partes[2], 10);
-        if (anio < 100) anio += 2000;
-        return new Date(anio, mes, dia);
-    }
-    const d = new Date(fechaStr);
-    return isNaN(d.getTime()) ? null : d;
-}
-
-function procesarLogicaBaterias(filas) {
-    let lugaresMap = {};
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); // Normalizamos 'hoy' al inicio del día
-
-    filas.forEach(item => {
-        let lugarStr = "";
-        let batNombre = "";
-        let fechaObj = null;
-
-        if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-            // Lectura del JSON proveniente de Apps Script
-            lugarStr = item.lugar ? item.lugar.toString().trim() : '';
-            
-            const codigo = item.codigo ? item.codigo.toString().trim() : 'S/C';
-            const marca = item.marca ? item.marca.toString().trim() : '';
-            
-            batNombre = (marca && marca !== '-') ? `${codigo} (${marca})` : codigo;
-            
-            if (item.fechaObj) {
-                fechaObj = parsearFecha(item.fechaObj);
-            } else if (item.fechaInstalacion) {
-                fechaObj = parsearFecha(item.fechaInstalacion);
-            }
-        } else if (Array.isArray(item)) {
-            // Fallback por si viniera una matriz sin procesar
-            const codigo = item[0] ? item[0].toString().trim() : 'S/C';
-            const marca = item[1] ? item[1].toString().trim() : '';
-            batNombre = (marca && marca !== '-') ? `${codigo} (${marca})` : codigo;
-
-            const ciclos = [
-                { fecha: item[5], lugar: item[6] },
-                { fecha: item[10], lugar: item[11] },
-                { fecha: item[15], lugar: item[16] },
-                { fecha: item[20], lugar: item[21] }
-            ];
-
-            ciclos.forEach(c => {
-                if (c.lugar && c.lugar.toString().trim() !== "") {
-                    const lTemp = c.lugar.toString().trim();
-                    const fTemp = parsearFecha(c.fecha);
-                    if (fTemp && (!fechaObj || fTemp > fechaObj)) {
-                        lugarStr = lTemp;
-                        fechaObj = fTemp;
-                    }
+                if (!res.ok) {
+                    throw new Error(`HTTP Status: ${res.status}`);
                 }
-            });
-        }
 
-        if (lugarStr !== "" && fechaObj && !isNaN(fechaObj.getTime())) {
-            if (!lugaresMap[lugarStr] || fechaObj > lugaresMap[lugarStr].fechaObj) {
-                lugaresMap[lugarStr] = {
-                    lugar: lugarStr,
-                    bateria: batNombre,
-                    fechaObj: fechaObj
-                };
+                const data = await res.json();
+
+                if (Array.isArray(data)) {
+                    cacheDatosBAT = data;
+                } else if (data && Array.isArray(data.datos)) {
+                    cacheDatosBAT = data.datos;
+                } else if (data && Array.isArray(data.data)) {
+                    cacheDatosBAT = data.data;
+                } else if (data && typeof data === 'object') {
+                    cacheDatosBAT = Object.values(data);
+                } else {
+                    cacheDatosBAT = [];
+                }
             }
+
+            if (cacheDatosBAT && cacheDatosBAT.length > 0) {
+                procesarLogicaBaterias(cacheDatosBAT);
+            } else {
+                document.getElementById('tablaBaterias').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">No hay datos disponibles en Baterías</td></tr>`;
+            }
+            document.getElementById('timeBat').innerText = obtenerFechaHoraActual();
+        } catch (e) {
+            console.error("Error al conectar con la URL de Baterías:", e);
+            document.getElementById('tablaBaterias').innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">Error de conexión al cargar Baterías: ${e.message}</td></tr>`;
+            document.getElementById('timeBat').innerText = obtenerFechaHoraActual();
         }
-    });
+    }
 
-    listaBateriasProcesada = Object.values(lugaresMap).map(item => {
-        const fInst = item.fechaObj;
-        
-        // Sumamos 2 años
-        const fProximo = new Date(fInst.getFullYear() + 2, fInst.getMonth(), fInst.getDate());
-        
-        const diffTime = fProximo - hoy;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        let badgeHtml = "";
-        if (diffDays < 0) {
-            badgeHtml = `<span class="badge-status badge-vencida">Vencida hace ${Math.abs(diffDays)} días</span>`;
-        } else if (diffDays <= 90) {
-            badgeHtml = `<span class="badge-status badge-alerta">Faltan ${diffDays} días</span>`;
-        } else {
-            const meses = Math.round(diffDays / 30);
-            badgeHtml = `<span class="badge-status badge-ok">Faltan ~${meses} meses (${diffDays} días)</span>`;
+    function parsearFecha(fechaStr) {
+        if (!fechaStr) return null;
+        if (typeof fechaStr === 'string' && fechaStr.includes('T')) {
+            const dIso = new Date(fechaStr);
+            return isNaN(dIso.getTime()) ? null : new Date(dIso.getUTCFullYear(), dIso.getUTCMonth(), dIso.getUTCDate());
         }
+        const partes = fechaStr.toString().split(/[\/\-]/);
+        if (partes.length === 3) {
+            let dia = parseInt(partes[0], 10);
+            let mes = parseInt(partes[1], 10) - 1;
+            let anio = parseInt(partes[2], 10);
+            if (anio < 100) anio += 2000;
+            return new Date(anio, mes, dia);
+        }
+        const d = new Date(fechaStr);
+        return isNaN(d.getTime()) ? null : d;
+    }
 
-        // Formato manual DD/MM/YYYY para evitar restas por zona horaria
-        const dia = String(fInst.getDate()).padStart(2, '0');
-        const mes = String(fInst.getMonth() + 1).padStart(2, '0');
-        const anio = fInst.getFullYear();
+    function procesarLogicaBaterias(filas) {
+        let lugaresMap = {};
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
 
-        const diaP = String(fProximo.getDate()).padStart(2, '0');
-        const mesP = String(fProximo.getMonth() + 1).padStart(2, '0');
-        const anioP = fProximo.getFullYear();
+        filas.forEach(item => {
+            let lugarStr = "";
+            let batNombre = "";
+            let fechaObj = null;
 
-        return {
-            lugar: item.lugar,
-            bateria: item.bateria,
-            fechaInstStr: `${dia}/${mes}/${anio}`,
-            fechaProxStr: `${diaP}/${mesP}/${anioP}`,
-            badgeHtml: badgeHtml,
-            diffDays: diffDays
-        };
-    });
+            if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+                lugarStr = item.lugar ? item.lugar.toString().trim() : '';
+                
+                const codigo = item.codigo ? item.codigo.toString().trim() : 'S/C';
+                const marca = item.marca ? item.marca.toString().trim() : '';
+                
+                batNombre = (marca && marca !== '-') ? `${codigo} (${marca})` : codigo;
+                
+                if (item.fechaObj) {
+                    fechaObj = parsearFecha(item.fechaObj);
+                } else if (item.fechaInstalacion) {
+                    fechaObj = parsearFecha(item.fechaInstalacion);
+                }
+            } else if (Array.isArray(item)) {
+                const codigo = item[0] ? item[0].toString().trim() : 'S/C';
+                const marca = item[1] ? item[1].toString().trim() : '';
+                batNombre = (marca && marca !== '-') ? `${codigo} (${marca})` : codigo;
 
-    listaBateriasProcesada.sort((a, b) => a.diffDays - b.diffDays);
-    renderTablaBaterias(listaBateriasProcesada);
-}
+                const ciclos = [
+                    { fecha: item[5], lugar: item[6] },
+                    { fecha: item[10], lugar: item[11] },
+                    { fecha: item[15], lugar: item[16] },
+                    { fecha: item[20], lugar: item[21] }
+                ];
 
-function renderTablaBaterias(lista) {
+                ciclos.forEach(c => {
+                    if (c.lugar && c.lugar.toString().trim() !== "") {
+                        const lTemp = c.lugar.toString().trim();
+                        const fTemp = parsearFecha(c.fecha);
+                        if (fTemp && (!fechaObj || fTemp > fechaObj)) {
+                            lugarStr = lTemp;
+                            fechaObj = fTemp;
+                        }
+                    }
+                });
+            }
+
+            if (lugarStr !== "" && fechaObj && !isNaN(fechaObj.getTime())) {
+                if (!lugaresMap[lugarStr] || fechaObj > lugaresMap[lugarStr].fechaObj) {
+                    lugaresMap[lugarStr] = {
+                        lugar: lugarStr,
+                        bateria: batNombre,
+                        fechaObj: fechaObj
+                    };
+                }
+            }
+        });
+
+        listaBateriasProcesada = Object.values(lugaresMap).map(item => {
+            const fInst = item.fechaObj;
+            
+            const fProximo = new Date(fInst.getFullYear() + 2, fInst.getMonth(), fInst.getDate());
+            
+            const diffTime = fProximo - hoy;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            let badgeHtml = "";
+            if (diffDays < 0) {
+                badgeHtml = `<span class="badge-status badge-vencida">Vencida hace ${Math.abs(diffDays)} días</span>`;
+            } else if (diffDays <= 90) {
+                badgeHtml = `<span class="badge-status badge-alerta">Faltan ${diffDays} días</span>`;
+            } else {
+                const meses = Math.round(diffDays / 30);
+                badgeHtml = `<span class="badge-status badge-ok">Faltan ~${meses} meses (${diffDays} días)</span>`;
+            }
+
+            const dia = String(fInst.getDate()).padStart(2, '0');
+            const mes = String(fInst.getMonth() + 1).padStart(2, '0');
+            const anio = fInst.getFullYear();
+
+            const diaP = String(fProximo.getDate()).padStart(2, '0');
+            const mesP = String(fProximo.getMonth() + 1).padStart(2, '0');
+            const anioP = fProximo.getFullYear();
+
+            return {
+                lugar: item.lugar,
+                bateria: item.bateria,
+                fechaInstStr: `${dia}/${mes}/${anio}`,
+                fechaProxStr: `${diaP}/${mesP}/${anioP}`,
+                badgeHtml: badgeHtml,
+                diffDays: diffDays
+            };
+        });
+
+        listaBateriasProcesada.sort((a, b) => a.diffDays - b.diffDays);
+        renderTablaBaterias(listaBateriasProcesada);
+    }
+
+    function renderTablaBaterias(lista) {
         const tbody = document.getElementById('tablaBaterias');
         tbody.innerHTML = "";
         if (lista.length === 0) {
@@ -968,7 +963,6 @@ function renderTablaBaterias(lista) {
         }
 
         lista.forEach(b => {
-            // Aseguramos que muestre 'b.bateria' o 'b.codigo' si uno de los dos está vacío
             const nombreBateria = b.bateria || b.codigo || "S/C";
 
             tbody.innerHTML += `
@@ -983,14 +977,14 @@ function renderTablaBaterias(lista) {
         });
     }
 
-function filtrarTablaBaterias() {
-    const query = document.getElementById('inputSearchBat').value.toLowerCase();
-    const filtradas = listaBateriasProcesada.filter(b => 
-        b.lugar.toLowerCase().includes(query) || 
-        b.bateria.toLowerCase().includes(query)
-    );
-    renderTablaBaterias(filtradas);
-}
+    function filtrarTablaBaterias() {
+        const query = document.getElementById('inputSearchBat').value.toLowerCase();
+        const filtradas = listaBateriasProcesada.filter(b => 
+            b.lugar.toLowerCase().includes(query) || 
+            b.bateria.toLowerCase().includes(query)
+        );
+        renderTablaBaterias(filtradas);
+    }
 </script>
 
 </body>
